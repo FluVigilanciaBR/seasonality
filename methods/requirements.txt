@@ -1,0 +1,7 @@
+dbfread
+pandas
+seaborn
+rpy2
+matplotlib
+scipy
+numpy
