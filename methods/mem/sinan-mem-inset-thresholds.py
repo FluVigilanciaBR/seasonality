@@ -124,7 +124,7 @@ def discardseasons(df, seasons, gdthres=2.0, smin=5):
 
 def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     rdf = pandas2ri.py2ri(df)
-    seasons = sorted(list(df.columns.drop(['UF', 'isoweek'])))[:-1]
+    seasons = sorted(list(df.columns.drop(['UF', 'epiweek'])))[:-1]
     # Discard 2009 season if present:
     print(discarded_seasons)
     seasons = sorted(set(seasons).difference(discarded_seasons))
@@ -274,24 +274,24 @@ def plotmemcurve(uf, dftmp, dftmpinset, thresholds, seasons, lastseason, epicols
     # elif uf == 32:
     #     ax[0].set_ylim([0,0.3])
 
-    ax[0].fill_between(dftmp['isoweek'], 0, dftmp['corredor baixo'], color='green', alpha=0.5)
-    ax[0].fill_between(dftmp['isoweek'], dftmp['corredor baixo'], dftmp['corredor mediano'], color='yellow',
+    ax[0].fill_between(dftmp['epiweek'], 0, dftmp['corredor baixo'], color='green', alpha=0.5)
+    ax[0].fill_between(dftmp['epiweek'], dftmp['corredor baixo'], dftmp['corredor mediano'], color='yellow',
                        alpha=0.5)
-    ax[0].fill_between(dftmp['isoweek'], dftmp['corredor mediano'], dftmp['corredor alto'], color='orange',
+    ax[0].fill_between(dftmp['epiweek'], dftmp['corredor mediano'], dftmp['corredor alto'], color='orange',
                        alpha=0.5)
 
-    dftmp.plot(ax=ax[0], x='isoweek', y=seasons)
-    dftmp.plot(ax=ax[0], x='isoweek', y=lastseason, color='k', lw=3)
-    dftmp.plot(ax=ax[0], x='isoweek', y='limiar pré-epidêmico', style='--', color='red', alpha=0.8)
-    # dftmp.plot(ax=ax[0], x='isoweek', y='intensidade baixa', style='--')
-    dftmp.plot(ax=ax[0], x='isoweek', y='intensidade alta', style='--')
-    dftmp.plot(ax=ax[0], x='isoweek', y='intensidade muito alta', style='--', color=colorcode[-1])
+    dftmp.plot(ax=ax[0], x='epiweek', y=seasons)
+    dftmp.plot(ax=ax[0], x='epiweek', y=lastseason, color='k', lw=3)
+    dftmp.plot(ax=ax[0], x='epiweek', y='limiar pré-epidêmico', style='--', color='red', alpha=0.8)
+    # dftmp.plot(ax=ax[0], x='epiweek', y='intensidade baixa', style='--')
+    dftmp.plot(ax=ax[0], x='epiweek', y='intensidade alta', style='--')
+    dftmp.plot(ax=ax[0], x='epiweek', y='intensidade muito alta', style='--', color=colorcode[-1])
 
     # Check for maximum value on y-axis and fill from 'corredor alto' to maxy
-    dftmp.plot(ax=ax[0], x='isoweek', y='corredor alto', legend=False, alpha=0)
+    dftmp.plot(ax=ax[0], x='epiweek', y='corredor alto', legend=False, alpha=0)
     miny, maxy = ax[0].get_ylim()
     del (ax[0].lines[-1])
-    ax[0].fill_between(dftmp['isoweek'], dftmp['corredor alto'], maxy, color='red', alpha=0.5)
+    ax[0].fill_between(dftmp['epiweek'], dftmp['corredor alto'], maxy, color='red', alpha=0.5)
     ax[0].set_ylim([miny, maxy])
     for label in ax[0].get_xticklabels():
         label.set_fontproperties(fontpropticks)
@@ -307,9 +307,9 @@ def plotmemcurve(uf, dftmp, dftmpinset, thresholds, seasons, lastseason, epicols
     else:
         axinset.set_ylim([0, maxval])
 
-    dftmpinset.plot(ax=axinset, x='isoweek', y=seasons)
-    dftmpinset.plot(ax=axinset, x='isoweek', y=lastseason, color='k', lw=3)
-    dftmpinset.plot(ax=axinset, x='isoweek', y='limiar pré-epidêmico absoluto', style='--', color='red', alpha=0.8)
+    dftmpinset.plot(ax=axinset, x='epiweek', y=seasons)
+    dftmpinset.plot(ax=axinset, x='epiweek', y=lastseason, color='k', lw=3)
+    dftmpinset.plot(ax=axinset, x='epiweek', y='limiar pré-epidêmico absoluto', style='--', color='red', alpha=0.8)
     axinset.legend_.remove()
     axinset.set_xlabel('SE', fontproperties=fontproplblinset)
     axinset.set_ylabel('Casos', fontproperties=fontproplblinset)
@@ -399,12 +399,12 @@ def plotmemfailedcurve(uf, dftmp, dftmpinset, seasons, lastseason):
     # elif uf == 32:
     #     ax[0].set_ylim([0,0.3])
 
-    dftmp.plot(ax=ax[0], x='isoweek', y=seasons)
-    dftmp.plot(ax=ax[0], x='isoweek', y=lastseason, color='k', lw=3)
-    dftmp.plot(ax=ax[0], x='isoweek', y='limiar pré-epidêmico', style='--', color='red', alpha=0.8)
-    # dftmp.plot(ax=ax[0], x='isoweek', y='intensidade baixa', style='--')
-    dftmp.plot(ax=ax[0], x='isoweek', y='intensidade alta', style='--')
-    dftmp.plot(ax=ax[0], x='isoweek', y='intensidade muito alta', style='--', color=colorcode[-1])
+    dftmp.plot(ax=ax[0], x='epiweek', y=seasons)
+    dftmp.plot(ax=ax[0], x='epiweek', y=lastseason, color='k', lw=3)
+    dftmp.plot(ax=ax[0], x='epiweek', y='limiar pré-epidêmico', style='--', color='red', alpha=0.8)
+    # dftmp.plot(ax=ax[0], x='epiweek', y='intensidade baixa', style='--')
+    dftmp.plot(ax=ax[0], x='epiweek', y='intensidade alta', style='--')
+    dftmp.plot(ax=ax[0], x='epiweek', y='intensidade muito alta', style='--', color=colorcode[-1])
 
     for label in ax[0].get_xticklabels():
         label.set_fontproperties(fontpropticks)
@@ -420,9 +420,9 @@ def plotmemfailedcurve(uf, dftmp, dftmpinset, seasons, lastseason):
     else:
         axinset.set_ylim([0, maxval])
 
-    dftmpinset.plot(ax=axinset, x='isoweek', y=seasons)
-    dftmpinset.plot(ax=axinset, x='isoweek', y=lastseason, color='k', lw=3)
-    dftmpinset.plot(ax=axinset, x='isoweek', y='limiar pré-epidêmico absoluto', style='--', color='red', alpha=0.8)
+    dftmpinset.plot(ax=axinset, x='epiweek', y=seasons)
+    dftmpinset.plot(ax=axinset, x='epiweek', y=lastseason, color='k', lw=3)
+    dftmpinset.plot(ax=axinset, x='epiweek', y='limiar pré-epidêmico absoluto', style='--', color='red', alpha=0.8)
     axinset.legend_.remove()
     axinset.set_xlabel('SE', fontproperties=fontproplblinset)
     axinset.set_ylabel('Casos', fontproperties=fontproplblinset)
@@ -478,7 +478,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
         print(uf)
         dftmp = df[df.UF == uf].reset_index().drop('index', axis=1).copy()
         dftmpinset = dfinset[dfinset.UF == uf].reset_index().drop('index', axis=1).copy()
-        seasons = sort(list(dftmp.columns.drop(['UF', 'isoweek'])))
+        seasons = sort(list(dftmp.columns.drop(['UF', 'epiweek'])))
         lastseason = seasons[-1]
         seasons = list(np.delete(seasons, -1))
 
@@ -505,7 +505,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             if (thresholds['pre.post.intervals'].loc['pre', 2] >= 5 * incidence_norm):
                 dftmp['mediana pré-epidêmica'] = thresholds['pre.post.intervals'].loc['pre', 1]
                 dftmp['limiar pré-epidêmico'] = thresholds['pre.post.intervals'].loc['pre', 2]
-                dftmp['se relativa ao início do surto'] = dftmp['isoweek'] - thresholds['mean.start'][0]
+                dftmp['se relativa ao início do surto'] = dftmp['epiweek'] - thresholds['mean.start'][0]
                 dftmp['se típica do início do surto'] = thresholds['mean.start'][0]
                 # Confidence interval for epi.start
                 cimin = thresholds['ci.start'].loc[0, 0]
@@ -601,7 +601,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmpinset['corredor baixo'] = thresholdsinset['typ.real.curve']['baixo']
             dftmpinset['corredor mediano'] = thresholdsinset['typ.real.curve']['mediano']
             dftmpinset['corredor alto'] = thresholdsinset['typ.real.curve']['alto']
-            dftmpinset['se relativa ao início do surto'] = dftmpinset['isoweek'] - thresholdsinset['mean.start'][0]
+            dftmpinset['se relativa ao início do surto'] = dftmpinset['epiweek'] - thresholdsinset['mean.start'][0]
             dftmpinset['se típica do início do surto'] = thresholdsinset['mean.start'][0]
             dftmpinset['duração típica do surto'] = thresholdsinset['mean.length'][0]
             dftmpinset['curva epi. baixa'] = thresholdsinset['typ.curve']['baixo']
@@ -714,7 +714,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                                           'se típica do início do surto',
                                           'IC da se típica do início do surto', 'duração típica do surto',
                                           'IC da duração típica do surto']].head(1), ignore_index=True)
-        dfcorredor = dfcorredor.append(dftmp[['UF', 'População', 'isoweek', 'corredor baixo', 'corredor mediano',
+        dfcorredor = dfcorredor.append(dftmp[['UF', 'População', 'epiweek', 'corredor baixo', 'corredor mediano',
                                               'corredor alto']],
                                        ignore_index=True)
 

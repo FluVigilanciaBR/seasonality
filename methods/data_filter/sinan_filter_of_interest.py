@@ -1,5 +1,6 @@
 # Apply filters of interest in a dataframe containing SINAN-SRAG data
 import pandas as pd
+import numpy as np
 import argparse
 from argparse import RawDescriptionHelpFormatter
 
@@ -107,7 +108,27 @@ def applysinanfilter(df):
                             (df.OTHERS[labrows] == 0) & (df.DELAYED[labrows] == 0) &
                             (df.INCONCLUSIVE[labrows] == 0)).astype(int)
 
+    df.NU_IDADE_N = df.NU_IDADE_N.astype(np.float)
 
+    def f_idade(x):
+
+        # System registers age with the following format:
+        # TAAA
+        # T: type (1-hours, 2-days, 3-months, 4-years)
+        #   Hours used only if age < 24h, days used only if 24h <= age < 30d, months only if 30d <= a < 12 months
+        # AAA: count on the respective scale
+        # Ex.:
+        # 1010 : 10 days
+        # 2010: 10 months
+        # 3010: 10 years
+        if np.isnan(x):
+            return np.nan
+        if x < 4000:
+            return 0
+        else:
+            return x - 4000
+
+    df['idade_em_anos'] = df['NU_IDADE_N'].apply(f_idade)
 
     return(df)
 
