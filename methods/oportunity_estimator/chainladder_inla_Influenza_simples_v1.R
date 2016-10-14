@@ -140,7 +140,7 @@ for (uf in uf_list){
   if (!(uf %in% low.activity)) {
     
     # Calculate estimates
-    df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, qthreshold)
+    df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold)
     
     # Generate quantiles estimates
     aux2 <- t(apply(df.tbl.tmp.estimates$samples,1,FUN = post.sum))

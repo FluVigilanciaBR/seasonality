@@ -1,15 +1,12 @@
-generate.estimates <- function(delay.tbl.tmp, qthreshold){
-  delay.week <- paste("d",0:qthreshold, sep="")
+generate.estimates <- function(delay.tbl.tmp, Dmax){
+  
+  # Generate etimates for the previous Dmax weeks based on notification oportunity profile
+  # found in delay.tbl.tmp
+  delay.week <- paste("d",0:Dmax, sep="")
   delay.tbl.tmp <- delay.tbl.tmp[,delay.week]
   
   # tempo máximo do banco
   Tmax <- nrow(delay.tbl.tmp)
-  
-  # Número máximo de semanas com delay
-  #Dmax <- ncol(delay.tbl.tmp.obs)-1
-  Dmax <- qthreshold
-  
-  #View(delay.tbl.tmp)
   
   # Semana escolhida arbitrariamente
   Tactual <- dim(delay.tbl.tmp)[1]
