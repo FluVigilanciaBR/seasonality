@@ -6,6 +6,7 @@ episem <- function(x,separa='W',retorna='YW') {
   # retorna='W' retorna 'WW'
   # retorna='Y' retorna 'YYYY'
   # semana epi 1 de 2000 02/01/2000
+  if (is.na(x) | as.character(x) == '') {return(NA)}
   
   if (class(x)!= "Date") {
     
