@@ -17,11 +17,11 @@
 d <- read.csv("../data_filter/clean_data_filtro_sintomas.csv")
 
 # Claudia's data manipulation
-d$ano <- year(as_date(d$DT_DIGITA))
+require(chron)
+d$ano <- years(as.Date(d$DT_DIGITA))
 d <- subset(d, ano >= 2013)
 d <- subset(d, SG_UF_NOT==41) # parana
 d$DT_NOTIFIC <- d$DT_SIN_PRI
-
 
 # Calculating delay time
 d$DelayDays <- difftime(as.Date(as.character(d$DT_DIGITA),format="%Y-%m-%d"), 
