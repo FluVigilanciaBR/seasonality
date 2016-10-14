@@ -36,20 +36,22 @@ d$DelayWeeks <- d$DT_DIGITA_epiweek - d$DT_NOTIFIC_epiweek +
 d <- na.exclude(d[d$DelayWeeks < 27, ])
 
 # # Fill all epiweeks:
-# years.list <- unique(d$DT_DIGITA_epiyear)
-# years.list <- years.list[order(years.list)]
+years.list <- unique(d$DT_DIGITA_epiyear)
+years.list <- years.list[order(years.list)]
 # df.epiweeks <- data.frame(DT_NOTIFIC_epiyearweek=character(), SG_UF_NOT=numeric())
-# for (y in years.list){
-#   epiweeks <- c()
-#   lweek <- as.integer(lastepiweek(y))
-#   for (w in c(1:lweek)){
-#     epiweeks <- c(epiweeks, paste0(y,'W',sprintf('%02d', w)))  
-#   }
-#   for (uf in uf_list){
-#     df.epiweeks <- rbind(df.epiweeks, data.frame(list(DT_NOTIFIC_epiyearweek=epiweeks, SG_UF_NOT=rep(uf, lweek))))
-#   }
-# }
-# 
+df.epiweeks <- data.frame(DT_NOTIFIC_epiyearweek=character())
+for (y in years.list){
+  epiweeks <- c()
+  lweek <- as.integer(lastepiweek(y))
+  for (w in c(1:lweek)){
+    epiweeks <- c(epiweeks, paste0(y,'W',sprintf('%02d', w)))
+  }
+  df.epiweeks <- rbind(df.epiweeks, data.frame(list(DT_NOTIFIC_epiyearweek=epiweeks)))
+  # for (uf in uf_list){
+  #   df.epiweeks <- rbind(df.epiweeks, data.frame(list(DT_NOTIFIC_epiyearweek=epiweeks, SG_UF_NOT=rep(uf, lweek))))
+  # }
+}
+
 # dtest <- merge(df.epiweeks, d, all.x=T)  
 
 # Grab target quantile from delay distribution for each UF
