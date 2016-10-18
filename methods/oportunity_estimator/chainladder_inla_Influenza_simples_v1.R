@@ -12,6 +12,8 @@
 # Y_{0,t} is known forall t
 # If T is today, Y_{t,d} is unknown for all (t,d) such that t+d > T
 
+# Contributtors
+# Claudia T Codeço and Marcelo F C Gomes
 # Load auxiliary functions
 source("../data_filter/episem.R")
 source('./lastepiweek.R')
@@ -37,8 +39,79 @@ d$DelayWeeks <- d$DT_DIGITA_epiweek - d$DT_NOTIFIC_epiweek +
 # Discard notifications with delay greater than 6 months (> 26 weeks)
 d <- na.exclude(d[d$DelayWeeks < 27, ])
 
+# Read population profile:
+d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', check.names = F)
+
+# Create entries for regional aggregates:
+d$Region <- mapply(function(x) as.character(unique(d_pop[d_pop$`Código`==as.character(x),'Região'])), d$SG_UF_NOT)
+d$Country <- 'BR'
+
+# Grab target quantile from delay distribution for each UF
+delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = function(x,...) max(8,quantile(x,...)),
+                                            probs=quantile.target))),
+                       ceiling(with(d, tapply(DelayWeeks, Region, FUN = function(x,...) max(8,quantile(x,...)),
+                                              probs=quantile.target))),
+                       ceiling(with(d, tapply(DelayWeeks, Country, FUN = function(x,...) max(8,quantile(x,...)),
+                                              probs=quantile.target))))
+
+# Read activity thresholds:
+df.thresholds <- read.csv('../mem/mem-data/clean_data_epiweek4mem-mem-report-criterium-method.csv', check.names = F)
+low.activity <- df.thresholds[is.na(df.thresholds$`se típica do início do surto`),'UF']
+
+# Read weekly data:
+d_weekly <- read.csv('../data_filter/clean_data_epiweek-weekly-incidence.csv', check.names = F)
+d_weekly['DT_NOTIFIC_epiyearweek'] <- mapply(function(x,y) paste0(x,'W',sprintf("%02d",y)), d_weekly$epiyear,d_weekly$epiweek)
 # # Fill all epiweeks:
-fyear <- min(d$DT_DIGITA_epiyear)
+fyear <- min(d_weekly$epiyear)
+today <- episem(format(Sys.Date(), '%Y-%m-%d'))
+lyear <- as.integer(strsplit(today, 'W')[[1]][1])
+today.week <- as.integer(strsplit(today, 'W')[[1]][2])
+today.week <- ifelse(today.week > 1, today.week-1, as.integer(lastepiweek(lyear-1)))
+years.list <- c(fyear:lyear)
+df.epiweeks <- data.frame(DT_NOTIFIC_epiyearweek=character(), UF=factor())
+# List of locations:
+uf_list <- unique(d_weekly$UF)
+for (y in years.list){
+  epiweeks <- c()
+  lweek <- ifelse(y < lyear, as.integer(lastepiweek(y)), today.week)
+  for (w in c(1:lweek)){
+    epiweeks <- c(epiweeks, paste0(y,'W',sprintf('%02d', w)))
+  }
+  for (uf in uf_list){
+    df.epiweeks <- rbind(df.epiweeks, data.frame(list(DT_NOTIFIC_epiyearweek=epiweeks, UF=uf)))
+  }
+}
+
+d_weekly <- merge(df.epiweeks, d_weekly, by=c('DT_NOTIFIC_epiyearweek', 'UF'), all.x=T)
+d_weekly[is.na(d_weekly$epiweek), 'epiweek'] <- mapply(function (x) as.integer(strsplit(as.character(x[[1]]), 'W')[[1]][2]), 
+                                                       d_weekly[is.na(d_weekly$epiweek), 'DT_NOTIFIC_epiyearweek'])
+d_weekly[is.na(d_weekly$epiyear), 'epiyear'] <- mapply(function (x) as.integer(strsplit(as.character(x[[1]]), 'W')[[1]][1]), 
+                                                       d_weekly[is.na(d_weekly$epiyear), 'DT_NOTIFIC_epiyearweek'])
+
+d_weekly[is.na(d_weekly)] <- 0
+d_weekly$Situation <- 'stable'
+d_weekly[,c("mean","50%","2.5%","97.5%")] <- d_weekly$SRAG
+
+# Thresholds:
+thres.cols <- c('limiar pré-epidêmico','intensidade alta','intensidade muito alta')
+aux2 <- t(mapply(FUN=function(uf, inc) 
+  post.thresholds(inc, lims=as.numeric(df.thresholds[df.thresholds$UF==as.character(uf),thres.cols])),
+  d_weekly$UF, d_weekly$SRAG) )
+thres.prob.cols <- colnames(aux2)
+d_weekly[,thres.prob.cols] <- aux2
+
+# Check if plot folder exists
+require(scales)
+if (!dir.exists('./plots')) {
+  dir.create(file.path('./plots'), showWarnings = FALSE)
+}
+# Load palette
+require(RColorBrewer)
+cores <- colorRampPalette((brewer.pal(9, 'Oranges')))(27)
+
+# Prepare filled epiweeks data frame:
+# # Fill all epiweeks:
+fyear <- min(d$DT_NOTIFIC_epiyear)
 today <- episem(format(Sys.Date(), '%Y-%m-%d'))
 lyear <- as.integer(strsplit(today, 'W')[[1]][1])
 today.week <- as.integer(strsplit(today, 'W')[[1]][2])
@@ -54,33 +127,25 @@ for (y in years.list){
 }
 rownames(df.epiweeks) <- df.epiweeks$DT_NOTIFIC_epiyearweek
 
-# Grab target quantile from delay distribution for each UF
-delay.topquantile <- ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = function(x,...) max(8,quantile(x,...)), probs=quantile.target)))
-
-# Check if plot folder exists
-require(scales)
-if (!dir.exists('./plots')) {
-  dir.create(file.path('./plots'), showWarnings = FALSE)
-}
-# Load palette
-require(RColorBrewer)
-cores <- colorRampPalette((brewer.pal(9, 'Oranges')))(27)
-
 # List of locations:
 uf_list <- unique(d$SG_UF_NOT)
+reg_list <- unique(d$Region)
+cntry_list <- unique(d$Country)
 
-# Read activity thresholds:
-df.thresholds <- read.csv('../mem/mem-data/clean_data4mem-mem-report-criterium-method.csv')
-low.activity <- df.thresholds[is.na(df.thresholds$`se.típica.do.início.do.surto`),'UF']
-
-for (uf in uf_list){
+for (uf in c(uf_list, reg_list, cntry_list)){
   if (!dir.exists(file.path('./plots',uf))) {
     dir.create(file.path('./plots',uf), showWarnings = FALSE)
   }
   
   # Plot UF's delay distribution
   qthreshold <- delay.topquantile[as.character(uf)]
-  d.tmp <- droplevels(subset(d, SG_UF_NOT==uf))
+  if (uf %in% uf_list){
+    d.tmp <- droplevels(subset(d, SG_UF_NOT==uf))
+  } else if (uf %in% reg_list){
+    d.tmp <- droplevels(subset(d, Region==uf))
+  } else {
+    d.tmp <- droplevels(subset(d, Country==uf))
+  }
   svg(paste0('./plots/',uf,'/delay_pattern.svg'))
   histo <- hist(d.tmp$DelayWeeks, breaks=c(0:27), plot=F)
   barplot.fig <- barplot(histo$density, xlab = "Delay (weeks)", ylab = "Notifications frequency",
@@ -103,17 +168,12 @@ for (uf in uf_list){
   delay.tbl.tmp[is.na(delay.tbl.tmp)] <- 0
   rownames(delay.tbl.tmp) <- delay.tbl.tmp$Row.names
   
-  delay.tbl.uf <- delay.tbl.tmp[c("DT_NOTIFIC_epiyearweek", "Notifications")]
-  delay.tbl.uf$UF <- uf
-  
-  # delay.tbl[[as.character(uf)]] <- delay.tbl.tmp
-
   # Plot UF's time series
   svg(paste0('./plots/',uf,'/timeseries.svg'))
   # # Time series
   fyear = min(d.tmp$DT_NOTIFIC_epiyear)
   lyear = max(d.tmp$DT_NOTIFIC_epiyear)
-  plot(delay.tbl.tmp$Notifications , type = "l", axes=F, xlab="Time", ylab="")
+  plot(delay.tbl.tmp$Notifications , type = "l", axes=F, xlab="Time", ylab="Notifications")
   axis(2)
   axis(1, at = seq(0,52*(lyear-fyear+1),52) ,labels = fyear:(lyear+1))
   dev.off()
@@ -122,7 +182,7 @@ for (uf in uf_list){
   svg(paste0('./plots/',uf,'/delay_timeseries.svg'))
   delay.week <- paste("d",0:26, sep="")
   barplot.fig <- barplot(t(as.matrix(delay.tbl.tmp[,delay.week])), beside = F, col=cores, axisnames = F,
-                         xlab  =  "Epi week", ylab = "Reports", border = NA)
+                         xlab  =  "Time", ylab = "Notifications", border = NA)
   lines(x=barplot.fig,y=delay.tbl.tmp$d0, type = "l")
   axis(1, at = barplot.fig[seq(1,53*(lyear-fyear+1),52)] , labels = c(fyear:(lyear+1)) )
   #legend(x='topright', legend = c(seq(0,25,5)), fill=cores[seq(1,26,5)], pch = '.')
@@ -132,10 +192,10 @@ for (uf in uf_list){
   # Preparing the data to be modelled
   ##################################################################
   
-  # Obtain location's thresholds
-  uf.threshold <- as.numeric(df.thresholds[df.thresholds$UF == as.character(uf), c("limiar.pré.epidêmico",
-                                                                        "intensidade.alta",
-                                                                        "intensidade.muito.alta")])
+  # Time index of the unknown counts (Dmax+1,...,Tactual) 
+  uf.indexes <- rownames(d_weekly[d_weekly$UF==as.character(uf),])
+  Tactual <- length(uf.indexes)
+  index.time <- uf.indexes[(Tactual-qthreshold+1):Tactual]
   
   if (!(uf %in% low.activity)) {
     
@@ -143,27 +203,37 @@ for (uf in uf_list){
     df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold)
     
     # Generate quantiles estimates
-    aux2 <- t(apply(df.tbl.tmp.estimates$samples,1,FUN = post.sum))
-    
-    # Populate data frame with notified values
-    delay.tbl.uf[colnames(aux2)] <- delay.tbl.uf$Notifications
+    aux2 <- round(t(apply(df.tbl.tmp.estimates$samples,1,FUN = post.sum)))
+
+    # Calculate corresponding incidence
+    years <- d_weekly[index.time, 'epiyear']
+    pop <- sapply(years, FUN=function(x) d_pop$Total[d_pop$`Código`==uf & d_pop$Ano==x])
+    aux2 <- aux2*100000/pop
     
     # For estimated region, update with obtained predictions
-    delay.tbl.uf[index.time,colnames(aux2)] <- aux2
+    d_weekly[index.time, 'Situation'] <- 'estimated'
+    d_weekly[index.time,colnames(aux2)] <- aux2
     
     # Calculate probability of falling in each activity region
-    aux2 <- t(apply(delay.tbl.uf$Notifications,1,FUN = post.thresholds, lims = uf.threshold) )
-    delay.tbl.uf[colnames(aux2)] <- aux2
-    delay.tbl.uf[index.time,colnames(aux2)] <- t(apply(df.tbl.tmp.estimates$samples,1,FUN = post.thresholds, lims = uf.threshold ))
+    # Obtain location's thresholds
+    uf.threshold <- as.numeric(df.thresholds[df.thresholds$UF == as.character(uf), c("limiar pré-epidêmico",
+                                                                                     "intensidade alta",
+                                                                                     "intensidade muito alta")])
+    uf.threshold.absolute <- uf.threshold*d_pop[d_pop[,'Código']==uf & d_pop$Ano==lyear, 'Total']/100000
+    d_weekly[index.time,thres.prob.cols] <- t(apply(df.tbl.tmp.estimates$samples,1,FUN = post.thresholds, lims = uf.threshold.absolute ))
   
   } else {
-
-    # Location does not have enough activity for drawing estimates
-    aux2 <- t(apply(delay.tbl.uf$Notifications,1,FUN = post.thresholds, lims = uf.threshold) )
-    delay.tbl.uf[colnames(aux2)] <- aux2
-
+    d_weekly[index.time, 'Situation'] <- 'unknown'
   }
   
-  
-  
 }
+
+if (!dir.exists(file.path('../clean_data'))) {
+  dir.create(file.path('../clean_data'), showWarnings = FALSE)
+}
+
+d_weekly[,'Run date'] <- Sys.Date()
+write.csv(d_weekly, file=file.path('../clean_data/',paste0(today,'estimated_values.csv')), row.names = F)
+write.csv(d_weekly, file='../clean_data/current_estimated_values.csv', row.names = F)
+df.Dmax <- data.frame(list(UF=names(delay.topquantile), epiyearweek=today, Dmax=delay.topquantile, Execution=Sys.Date()))
+write.csv(df.Dmax, file='../clean_data/Dmax.csv', row.names = F, append=T)

@@ -8,7 +8,7 @@ generate.estimates <- function(delay.tbl.tmp, Dmax){
   # tempo máximo do banco
   Tmax <- nrow(delay.tbl.tmp)
   
-  # Semana escolhida arbitrariamente
+  # Última semana no banco
   Tactual <- dim(delay.tbl.tmp)[1]
   
   # Taking the 20th week of 2012 (peak of a epidemic) as a test week

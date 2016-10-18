@@ -163,6 +163,12 @@ def main(fname, sep=','):
     # df = df_uf.append(df_region, ignore_index=True)
     # dfinc = df_uf_inc.append(df_region_inc, ignore_index=True)
 
+    # Write population table to be used for thresholds:
+    last_year = int(df.epiyear.max())
+    # Load population size time series:
+    dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv')
+    dfpopcurrent = dfpop[dfpop.Ano == last_year]
+    dfpopcurrent.to_csv('../data/populacao_uf_regional_atual.csv', index=False)
 
     # Write output to file:
     fnameout = '.'.join(fname.split('.')[:-1]) + '4mem-incidence.csv'
@@ -171,8 +177,10 @@ def main(fname, sep=','):
     df4mem.to_csv(fnameout, index=False)
 
     fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly-incidence.csv'
+    dfinc = dfinc.sort_values(by=['UF', 'epiyear', 'epiweek'], axis=0).reset_index().drop('index', axis=1)
     dfinc.to_csv(fnameout, index=False)
     fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly.csv'
+    df = df.sort_values(by=['UF', 'epiyear', 'epiweek'], axis=0).reset_index().drop('index', axis=1)
     df.to_csv(fnameout, index=False)
 
 if __name__ == '__main__':

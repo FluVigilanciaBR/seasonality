@@ -490,7 +490,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
         discarded_seasons.extend(['SRAG2009'])
 
         # Calculate incidence normalization factor, per 100.000
-        incidence_norm = np.float(100000 / dfpop.loc[dfpop['Código'] == str(uf), 'População atual'])
+        incidence_norm = np.float(100000 / dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
 
         lowseasons = set()
 
@@ -538,7 +538,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmp['corredor baixo'] = thresholds['typ.real.curve']['baixo']
             dftmp['corredor mediano'] = thresholds['typ.real.curve']['mediano']
             dftmp['corredor alto'] = thresholds['typ.real.curve']['alto']
-            dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'População atual'])
+            dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
 
             dftmp['curva epi. baixa'] = thresholds['typ.curve']['baixo']
             dftmp['curva epi. mediana'] = thresholds['typ.curve']['mediano']
@@ -655,7 +655,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmp['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
             dftmp['IC da se típica do início do surto'] = np.nan
             dftmp['IC da duração típica do surto'] = np.nan
-            dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'População atual'])
+            dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
 
             dftmp.to_csv('./mem-data/%s-memfailed-%s-dropgdist%s-droplow%s-%s_method.csv' %
                          (pref, tabela_ufnome[uf].replace(' ', '_'),
