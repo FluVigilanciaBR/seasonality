@@ -104,7 +104,6 @@ def discardseasons(df, seasons, gdthres=2.0, smin=5):
 
     ####### Test removing one by one ######
     # Take log of geometric deviation threshold for simplicity
-    print(gdthres)
     gdthres = np.log(gdthres)
     for n in range(nmax):
         # Current maxima
@@ -116,7 +115,6 @@ def discardseasons(df, seasons, gdthres=2.0, smin=5):
 
         if mgd > gdthres:
             idx = abs(np.log(tmp_series) - series_gmean).idxmax()
-            # print(series_gmean, np.log(tmp_series).max(), mgd, idx, gdthres)
             drop_seasons.append(idx)
 
     return drop_seasons
@@ -126,9 +124,7 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     rdf = pandas2ri.py2ri(df)
     seasons = sorted(list(df.columns.drop(['UF', 'epiweek'])))[:-1]
     # Discard 2009 season if present:
-    print(discarded_seasons)
     seasons = sorted(set(seasons).difference(discarded_seasons))
-    print(seasons)
     rseasons = ro.StrVector(seasons)
     ro.globalenv['df'] = rdf
     ro.globalenv['seasons'] = rseasons
@@ -180,7 +176,6 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     episeasons = list(seasons)
     if len(dropseasons) > 0 and len(dropseasons) < len(seasons):
         episeasons = sorted(list(set(seasons).difference(dropseasons)))
-        print(episeasons)
         ro.globalenv['episeasons'] = ro.StrVector(episeasons)
 
         # epimemrslt = ro.r('memmodel(i.data=subset(df, select=episeasons), i.type.curve=par.type.curve,' +
@@ -235,8 +230,7 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     pyepimemrslt['typ.real.curve'] = typrealcurve.copy()
     pyepimemrslt['typ.real.curve'].rename(columns={0: 'baixo', 1: 'mediano', 2: 'alto'}, inplace=True)
     pyepimemrslt['typ.real.curve']['mediano'].fillna(0, inplace=True)
-    pyepimemrslt['typ.real.curve']['baixo'] = pyepimemrslt['typ.real.curve']['baixo']. \
-        where(pyepimemrslt['typ.real.curve']['baixo'] >= 0, other=0)
+    pyepimemrslt['typ.real.curve'].loc[pyepimemrslt['typ.real.curve']['baixo'] < 0, 'baixo'] = 0
     pyepimemrslt['typ.real.curve']['baixo'] = pyepimemrslt['typ.real.curve']['baixo']. \
         where((-pyepimemrslt['typ.real.curve']['baixo'].isnull()), other=pyepimemrslt['typ.real.curve']['mediano'])
     pyepimemrslt['typ.real.curve']['alto'] = pyepimemrslt['typ.real.curve']['alto']. \
@@ -252,10 +246,7 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
 def extract_typ_real_curve(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
 
     seasons = sorted(list(df.columns.drop(['UF', 'epiweek'])))[:-1]
-    # Discard 2009 season if present:
-    print(discarded_seasons)
     seasons = sorted(set(seasons).difference(discarded_seasons))
-    print(seasons)
 
     rdf = pandas2ri.py2ri(df)
     rseasons = ro.StrVector(seasons)
@@ -269,7 +260,7 @@ def extract_typ_real_curve(df, discarded_seasons=None, wdw_method=2, lower_bound
                       'i.level.curve=par.level.curve))')
 
     # Pre-epidemic threshold:
-    typrealcurve = pandas2ri.ri2py_dataframe(epimemrslt)
+    typrealcurve = pd.DataFrame(epimemrslt)
 
     # Store results in python dictionary of objects
     pyepimemrslt = {}
@@ -278,8 +269,7 @@ def extract_typ_real_curve(df, discarded_seasons=None, wdw_method=2, lower_bound
     pyepimemrslt['typ.real.curve'] = typrealcurve.copy()
     pyepimemrslt['typ.real.curve'].rename(columns={0: 'baixo', 1: 'mediano', 2: 'alto'}, inplace=True)
     pyepimemrslt['typ.real.curve']['mediano'].fillna(0, inplace=True)
-    pyepimemrslt['typ.real.curve']['baixo'] = pyepimemrslt['typ.real.curve']['baixo']. \
-        where(pyepimemrslt['typ.real.curve']['baixo'] >= 0, other=0)
+    pyepimemrslt['typ.real.curve'].loc[pyepimemrslt['typ.real.curve']['baixo'] < 0, 'baixo'] = 0
     pyepimemrslt['typ.real.curve']['baixo'] = pyepimemrslt['typ.real.curve']['baixo']. \
         where((-pyepimemrslt['typ.real.curve']['baixo'].isnull()), other=pyepimemrslt['typ.real.curve']['mediano'])
     pyepimemrslt['typ.real.curve']['alto'] = pyepimemrslt['typ.real.curve']['alto']. \
@@ -486,7 +476,6 @@ def plotmemfailedcurve(uf, dftmp, dftmpinset, seasons, lastseason):
 
 
 def main(fname, plot_curves=False, sep=',', uflist='all'):
-    print(fname, sep, uflist, plot_curves)
     pref = ('.'.join(fname.replace('-incidence', '').split('.')[:-1])).split('/')[-1]
     df = pd.read_csv(fname, sep=sep)
     dfinset = pd.read_csv(fname.replace('-incidence', ''), sep=sep)
@@ -534,7 +523,6 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
         lowseasons = set()
 
         try:
-            # print(dftmpinset[list(set(seasons).difference(discarded_seasons))].max().max())
             if dftmpinset[list(set(seasons).difference(discarded_seasons))].max().max() < 3:
                 print(uf, 'max < 3')
                 raise
@@ -615,7 +603,6 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                          index=False)
 
             dftmpinset['limiar pré-epidêmico absoluto'] = thresholdsinset['pre.post.intervals'].loc['pre', 2]
-            print(uf, dftmpinset['limiar pré-epidêmico absoluto'].head(1))
             if dftmpinset['limiar pré-epidêmico absoluto'].unique() < 5:
                 dftmp['limiar pré-epidêmico'] = 5 * incidence_norm
                 dftmpinset['limiar pré-epidêmico absoluto'] = 5
@@ -656,7 +643,6 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                                                                               '-'.join(lowseasons).replace('SRAG', ''),
                                                                               wdw_method_lbl[wdw_method]),
                 index=False)
-            print(uf)
 
             if (plot_curves == True):
                 fig = plotmemcurve(uf=uf, dftmp=dftmp, dftmpinset=dftmpinset, thresholds=thresholds, seasons=seasons,
@@ -681,8 +667,6 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
 
         except:
             print('MEM Failed', uf)
-            print('Discarded seasons', discarded_seasons)
-            print(dftmp)
             thresholds = extract_typ_real_curve(dftmp, discarded_seasons, wdw_method,
                                                             lower_bound=5*incidence_norm)
             thresholdsinset = extract_typ_real_curve(dftmpinset, discarded_seasons, wdw_method,

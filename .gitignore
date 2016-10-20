@@ -12,3 +12,7 @@ vignettes/*.pdf
 .RData
 # Pycharm files
 .idea/
+# Function plots
+methods/opportunity_estimator/plots/
+# MEM detailed output:
+methods/mem/mem-data/
