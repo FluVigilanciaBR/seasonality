@@ -249,6 +249,45 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     return pyepimemrslt, dropseasons
 
 
+def extract_typ_real_curve(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
+
+    seasons = sorted(list(df.columns.drop(['UF', 'epiweek'])))[:-1]
+    # Discard 2009 season if present:
+    print(discarded_seasons)
+    seasons = sorted(set(seasons).difference(discarded_seasons))
+    print(seasons)
+
+    rdf = pandas2ri.py2ri(df)
+    rseasons = ro.StrVector(seasons)
+
+    ro.globalenv['df'] = rdf
+    ro.globalenv['seasons'] = rseasons
+    ro.globalenv['par.method'] = wdw_method
+    ro.globalenv['par.type.curve'] = 2
+    ro.globalenv['par.level.curve'] = 0.95
+    epimemrslt = ro.r('t(apply(subset(df, select=seasons), 1, memci, i.type.curve=par.type.curve, ' +
+                      'i.level.curve=par.level.curve))')
+
+    # Pre-epidemic threshold:
+    typrealcurve = pandas2ri.ri2py_dataframe(epimemrslt)
+
+    # Store results in python dictionary of objects
+    pyepimemrslt = {}
+    # typ.real.curve is the typical curve without time shift, that is, respecting the original weeks from data
+    # this curve is better to keep all seasons, not only the epidemic ones.
+    pyepimemrslt['typ.real.curve'] = typrealcurve.copy()
+    pyepimemrslt['typ.real.curve'].rename(columns={0: 'baixo', 1: 'mediano', 2: 'alto'}, inplace=True)
+    pyepimemrslt['typ.real.curve']['mediano'].fillna(0, inplace=True)
+    pyepimemrslt['typ.real.curve']['baixo'] = pyepimemrslt['typ.real.curve']['baixo']. \
+        where(pyepimemrslt['typ.real.curve']['baixo'] >= 0, other=0)
+    pyepimemrslt['typ.real.curve']['baixo'] = pyepimemrslt['typ.real.curve']['baixo']. \
+        where((-pyepimemrslt['typ.real.curve']['baixo'].isnull()), other=pyepimemrslt['typ.real.curve']['mediano'])
+    pyepimemrslt['typ.real.curve']['alto'] = pyepimemrslt['typ.real.curve']['alto']. \
+        where((-pyepimemrslt['typ.real.curve']['alto'].isnull()), other=pyepimemrslt['typ.real.curve']['mediano'])
+
+    return pyepimemrslt
+
+
 def plotmemcurve(uf, dftmp, dftmpinset, thresholds, seasons, lastseason, epicols):
     sns.set_style('darkgrid')
     sns.set_context("talk")
@@ -641,15 +680,23 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
 
 
         except:
+            print('MEM Failed', uf)
+            print('Discarded seasons', discarded_seasons)
+            print(dftmp)
+            thresholds = extract_typ_real_curve(dftmp, discarded_seasons, wdw_method,
+                                                            lower_bound=5*incidence_norm)
+            thresholdsinset = extract_typ_real_curve(dftmpinset, discarded_seasons, wdw_method,
+                                                                 lower_bound=5)
+
             dftmp['mediana pré-epidêmica'] = np.nan
             dftmp['limiar pré-epidêmico'] = 5 * incidence_norm
             dftmp['limiar pós-epidêmico'] = 5 * incidence_norm
             dftmp['intensidade baixa'] = np.nan
             dftmp['intensidade alta'] = 10 * incidence_norm
             dftmp['intensidade muito alta'] = 20 * incidence_norm
-            dftmp['corredor baixo'] = np.nan
-            dftmp['corredor mediano'] = np.nan
-            dftmp['corredor alto'] = np.nan
+            dftmp['corredor baixo'] = thresholds['typ.real.curve']['baixo']
+            dftmp['corredor mediano'] = thresholds['typ.real.curve']['mediano']
+            dftmp['corredor alto'] = thresholds['typ.real.curve']['alto']
             dftmp['se típica do início do surto'] = np.nan
             dftmp['duração típica do surto'] = np.nan
             dftmp['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
@@ -657,10 +704,9 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmp['IC da duração típica do surto'] = np.nan
             dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
 
-            dftmp.to_csv('./mem-data/%s-memfailed-%s-dropgdist%s-droplow%s-%s_method.csv' %
+            dftmp.to_csv('./mem-data/%s-memfailed-%s-dropgdist%s-%s_method.csv' %
                          (pref, tabela_ufnome[uf].replace(' ', '_'),
-                          '-'.join(discarded_seasons).replace('SRAG', ''), '-'.join(lowseasons).replace('SRAG', ''),
-                          wdw_method_lbl[wdw_method]), index=False)
+                          '-'.join(discarded_seasons).replace('SRAG', ''), wdw_method_lbl[wdw_method]), index=False)
 
             dftmpinset['limiar pré-epidêmico absoluto'] = 5
             dftmpinset['limiar pós-epidêmico absoluto'] = 5
@@ -668,9 +714,9 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmpinset['intensidade alta absoluta'] = 10
             dftmpinset['intensidade muito alta absoluta'] = 20
 
-            dftmpinset['corredor baixo'] = np.nan
-            dftmpinset['corredor mediano'] = np.nan
-            dftmpinset['corredor alto'] = np.nan
+            dftmpinset['corredor baixo'] = thresholdsinset['typ.real.curve']['baixo']
+            dftmpinset['corredor mediano'] = thresholdsinset['typ.real.curve']['mediano']
+            dftmpinset['corredor alto'] = thresholdsinset['typ.real.curve']['alto']
             dftmpinset['se relativa ao início do surto'] = np.nan
             dftmpinset['se típica do início do surto'] = np.nan
             dftmpinset['duração típica do surto'] = np.nan
@@ -679,12 +725,10 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmpinset['curva epi. alta'] = np.nan
             dftmpinset['n.seasons'] = 0
             dftmpinset.to_csv(
-                './mem-data/%s-memfailed-%s-dropgdist%s-droplow%s-%s_method.csv' % (pref, tabela_ufnome[uf].
+                './mem-data/%s-memfailed-%s-dropgdist%s-%s_method.csv' % (pref, tabela_ufnome[uf].
                                                                                     replace(' ', '_'),
                                                                                     '-'.join(discarded_seasons).replace(
                                                                                         'SRAG', ''),
-                                                                                    '-'.join(lowseasons).replace('SRAG',
-                                                                                                                 ''),
                                                                                     wdw_method_lbl[wdw_method]),
                 index=False)
 
@@ -720,9 +764,11 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
 
     dfreport['Unidade da Federação'] = dfreport.UF.map(tabela_ufnome)
     dfreport.to_csv('./mem-data/%s-mem-report-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
+    dfreport.to_csv('../clean_data/mem-report.csv', index=False)
 
     dfcorredor['Unidade da Federação'] = dfcorredor.UF.map(tabela_ufnome)
     dfcorredor.to_csv('./mem-data/%s-mem-typical-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
+    dfcorredor.to_csv('../clean_data/mem-typical.csv', index=False)
 
 
 if __name__ == '__main__':
