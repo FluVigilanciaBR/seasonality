@@ -720,10 +720,11 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
 
     dfreport['Unidade da Federação'] = dfreport.UF.map(tabela_ufnome)
     dfreport.to_csv('./mem-data/%s-mem-report-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
+    dfreport.to_csv('../clean_data/mem-report.csv', index=False)
 
     dfcorredor['Unidade da Federação'] = dfcorredor.UF.map(tabela_ufnome)
     dfcorredor.to_csv('./mem-data/%s-mem-typical-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
-
+    dfcorredor.to_csv('../clean_data/mem-typical.csv', index=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generate MEM analysis from cleaned SINAN-SRAG data,\n" +

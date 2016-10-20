@@ -1,3 +1,4 @@
+#!/usr/bin/env Rscript
 # Notification delay modelling
 # Leo Bastos
 # 
@@ -25,7 +26,7 @@ source('./post.sum.R')
 quantile.target <- .95
 
 # Read data and filter columns
-d <- droplevels(subset(read.csv("../data_filter/clean_data_epiweek.csv"),
+d <- droplevels(subset(read.csv("../clean_data/clean_data_epiweek.csv", check.names = F),
                        select=c(SG_UF_NOT, DT_NOTIFIC_epiyearweek, DT_NOTIFIC_epiyear,
                                 DT_NOTIFIC_epiweek, DT_DIGITA_epiyear, DT_DIGITA_epiweek)))
 
@@ -38,6 +39,15 @@ d$DelayWeeks <- d$DT_DIGITA_epiweek - d$DT_NOTIFIC_epiweek +
 
 # Discard notifications with delay greater than 6 months (> 26 weeks)
 d <- na.exclude(d[d$DelayWeeks < 27, ])
+
+# Latest week with closed counts on DT_DIGITA is actualy the previous one
+today <- episem(format(Sys.Date(), '%Y-%m-%d'))
+lyear <- as.integer(strsplit(today, 'W')[[1]][1])
+today.week <- as.integer(strsplit(today, 'W')[[1]][2])
+today.week <- ifelse(today.week > 1, today.week-1, as.integer(lastepiweek(lyear-1)))
+today <- paste0(lyear,'W',today.week)
+# Discar incomplete data from the current week
+d <- d[d$DT_DIGITA_epiyear < lyear | (d$DT_DIGITA_epiyear==lyear & d$DT_DIGITA_epiweek<=today.week), ]
 
 # Read population profile:
 d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', check.names = F)
@@ -55,18 +65,14 @@ delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = funct
                                               probs=quantile.target))))
 
 # Read activity thresholds:
-df.thresholds <- read.csv('../mem/mem-data/clean_data_epiweek4mem-mem-report-criterium-method.csv', check.names = F)
+df.thresholds <- read.csv('../clean_data/mem-report.csv', check.names = F)
 low.activity <- df.thresholds[is.na(df.thresholds$`se típica do início do surto`),'UF']
 
 # Read weekly data:
-d_weekly <- read.csv('../data_filter/clean_data_epiweek-weekly-incidence.csv', check.names = F)
+d_weekly <- read.csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', check.names = F)
 d_weekly['DT_NOTIFIC_epiyearweek'] <- mapply(function(x,y) paste0(x,'W',sprintf("%02d",y)), d_weekly$epiyear,d_weekly$epiweek)
 # # Fill all epiweeks:
 fyear <- min(d_weekly$epiyear)
-today <- episem(format(Sys.Date(), '%Y-%m-%d'))
-lyear <- as.integer(strsplit(today, 'W')[[1]][1])
-today.week <- as.integer(strsplit(today, 'W')[[1]][2])
-today.week <- ifelse(today.week > 1, today.week-1, as.integer(lastepiweek(lyear-1)))
 years.list <- c(fyear:lyear)
 df.epiweeks <- data.frame(DT_NOTIFIC_epiyearweek=character(), UF=factor())
 # List of locations:
@@ -112,9 +118,6 @@ cores <- colorRampPalette((brewer.pal(9, 'Oranges')))(27)
 # Prepare filled epiweeks data frame:
 # # Fill all epiweeks:
 fyear <- min(d$DT_NOTIFIC_epiyear)
-today <- episem(format(Sys.Date(), '%Y-%m-%d'))
-lyear <- as.integer(strsplit(today, 'W')[[1]][1])
-today.week <- as.integer(strsplit(today, 'W')[[1]][2])
 years.list <- c(fyear:lyear)
 df.epiweeks <- data.frame(DT_NOTIFIC_epiyearweek=character())
 for (y in years.list){

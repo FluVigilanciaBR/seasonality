@@ -1,0 +1,11 @@
+# Convert from DBF to csv
+python3 dbf2csv.py ../data/INFLUD*.DBF
+# Agreggate and filter columns
+python3 sinan_filter_of_interest.py --path ../data/INFLUD*.csv
+# Add epiweek columns
+Rscript --vanilla insert_epiweek.R clean_data.csv 
+# Convert to MEM structure
+python3 sinan-convert2mem.py clean_data_epiweek.csv
+# Apply MEM
+python3 sinan-mem-inset-thresholds.py --path clean_data_epiweek4mem-incidence.csv
+
