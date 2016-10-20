@@ -2,17 +2,14 @@ generate.estimates <- function(delay.tbl.tmp, Dmax){
   
   # Generate etimates for the previous Dmax weeks based on notification oportunity profile
   # found in delay.tbl.tmp
-  delay.week <- paste("d",0:Dmax, sep="")
-  delay.tbl.tmp <- delay.tbl.tmp[,delay.week]
+  delay.week <- paste0("d",0:Dmax)
+  delay.tbl.tmp <- delay.tbl.tmp[delay.week]
   
   # tempo máximo do banco
   Tmax <- nrow(delay.tbl.tmp)
   
   # Última semana no banco
   Tactual <- dim(delay.tbl.tmp)[1]
-  
-  # Taking the 20th week of 2012 (peak of a epidemic) as a test week
-  #Tactual <- 124
   
   delay.tbl.tmp.obs <- delay.tbl.tmp[1:Tactual,(0:Dmax)+1]
   
