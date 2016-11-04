@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript --vanilla
 # Notification delay modelling
 # Leo Bastos
 # 
@@ -61,9 +61,6 @@ today.week <- as.integer(strsplit(today, 'W')[[1]][2])
 today.week <- ifelse(today.week > 1, today.week-1, as.integer(lastepiweek(lyear-1)))
 today <- paste0(lyear,'W',today.week)
 
-print(quantile.target)
-print(today)
-q()
 # Discar incomplete data from the current week
 d <- d[d$DT_DIGITA_epiyear < lyear | (d$DT_DIGITA_epiyear==lyear & d$DT_DIGITA_epiweek<=today.week), ]
 
