@@ -1,3 +1,6 @@
+# coding:utf8
+__author__ = 'Marcelo Ferreira da Costa Gomes'
+
 # Apply filters of interest in a dataframe containing SINAN-SRAG data
 import pandas as pd
 import numpy as np

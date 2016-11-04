@@ -1,6 +1,6 @@
 # coding:utf8
-
 __author__ = 'Marcelo Ferreira da Costa Gomes'
+
 import rpy2.robjects as ro
 from numpy import *
 from pandas import *
@@ -50,10 +50,10 @@ tabela_ufnome = {'11': 'Rondônia',
                  '51': 'Mato Grosso',
                  '52': 'Goiás',
                  '53': 'Distrito Federal',
-                 'AfAmN': 'Região 1',
-                 'Aw': 'Região 3',
-                 'AsBSh': 'Região 2',
-                 'Cf': 'Região 4',
+                 'RegN': 'Regional Norte',
+                 'RegC': 'Regional Centro',
+                 'RegL': 'Regional Leste',
+                 'RegS': 'Regional Sul',
                  'BR': 'Brasil'}
 tabela_ufcod = {v: k for k, v in tabela_ufnome.items()}
 fontproplgd = fm.FontProperties('Oswald')
@@ -747,10 +747,16 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                                        ignore_index=True)
 
     dfreport['Unidade da Federação'] = dfreport.UF.map(tabela_ufnome)
+    dfreport['Tipo'] = 'Estado'
+    dfreport.loc[dfreport['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
+    dfreport.loc[dfreport['UF'] == 'BR' ,'Tipo'] = 'País'
     dfreport.to_csv('./mem-data/%s-mem-report-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
     dfreport.to_csv('../clean_data/mem-report.csv', index=False)
 
     dfcorredor['Unidade da Federação'] = dfcorredor.UF.map(tabela_ufnome)
+    dfcorredor['Tipo'] = 'Estado'
+    dfcorredor.loc[dfcorredor['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
+    dfcorredor.loc[dfcorredor['UF'] == 'BR' ,'Tipo'] = 'País'
     dfcorredor.to_csv('./mem-data/%s-mem-typical-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
     dfcorredor.to_csv('../clean_data/mem-typical.csv', index=False)
 

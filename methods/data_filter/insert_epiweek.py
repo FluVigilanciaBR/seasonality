@@ -1,7 +1,7 @@
 import pandas as pd
 from episem import episem
 import argparse
-
+# coding:utf8
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 

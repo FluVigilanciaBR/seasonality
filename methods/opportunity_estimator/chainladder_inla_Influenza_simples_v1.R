@@ -22,8 +22,22 @@ source('./generate.estimates.R')
 source('./post.thresholds.R')
 source('./post.sum.R')
 
+## Read command line arguments
+suppressPackageStartupMessages(library("argparse"))
+# create parser object
+parser <- ArgumentParser()
+# specify our desired options
+# by default ArgumentParser will add an help option
+parser$add_argument("-p", "--percentile", type="double", default=95,
+                    help="Percentile to use as delay distribution threshold [default %(default)s]")
+parser$add_argument("-d", "--date", type="character", default=format(Sys.Date(), '%Y-%m-%d'),
+                    help="Date to use as base, in format YYYY-MM-DD [default Sys.Date()]")
+# get command line options, if help option encountered print help and exit,
+# otherwise if options not found on command line then set defaults,
+args <- parser$parse_args()
+
 # Set quantile target for delay distribution:
-quantile.target <- .95
+quantile.target <- args$percentile / 100
 
 # Read data and filter columns
 d <- droplevels(subset(read.csv("../clean_data/clean_data_epiweek.csv", check.names = F),
@@ -41,11 +55,15 @@ d$DelayWeeks <- d$DT_DIGITA_epiweek - d$DT_NOTIFIC_epiweek +
 d <- na.exclude(d[d$DelayWeeks < 27, ])
 
 # Latest week with closed counts on DT_DIGITA is actualy the previous one
-today <- episem(format(Sys.Date(), '%Y-%m-%d'))
+today <- episem(args$date)
 lyear <- as.integer(strsplit(today, 'W')[[1]][1])
 today.week <- as.integer(strsplit(today, 'W')[[1]][2])
 today.week <- ifelse(today.week > 1, today.week-1, as.integer(lastepiweek(lyear-1)))
 today <- paste0(lyear,'W',today.week)
+
+print(quantile.target)
+print(today)
+q()
 # Discar incomplete data from the current week
 d <- d[d$DT_DIGITA_epiyear < lyear | (d$DT_DIGITA_epiyear==lyear & d$DT_DIGITA_epiweek<=today.week), ]
 

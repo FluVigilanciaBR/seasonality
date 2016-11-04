@@ -1,7 +1,9 @@
+# coding:utf8
+__author__ = 'Marcelo Ferreira da Costa Gomes'
+
 import numpy as np
 import datetime
 
-__author__ = 'Marcelo Ferreira da Costa Gomes'
 '''
 Return Brazilian epidemiological week from passed date
 '''

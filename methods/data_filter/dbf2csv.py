@@ -1,3 +1,4 @@
+# coding:utf8
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 '''
 Convert dfb file to csv format
