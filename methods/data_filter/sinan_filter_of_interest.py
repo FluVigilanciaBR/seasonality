@@ -10,7 +10,7 @@ from argparse import RawDescriptionHelpFormatter
 
 def readtable(fname, sep):
 
-    df = pd.read_csv(fname, sep=sep, low_memory=False)
+    df = pd.read_csv(fname, sep=sep, low_memory=False, encoding='utf-8')
     return(df)
 
 

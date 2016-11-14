@@ -477,8 +477,8 @@ def plotmemfailedcurve(uf, dftmp, dftmpinset, seasons, lastseason):
 
 def main(fname, plot_curves=False, sep=',', uflist='all'):
     pref = ('.'.join(fname.replace('-incidence', '').split('.')[:-1])).split('/')[-1]
-    df = pd.read_csv(fname, sep=sep)
-    dfinset = pd.read_csv(fname.replace('-incidence', ''), sep=sep)
+    df = pd.read_csv(fname, sep=sep, encoding='utf-8')
+    dfinset = pd.read_csv(fname.replace('-incidence', ''), sep=sep, encoding='utf-8')
     if 'Região' in list(df.columns):
         df.rename(columns={'Região': 'UF'}, inplace=True)
         dfinset.rename(columns={'Região': 'UF'}, inplace=True)
@@ -490,7 +490,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
     if uflist == 'all':
         uflist = list(df.UF.unique())
 
-    dfpop = pd.read_csv('../data/populacao_uf_regional_atual.csv')
+    dfpop = pd.read_csv('../data/populacao_uf_regional_atual.csv', encoding='utf-8')
     dfreport = pd.DataFrame()
     dfcorredor = pd.DataFrame()
 
@@ -600,7 +600,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             '-'.join(discarded_seasons).replace('SRAG', ''),
             '-'.join(lowseasons).replace('SRAG', ''),
             wdw_method_lbl[wdw_method]),
-                         index=False)
+                         index=False, encoding='utf-8')
 
             dftmpinset['limiar pré-epidêmico absoluto'] = thresholdsinset['pre.post.intervals'].loc['pre', 2]
             if dftmpinset['limiar pré-epidêmico absoluto'].unique() < 5:
@@ -642,7 +642,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                                                                                   'SRAG', ''),
                                                                               '-'.join(lowseasons).replace('SRAG', ''),
                                                                               wdw_method_lbl[wdw_method]),
-                index=False)
+                index=False, encoding='utf-8')
 
             if (plot_curves == True):
                 fig = plotmemcurve(uf=uf, dftmp=dftmp, dftmpinset=dftmpinset, thresholds=thresholds, seasons=seasons,
@@ -690,7 +690,8 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
 
             dftmp.to_csv('./mem-data/%s-memfailed-%s-dropgdist%s-%s_method.csv' %
                          (pref, tabela_ufnome[uf].replace(' ', '_'),
-                          '-'.join(discarded_seasons).replace('SRAG', ''), wdw_method_lbl[wdw_method]), index=False)
+                          '-'.join(discarded_seasons).replace('SRAG', ''), wdw_method_lbl[wdw_method]), index=False,
+                         encoding='utf-8')
 
             dftmpinset['limiar pré-epidêmico absoluto'] = 5
             dftmpinset['limiar pós-epidêmico absoluto'] = 5
@@ -714,7 +715,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                                                                                     '-'.join(discarded_seasons).replace(
                                                                                         'SRAG', ''),
                                                                                     wdw_method_lbl[wdw_method]),
-                index=False)
+                index=False, encoding='utf-8')
 
             if (plot_curves == True):
                 fig = plotmemfailedcurve(uf=uf, dftmp=dftmp, dftmpinset=dftmpinset, seasons=seasons,

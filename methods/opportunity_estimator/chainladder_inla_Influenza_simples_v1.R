@@ -40,7 +40,7 @@ args <- parser$parse_args()
 quantile.target <- args$percentile / 100
 
 # Read data and filter columns
-d <- droplevels(subset(read.csv("../clean_data/clean_data_epiweek.csv", check.names = F),
+d <- droplevels(subset(read.csv("../clean_data/clean_data_epiweek.csv", check.names = F, encoding='utf-8'),
                        select=c(SG_UF_NOT, DT_NOTIFIC_epiyearweek, DT_NOTIFIC_epiyear,
                                 DT_NOTIFIC_epiweek, DT_DIGITA_epiyear, DT_DIGITA_epiweek)))
 
@@ -65,7 +65,7 @@ today <- paste0(lyear,'W',today.week)
 d <- d[d$DT_DIGITA_epiyear < lyear | (d$DT_DIGITA_epiyear==lyear & d$DT_DIGITA_epiweek<=today.week), ]
 
 # Read population profile:
-d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', check.names = F)
+d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', check.names = F, encoding='utf-8')
 
 # Create entries for regional aggregates:
 d$Region <- mapply(function(x) as.character(unique(d_pop[d_pop$`Código`==as.character(x),'Região'])), d$SG_UF_NOT)
@@ -80,11 +80,11 @@ delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = funct
                                               probs=quantile.target))))
 
 # Read activity thresholds:
-df.thresholds <- read.csv('../clean_data/mem-report.csv', check.names = F)
+df.thresholds <- read.csv('../clean_data/mem-report.csv', check.names = F, encoding='utf-8')
 low.activity <- df.thresholds[is.na(df.thresholds$`se típica do início do surto`),'UF']
 
 # Read weekly data:
-d_weekly <- read.csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', check.names = F)
+d_weekly <- read.csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', check.names = F, encoding='utf-8')
 d_weekly <- d_weekly[d_weekly$sexo == 'Total', c('UF', 'epiyear', 'epiweek', 'SRAG', 'Tipo')]
 d_weekly['DT_NOTIFIC_epiyearweek'] <- mapply(function(x,y) paste0(x,'W',sprintf("%02d",y)), d_weekly$epiyear,d_weekly$epiweek)
 # # Fill all epiweeks:
@@ -252,8 +252,10 @@ if (!dir.exists(file.path('../clean_data'))) {
 }
 
 d_weekly[,'Run date'] <- Sys.Date()
-write.csv(d_weekly, file=file.path('../clean_data/',paste0(today,'estimated_values.csv')), na='', row.names = F)
-write.csv(d_weekly, file='../clean_data/current_estimated_values.csv', na='', row.names = F)
+write.csv(d_weekly, file=file.path('../clean_data/',paste0(today,'estimated_values.csv')), na='', row.names = F,
+          encoding='utf-8')
+write.csv(d_weekly, file='../clean_data/current_estimated_values.csv', na='', row.names = F, encoding='utf-8')
 df.Dmax <- data.frame(list(UF=names(delay.topquantile), epiyearweek=today, Dmax=delay.topquantile, Execution=Sys.Date()))
 ifelse(file.exists('../clean_data/Dmax.csv'), print.col.names <- F, print.col.names <- T)
-write.table(df.Dmax, file='../clean_data/Dmax.csv', sep=',', quote=F, na='', row.names = F, col.names = print.col.names, append=T)
+write.table(df.Dmax, file='../clean_data/Dmax.csv', sep=',', quote=F, na='', row.names = F, col.names = print.col.names,
+            append=T, encoding='utf-8')

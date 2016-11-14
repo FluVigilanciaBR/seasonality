@@ -7,7 +7,7 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 def main(fname, sep=','):
 
-    df = pd.read_csv(fname, low_memory=False)
+    df = pd.read_csv(fname, low_memory=False, encoding='utf-8')
     target_cols = ['DT_NOTIFIC', 'DT_DIGITA']
     yearweek_cols = ['%s_epiyearweek' % k for k in target_cols]
     year_cols = ['%s_epiyear' % k for k in target_cols]
@@ -17,7 +17,7 @@ def main(fname, sep=','):
     df[week_cols] = df[target_cols].applymap(lambda x: episem(x, out='W'))
 
     fout = '../clean_data/%s_epiweek.csv' % fname.split('/')[-1][:-4]
-    df.to_csv(fout, index=False)
+    df.to_csv(fout, index=False, encoding='utf-8')
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ def lastepiweek(year):
 def readtable(fname, sep=','):
 
     target_col = ['SG_UF_NOT', 'DT_NOTIFIC_epiyear', 'DT_NOTIFIC_epiweek', 'CS_SEXO', 'idade_em_anos']
-    df = pd.read_csv(fname, sep=sep, low_memory=False)[target_col].rename(columns={'CS_SEXO': 'sexo',
+    df = pd.read_csv(fname, sep=sep, low_memory=False, encoding='utf-8')[target_col].rename(columns={'CS_SEXO': 'sexo',
                                                                                    'DT_NOTIFIC_epiyear': 'epiyear',
                                                                                    'DT_NOTIFIC_epiweek': 'epiweek'})
     df['Idade desconhecida'] = pd.isnull(df.idade_em_anos).astype(int)
@@ -75,7 +75,7 @@ def readtable(fname, sep=','):
     dffull = pd.merge(dftmp, df, how='left').fillna(0)
 
     # Load Federal Units aggregation:
-    dfreg = pd.read_csv('../data/regioesclimaticas.csv')
+    dfreg = pd.read_csv('../data/regioesclimaticas.csv', encoding='utf-8')
 
     dffull = pd.merge(dffull, dfreg[['Código', 'Região']].rename(columns={'Código': 'UF'}), how='left')
     dffull_reg = dffull.drop('UF', axis=1).groupby(['Região', 'epiyear', 'epiweek', 'sexo'], as_index=False).sum()
@@ -96,7 +96,7 @@ def uf4mem(dfin=pd.DataFrame()):
     df = dfin.copy()
 
     # Load Population file:
-    dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_v3_agebracket.csv')
+    dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_v3_agebracket.csv', encoding='utf-8')
 
     # Calculate incidence:
     yearlist = sorted(list(df.epiyear.unique()))
@@ -160,29 +160,29 @@ def main(fname, sep=','):
     # Write population table to be used for thresholds:
     last_year = int(df.epiyear.max())
     # Load population size time series:
-    dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv')
+    dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', encoding='utf-8')
     dfpopcurrent = dfpop[dfpop.Ano == last_year]
-    dfpopcurrent.to_csv('../data/populacao_uf_regional_atual.csv', index=False)
+    dfpopcurrent.to_csv('../data/populacao_uf_regional_atual.csv', index=False, encoding='utf-8')
 
     # Write output to file:
     fnameout = '.'.join(fname.split('.')[:-1]) + '4mem-incidence.csv'
-    dfinc4mem.to_csv(fnameout, index=False)
+    dfinc4mem.to_csv(fnameout, index=False, encoding='utf-8')
     fnameout = '.'.join(fname.split('.')[:-1]) + '4mem.csv'
-    df4mem.to_csv(fnameout, index=False)
+    df4mem.to_csv(fnameout, index=False, encoding='utf-8')
 
     fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly-incidence.csv'
     dfinc['Tipo'] = 'Estado'
     dfinc.loc[dfinc['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
     dfinc.loc[dfinc['UF'] == 'BR' ,'Tipo'] = 'País'
     dfinc = dfinc.sort_values(by=['UF', 'epiyear', 'epiweek'], axis=0).reset_index().drop('index', axis=1)
-    dfinc.to_csv(fnameout, index=False)
+    dfinc.to_csv(fnameout, index=False, encoding='utf-8')
 
     fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly.csv'
     df['Tipo'] = 'Estado'
     df.loc[df['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
     df.loc[df['UF'] == 'BR' ,'Tipo'] = 'País'
     df = df.sort_values(by=['UF', 'epiyear', 'epiweek'], axis=0).reset_index().drop('index', axis=1)
-    df.to_csv(fnameout, index=False)
+    df.to_csv(fnameout, index=False, encoding='utf-8')
 
 
 if __name__ == '__main__':

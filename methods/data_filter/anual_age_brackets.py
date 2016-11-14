@@ -11,7 +11,7 @@ def create_brackets(fname):
     :return:
     '''
 
-    dfibge = pd.read_csv(fname)
+    dfibge = pd.read_csv(fname, encoding='utf-8')
     age_cols = ['0-4 anos', '5-9 anos', '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos',
                 '50-59 anos', '60+ anos']
     dfibge['60+ anos'] = dfibge[['60-64', '65-69', '70-74', '75-79', '80-84', '85-89',
@@ -25,7 +25,7 @@ def create_brackets(fname):
 
     dfibge = dfibge[['Sigla', 'Ano', 'Sexo', 'Total']+age_cols].copy()
 
-    dfreg = pd.read_csv('../data/regioesclimaticas.csv')
+    dfreg = pd.read_csv('../data/regioesclimaticas.csv', encoding='utf-8')
     dfibge = dfibge.merge(dfreg)
 
     dfibge_regs = dfibge.groupby(['Região', 'Ano', 'Sexo'], as_index=False).sum()[['Região', 'Ano', 'Sexo',
@@ -38,7 +38,7 @@ def create_brackets(fname):
     dfibge = dfibge[['Código', 'Sigla', 'UF', 'Região', 'Região oficial', 'Ano', 'Sexo', 'Total']+age_cols].copy()
     dfibge = dfibge.sort_values(by=['Código', 'Ano', 'Sexo'], axis=0).reset_index().drop('index', axis=1)
     fout = fname[:-4]+'_agebracket.csv'
-    dfibge.to_csv(fout, index=False)
+    dfibge.to_csv(fout, index=False, encoding='utf-8')
 
     return
 
