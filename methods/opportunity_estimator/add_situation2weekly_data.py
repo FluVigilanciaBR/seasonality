@@ -4,8 +4,8 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 import pandas as pd
 
 
-df_est = pd.read_csv('../clean_data/current_estimated_values.csv', encoding='utf-8')
-df_age = pd.read_csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', encoding='utf-8')
+df_est = pd.read_csv('../clean_data/current_estimated_values.csv', low_memory=False, encoding='utf-8')
+df_age = pd.read_csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', low_memory=False, encoding='utf-8')
 df_est_simp = df_est[['UF', 'epiyear', 'epiweek', 'Situation']]
 df_age_full = df_age.merge(df_est_simp, on=['UF', 'epiyear', 'epiweek'], how='left')
 df_age_full.dropna(axis=0, inplace=True)

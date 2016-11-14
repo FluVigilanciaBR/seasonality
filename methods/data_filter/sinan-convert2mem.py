@@ -97,6 +97,8 @@ def uf4mem(dfin=pd.DataFrame()):
 
     # Load Population file:
     dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_v3_agebracket.csv', encoding='utf-8')
+    dfpop.rename(columns={'UF': 'Unidade da Federação'}, inplace=True)
+    dfpop.rename(columns={'Código': 'UF'}, inplace=True)
 
     # Calculate incidence:
     yearlist = sorted(list(df.epiyear.unique()))
@@ -109,17 +111,17 @@ def uf4mem(dfin=pd.DataFrame()):
         for year in yearlist:
             # Males:
             tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == 'M')
-            dfpop_tgt_rows = (dfpop['Código']==str(uf)) & (dfpop.Sexo == 'M') & (dfpop.index == year)
+            dfpop_tgt_rows = (dfpop.UF==str(uf)) & (dfpop.Sexo == 'M') & (dfpop.index == year)
             dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
                 div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
             # Females:
             tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == 'F')
-            dfpop_tgt_rows = (dfpop['Código'] == str(uf)) & (dfpop.Sexo == 'F') & (dfpop.index == year)
+            dfpop_tgt_rows = (dfpop.UF == str(uf)) & (dfpop.Sexo == 'F') & (dfpop.index == year)
             dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
                 div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
             # Total:
             tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == 'Total')
-            dfpop_tgt_rows = (dfpop['Código'] == str(uf)) & (dfpop.Sexo == 'Total') & (dfpop.index == year)
+            dfpop_tgt_rows = (dfpop.UF == str(uf)) & (dfpop.Sexo == 'Total') & (dfpop.index == year)
             dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
                 div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
     dfinc.rename(columns={'Total': 'SRAG'}, inplace=True)
@@ -145,6 +147,11 @@ def uf4mem(dfin=pd.DataFrame()):
 
     df4mem = dftmp.sort_values(by=['UF', 'epiweek'], axis=0).reset_index().drop('index', axis=1)
     dfinc4mem = dftmpinc.sort_values(by=['UF', 'epiweek'], axis=0).reset_index().drop('index', axis=1)
+
+    df.UF = df.UF.astype('str')
+    dfinc.UF = dfinc.UF.astype('str')
+    df = df.merge(dfpop[['UF', 'Unidade da Federação']].drop_duplicates(), how='left')
+    dfinc = dfinc.merge(dfpop[['UF', 'Unidade da Federação']].drop_duplicates(), how='left')
 
     return df, dfinc, df4mem, dfinc4mem
 
@@ -174,14 +181,14 @@ def main(fname, sep=','):
     dfinc['Tipo'] = 'Estado'
     dfinc.loc[dfinc['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
     dfinc.loc[dfinc['UF'] == 'BR' ,'Tipo'] = 'País'
-    dfinc = dfinc.sort_values(by=['UF', 'epiyear', 'epiweek'], axis=0).reset_index().drop('index', axis=1)
+    dfinc = dfinc.sort_values(by=['UF', 'epiyear', 'epiweek', 'sexo'], axis=0).reset_index().drop('index', axis=1)
     dfinc.to_csv(fnameout, index=False, encoding='utf-8')
 
     fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly.csv'
     df['Tipo'] = 'Estado'
     df.loc[df['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
     df.loc[df['UF'] == 'BR' ,'Tipo'] = 'País'
-    df = df.sort_values(by=['UF', 'epiyear', 'epiweek'], axis=0).reset_index().drop('index', axis=1)
+    df = df.sort_values(by=['UF', 'epiyear', 'epiweek', 'sexo'], axis=0).reset_index().drop('index', axis=1)
     df.to_csv(fnameout, index=False, encoding='utf-8')
 
 

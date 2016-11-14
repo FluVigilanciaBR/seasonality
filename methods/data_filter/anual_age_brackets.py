@@ -37,6 +37,13 @@ def create_brackets(fname):
 
     dfibge = dfibge[['Código', 'Sigla', 'UF', 'Região', 'Região oficial', 'Ano', 'Sexo', 'Total']+age_cols].copy()
     dfibge = dfibge.sort_values(by=['Código', 'Ano', 'Sexo'], axis=0).reset_index().drop('index', axis=1)
+
+    dfibge.loc[dfibge['Código'] == 'BR', 'UF'] = 'Brasil'
+    dfibge.loc[dfibge['Código'] == 'RegN', 'UF'] = 'Região Norte'
+    dfibge.loc[dfibge['Código'] == 'RegC', 'UF'] = 'Região Centro'
+    dfibge.loc[dfibge['Código'] == 'RegL', 'UF'] = 'Região Leste'
+    dfibge.loc[dfibge['Código'] == 'RegS', 'UF'] = 'Região Sul'
+
     fout = fname[:-4]+'_agebracket.csv'
     dfibge.to_csv(fout, index=False, encoding='utf-8')
 
