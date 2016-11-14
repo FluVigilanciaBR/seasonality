@@ -23,18 +23,20 @@ def create_brackets(fname):
     dfibge['40-49 anos'] = dfibge[['40-44', '45-49']].apply(sum, axis=1)
     dfibge['50-59 anos'] = dfibge[['50-54', '55-59']].apply(sum, axis=1)
 
-    dfibge = dfibge[['Sigla', 'Ano', 'Total']+age_cols].copy()
+    dfibge = dfibge[['Sigla', 'Ano', 'Sexo', 'Total']+age_cols].copy()
 
     dfreg = pd.read_csv('../data/regioesclimaticas.csv')
     dfibge = dfibge.merge(dfreg)
 
-    dfibge_regs = dfibge.groupby(['Região', 'Ano'], as_index=False).sum()[['Região', 'Ano', 'Total']+age_cols]
+    dfibge_regs = dfibge.groupby(['Região', 'Ano', 'Sexo'], as_index=False).sum()[['Região', 'Ano', 'Sexo',
+                                                                                   'Total']+age_cols]
     dfibge_regs.rename(columns={'Região': 'Código'}, inplace=True)
 
     dfibge = dfibge.append(dfibge_regs)
     dfibge = dfibge[~(dfibge['Código'] == 0)]
 
-    dfibge = dfibge[['Código', 'Sigla', 'UF', 'Região', 'Região oficial', 'Ano', 'Total']+age_cols].copy()
+    dfibge = dfibge[['Código', 'Sigla', 'UF', 'Região', 'Região oficial', 'Ano', 'Sexo', 'Total']+age_cols].copy()
+    dfibge = dfibge.sort_values(by=['Código', 'Ano', 'Sexo'], axis=0).reset_index().drop('index', axis=1)
     fout = fname[:-4]+'_agebracket.csv'
     dfibge.to_csv(fout, index=False)
 

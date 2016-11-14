@@ -7,7 +7,7 @@ import episem
 import datetime
 from argparse import RawDescriptionHelpFormatter
 
-age_cols = ['0-4 anos', '5-9 anos', '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos',
+age_cols = ['Idade desconhecida', '0-4 anos', '5-9 anos', '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos',
             '50-59 anos', '60+ anos']
 
 
@@ -27,10 +27,10 @@ def lastepiweek(year):
 
 def readtable(fname, sep=','):
 
-    target_col = ['SG_UF_NOT', 'DT_NOTIFIC_epiyear', 'DT_NOTIFIC_epiweek', 'idade_em_anos']
-    df = pd.read_csv(fname, sep=sep, low_memory=False)[target_col]
-    df['epiyear'] = df.DT_NOTIFIC_epiyear
-    df['epiweek'] = df.DT_NOTIFIC_epiweek
+    target_col = ['SG_UF_NOT', 'DT_NOTIFIC_epiyear', 'DT_NOTIFIC_epiweek', 'CS_SEXO', 'idade_em_anos']
+    df = pd.read_csv(fname, sep=sep, low_memory=False)[target_col].rename(columns={'CS_SEXO': 'sexo',
+                                                                                   'DT_NOTIFIC_epiyear': 'epiyear',
+                                                                                   'DT_NOTIFIC_epiweek': 'epiweek'})
     df['Idade desconhecida'] = pd.isnull(df.idade_em_anos).astype(int)
     df['0-4 anos'] = (df.idade_em_anos < 5).astype(int)
     df['5-9 anos'] = ((df.idade_em_anos >= 5) & (df.idade_em_anos < 10)).astype(int)
@@ -43,22 +43,33 @@ def readtable(fname, sep=','):
 
     df.rename(columns={'SG_UF_NOT': 'UF'}, inplace=True)
     grp_cols = ['UF', 'epiyear', 'epiweek'] + age_cols
-    df = df[grp_cols].groupby(['UF', 'epiyear', 'epiweek'], as_index=False).agg(sum)
 
+    # Aggregate independent of sex:
+    dftmp = df[grp_cols].groupby(['UF', 'epiyear', 'epiweek'], as_index=False).agg(sum)
+    dftmp['SRAG'] = dftmp[age_cols].apply(sum, axis=1)
+    dftmp['sexo'] = 'Total'
+
+    # Aggregate separeting by sex:
+    grp_cols = ['UF', 'epiyear', 'epiweek', 'sexo'] + age_cols
+    df = df[grp_cols].groupby(['UF', 'epiyear', 'epiweek', 'sexo'], as_index=False).agg(sum)
     df['SRAG'] = df[age_cols].apply(sum, axis=1)
+
+    df = df.append(dftmp, ignore_index=True)
+
     df.UF = df.UF.astype('int64')
 
     yearlist = sorted(list(df.epiyear.unique()))
     print(yearlist)
     lastweek = df.epiweek[df.epiyear == max(yearlist)].max()
     uflist = list(df.UF.unique())
+    sexlist = ['M', 'F', 'I', 'Total']
     tmpdict = []
     for year in yearlist[:-1]:
         for week in range(1, (lastepiweek(year)+1)):
             for uf in uflist:
-                tmpdict.append({'UF': uf, 'epiyear': year, 'epiweek': week})
-    tmpdict.extend([{'UF': uf, 'epiyear': yearlist[-1], 'epiweek': week} for week in range(1,(lastweek+1))
-                    for uf in uflist])
+                tmpdict.extend([{'UF': uf, 'epiyear': year, 'epiweek': week, 'sexo': sex} for sex in sexlist])
+    tmpdict.extend([{'UF': uf, 'epiyear': yearlist[-1], 'epiweek': week, 'sexo': sex} for sex in sexlist for week in
+                    range(1,(lastweek+1)) for uf in uflist])
     dftmp = pd.DataFrame(tmpdict)
 
     dffull = pd.merge(dftmp, df, how='left').fillna(0)
@@ -67,13 +78,15 @@ def readtable(fname, sep=','):
     dfreg = pd.read_csv('../data/regioesclimaticas.csv')
 
     dffull = pd.merge(dffull, dfreg[['Código', 'Região']].rename(columns={'Código': 'UF'}), how='left')
-    dffull_reg = dffull.drop('UF', axis=1).groupby(['Região', 'epiyear', 'epiweek'], as_index=False).sum()
-    dfBR = dffull_reg.drop('Região', axis=1).groupby(['epiyear', 'epiweek'], as_index=False).sum()
+    dffull_reg = dffull.drop('UF', axis=1).groupby(['Região', 'epiyear', 'epiweek', 'sexo'], as_index=False).sum()
+    dfBR = dffull_reg.drop('Região', axis=1).groupby(['epiyear', 'epiweek', 'sexo'], as_index=False).sum()
     dfBR['Região'] = 'BR'
     dffull_reg = dffull_reg.append(dfBR, ignore_index=True).rename(columns={'Região': 'UF'})
 
     dffull = dffull.drop('Região', axis=1).append(dffull_reg, ignore_index=True)
-    dffull = dffull[['UF', 'epiyear', 'epiweek', 'SRAG'] + age_cols]
+    dffull = dffull[['UF', 'epiyear', 'epiweek', 'sexo', 'SRAG'] + age_cols]
+
+    dffull = dffull.sort_values(by=['UF', 'epiyear', 'epiweek', 'sexo'], axis=0).reset_index().drop('index', axis=1)
 
     return(dffull)
 
@@ -83,32 +96,45 @@ def uf4mem(dfin=pd.DataFrame()):
     df = dfin.copy()
 
     # Load Population file:
-    dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv')
+    dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_v3_agebracket.csv')
 
     # Calculate incidence:
     yearlist = sorted(list(df.epiyear.unique()))
-    print(yearlist)
     uflist = list(df.UF.unique())
-    dfinc = df.rename(columns={'SRAG': 'Total'})
-    tgt_cols = ['Total']+age_cols
+    dfinc = df[~(df.sexo == 'I')].rename(columns={'SRAG': 'Total'}).drop(['Idade desconhecida'], axis=1)
+    tgt_cols = ['Total'] + age_cols
+    tgt_cols.remove('Idade desconhecida')
     dfpop.set_index('Ano', inplace=True)
     for uf in uflist:
         for year in yearlist:
-            tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year)
+            # Males:
+            tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == 'M')
+            dfpop_tgt_rows = (dfpop['Código']==str(uf)) & (dfpop.Sexo == 'M') & (dfpop.index == year)
             dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
-                div(dfpop.loc[dfpop['Código']==str(uf),tgt_cols].ix[year], axis='columns')
+                div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
+            # Females:
+            tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == 'F')
+            dfpop_tgt_rows = (dfpop['Código'] == str(uf)) & (dfpop.Sexo == 'F') & (dfpop.index == year)
+            dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
+                div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
+            # Total:
+            tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == 'Total')
+            dfpop_tgt_rows = (dfpop['Código'] == str(uf)) & (dfpop.Sexo == 'Total') & (dfpop.index == year)
+            dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
+                div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
     dfinc.rename(columns={'Total': 'SRAG'}, inplace=True)
 
-    # Calculate incidence and structure data in the format accepted by MEM algorithm:
+    # Structure data in the format accepted by MEM algorithm:
     lastweek = df.epiweek[(df.epiyear == max(yearlist)) & (df.epiweek != 53)].max()
     tmpdict = [{'UF': uf, 'epiweek': week} for week in range(1,53) for uf in uflist]
     dftmp = pd.DataFrame(tmpdict)
     dftmpinc = dftmp.copy()
     for year in yearlist:
         lbl = 'SRAG' + str(year)
-        dftmp = pd.merge(dftmp, df[df.epiyear == year][['UF', 'epiweek', 'SRAG']].rename(columns={'SRAG': lbl}),
-                         on=['UF', 'epiweek'], how='left')
-        dftmpinc = pd.merge(dftmpinc, dfinc[dfinc.epiyear == year][['UF', 'epiweek', 'SRAG']].rename(columns={'SRAG': lbl}),
+        dftmp = pd.merge(dftmp, df[(df.epiyear == year) & (df.sexo == 'Total')][['UF', 'epiweek', 'SRAG']].rename(
+            columns={'SRAG': lbl}), on=['UF', 'epiweek'], how='left')
+        dftmpinc = pd.merge(dftmpinc, dfinc[(df.epiyear == year) & (df.sexo == 'Total')][['UF', 'epiweek',
+                                                                                          'SRAG']].rename(columns={'SRAG': lbl}),
                             on=['UF', 'epiweek'], how='left')
         if year != yearlist[-1]:
             dftmp[lbl] = dftmp[lbl].fillna(0)

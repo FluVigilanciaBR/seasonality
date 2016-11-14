@@ -85,6 +85,7 @@ low.activity <- df.thresholds[is.na(df.thresholds$`se típica do início do surt
 
 # Read weekly data:
 d_weekly <- read.csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', check.names = F)
+d_weekly <- d_weekly[d_weekly$sexo == 'Total', c('UF', 'epiyear', 'epiweek', 'SRAG', 'Tipo')]
 d_weekly['DT_NOTIFIC_epiyearweek'] <- mapply(function(x,y) paste0(x,'W',sprintf("%02d",y)), d_weekly$epiyear,d_weekly$epiweek)
 # # Fill all epiweeks:
 fyear <- min(d_weekly$epiyear)
