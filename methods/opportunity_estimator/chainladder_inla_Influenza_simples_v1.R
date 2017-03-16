@@ -252,10 +252,16 @@ if (!dir.exists(file.path('../clean_data'))) {
 }
 
 d_weekly[,'Run date'] <- Sys.Date()
-write.csv(d_weekly, file=file.path('../clean_data/',paste0(today,'estimated_values.csv')), na='', row.names = F,
-          encoding='utf-8')
-write.csv(d_weekly, file='../clean_data/current_estimated_values.csv', na='', row.names = F, encoding='utf-8')
+con<-file(file.path('../clean_data/',paste0(today,'estimated_values.csv')), encoding="UTF-8")
+write.csv(d_weekly, file=con, na='', row.names = F)
+
+con<-file(file.path('../clean_data/current_estimated_values.csv'), encoding="UTF-8")
+write.csv(d_weekly, file=con, na='', row.names = F)
+
 df.Dmax <- data.frame(list(UF=names(delay.topquantile), epiyearweek=today, Dmax=delay.topquantile, Execution=Sys.Date()))
-ifelse(file.exists('../clean_data/Dmax.csv'), print.col.names <- F, print.col.names <- T)
-write.table(df.Dmax, file='../clean_data/Dmax.csv', sep=',', quote=F, na='', row.names = F, col.names = print.col.names,
-            append=T, encoding='utf-8')
+
+fname <- file.path('../clean_data/Dmax.csv')
+ifelse(file.exists(fname), print.col.names <- F, print.col.names <- T)
+con <- file(fname, encoding='UTF-8')
+write.table(df.Dmax, file=con, sep=',', quote=F, na='', row.names = F, col.names = print.col.names,
+            append=T)

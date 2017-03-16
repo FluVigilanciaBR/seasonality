@@ -1,4 +1,5 @@
 # Convert from DBF to csv
+cd data_filter/
 python3 dbf2csv.py ../data/INFLUD*.DBF
 # Agreggate and filter columns
 python3 sinan_filter_of_interest.py --path ../data/INFLUD*.csv
@@ -12,3 +13,6 @@ python3 sinan-mem-inset-thresholds.py --path ../clean_data/clean_data_epiweek4me
 # Apply opportunity estimates
 cd ../opportunity_estimator/
 Rscript --vanilla chainladder_inla_Influenza_simples_v1.R
+# Add situation to weekly data
+python3 add_situation2weekly_data.py
+cd ../

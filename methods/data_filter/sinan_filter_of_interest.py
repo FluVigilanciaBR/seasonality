@@ -41,11 +41,24 @@ def applysinanfilter(df):
 
     # Convert all date related columns to datetime format
     cols = df.columns
+    # Check date input format
+    dtsep = '-'
+    sample = df.DT_DIGITA.iloc[0]
+    if '/' in sample:
+        dtsep = '/'
+    dttest = pd.DataFrame(list(df.DT_DIGITA.str.split(dtsep)))
+    maxvals = [int(dttest[i].max()) for i in range(3)]
+    del(dttest)
+    yearpos = maxvals.index(max(maxvals))
+    if yearpos == 2:
+        dtformat = '%d'+dtsep+'%m'+dtsep+'%Y'
+    else:
+        dtformat = '%Y'+dtsep+'%m'+dtsep+'%d'
+
     for col in cols:
         if 'DT' in col:
             # Convert all date columns to datetime format. Output will have the format YYYY-MM-DD
-            # PS: assumes original file format is YYYY-MM-DD
-            df[col] = pd.to_datetime(df[col], errors='coerce', format='%Y-%m-%d')
+            df[col] = pd.to_datetime(df[col], errors='coerce', format=dtformat)
 
     # Create columns related to lab result
     
