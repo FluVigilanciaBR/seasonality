@@ -350,17 +350,17 @@ def plotmemcurve(uf, dftmp, dftmpinset, thresholds, seasons, lastseason, epicols
 
     #### Start plot relative to outbreak typical curve ####
 
-    ax[1].fill_between(dftmp['se relativa ao início do surto'], 0, dftmp['curva epi. baixa'], color='green',
+    ax[1].fill_between(dftmp['SE relativa ao início do surto'], 0, dftmp['curva epi. baixa'], color='green',
                        alpha=0.5)
-    ax[1].fill_between(dftmp['se relativa ao início do surto'], dftmp['curva epi. baixa'],
+    ax[1].fill_between(dftmp['SE relativa ao início do surto'], dftmp['curva epi. baixa'],
                        dftmp['curva epi. mediana'], color='yellow', alpha=0.5)
-    ax[1].fill_between(dftmp['se relativa ao início do surto'], dftmp['curva epi. mediana'],
+    ax[1].fill_between(dftmp['SE relativa ao início do surto'], dftmp['curva epi. mediana'],
                        dftmp['curva epi. alta'], color='orange', alpha=0.5)
-    dftmp.plot(ax=ax[1], x='se relativa ao início do surto', y='curva epi. mediana', color='silver',
+    dftmp.plot(ax=ax[1], x='SE relativa ao início do surto', y='curva epi. mediana', color='silver',
                label='tendência mediana')
-    dftmp.plot(ax=ax[1], x='se relativa ao início do surto', y='limiar pré-epidêmico', style='--',
+    dftmp.plot(ax=ax[1], x='SE relativa ao início do surto', y='limiar pré-epidêmico', style='--',
                color='red', alpha=0.8)
-    dftmp.plot(ax=ax[1], x='se relativa ao início do surto', y='limiar pós-epidêmico', style='--',
+    dftmp.plot(ax=ax[1], x='SE relativa ao início do surto', y='limiar pós-epidêmico', style='--',
                color='green', alpha=0.5)
 
     epicolor = []
@@ -368,12 +368,12 @@ def plotmemcurve(uf, dftmp, dftmpinset, thresholds, seasons, lastseason, epicols
         s = s.strip(' transladado')
         n = list(seasons).index(s)
         epicolor.append(colorcode[n])
-    dftmp.plot(ax=ax[1], x='se relativa ao início do surto', y=epicols, color=epicolor)
+    dftmp.plot(ax=ax[1], x='SE relativa ao início do surto', y=epicols, color=epicolor)
     # Check for maximum value on y-axis and fill from 'corredor alto' to maxy
-    dftmp.plot(ax=ax[1], x='se relativa ao início do surto', y='curva epi. alta', legend=False, alpha=0)
+    dftmp.plot(ax=ax[1], x='SE relativa ao início do surto', y='curva epi. alta', legend=False, alpha=0)
     miny, maxy = ax[1].get_ylim()
     del (ax[1].lines[-1])
-    ax[1].fill_between(dftmp['se relativa ao início do surto'], dftmp['curva epi. alta'], maxy, color='red',
+    ax[1].fill_between(dftmp['SE relativa ao início do surto'], dftmp['curva epi. alta'], maxy, color='red',
                        alpha=0.5)
     ax[1].set_ylim([miny, maxy])
     ax[1].plot([0, 0], [miny, maxy], '--', color='silver')
@@ -532,31 +532,35 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             if (thresholds['pre.post.intervals'].loc['pre', 2] >= 5 * incidence_norm):
                 dftmp['mediana pré-epidêmica'] = thresholds['pre.post.intervals'].loc['pre', 1]
                 dftmp['limiar pré-epidêmico'] = thresholds['pre.post.intervals'].loc['pre', 2]
-                dftmp['se relativa ao início do surto'] = dftmp['epiweek'] - thresholds['mean.start'][0]
-                dftmp['se típica do início do surto'] = thresholds['mean.start'][0]
+                dftmp['SE relativa ao início do surto'] = dftmp['epiweek'] - thresholds['mean.start'][0]
+                dftmp['SE típica do início do surto'] = thresholds['mean.start'][0]
                 # Confidence interval for epi.start
                 cimin = thresholds['ci.start'].loc[0, 0]
                 cimax = thresholds['ci.start'].loc[0, 2]
-                dftmp['IC da se típica do início do surto'] = '[%s-%s]' % (cimin, cimax)
+                dftmp['SE típica do início do surto - IC inferior (2,5%)'] = cimin
+                dftmp['SE típica do início do surto - IC superior (97,5%)'] = cimax
                 dftmp['duração típica do surto'] = thresholds['mean.length'][0]
                 # Confidence interval for epi.length
                 cimin = thresholds['ci.length'].loc[1, 0]
                 cimax = thresholds['ci.length'].loc[1, 2]
-                dftmp['IC da duração típica do surto'] = '[%s-%s]' % (cimin, cimax)
+                dftmp['duração típica do surto - IC inferior (2,5%)'] = cimin
+                dftmp['duração típica do surto - IC superior (97,5%)'] = cimax
             else:
                 dftmp['mediana pré-epidêmica'] = np.nan
                 dftmp['limiar pré-epidêmico'] = 5 * incidence_norm
-                dftmp['se relativa ao início do surto'] = np.nan
-                dftmp['se típica do início do surto'] = np.nan
+                dftmp['SE relativa ao início do surto'] = np.nan
+                dftmp['SE típica do início do surto'] = np.nan
                 # Confidence interval for epi.start
                 cimin = np.nan
                 cimax = np.nan
-                dftmp['IC da se típica do início do surto'] = np.nan
+                dftmp['SE típica do início do surto - IC inferior (2,5%)'] = np.nan
+                dftmp['SE típica do início do surto - IC superior (97,5%)'] = np.nan
                 dftmp['duração típica do surto'] = np.nan
                 # Confidence interval for epi.length
                 cimin = np.nan
                 cimax = np.nan
-                dftmp['IC da duração típica do surto'] = np.nan
+                dftmp['duração típica do surto - IC inferior (2,5%)'] = cimin
+                dftmp['duração típica do surto - IC superior (97,5%)'] = cimax
 
             dftmp['limiar pós-epidêmico'] = thresholds['pre.post.intervals'].loc['post', 2]
             dftmp['intensidade baixa'] = thresholds['epi.intervals'].loc[0, 3]
@@ -627,8 +631,8 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmpinset['corredor baixo'] = thresholdsinset['typ.real.curve']['baixo']
             dftmpinset['corredor mediano'] = thresholdsinset['typ.real.curve']['mediano']
             dftmpinset['corredor alto'] = thresholdsinset['typ.real.curve']['alto']
-            dftmpinset['se relativa ao início do surto'] = dftmpinset['epiweek'] - thresholdsinset['mean.start'][0]
-            dftmpinset['se típica do início do surto'] = thresholdsinset['mean.start'][0]
+            dftmpinset['SE relativa ao início do surto'] = dftmpinset['epiweek'] - thresholdsinset['mean.start'][0]
+            dftmpinset['SE típica do início do surto'] = thresholdsinset['mean.start'][0]
             dftmpinset['duração típica do surto'] = thresholdsinset['mean.length'][0]
             dftmpinset['curva epi. baixa'] = thresholdsinset['typ.curve']['baixo']
             dftmpinset['curva epi. mediana'] = thresholdsinset['typ.curve']['mediano']
@@ -681,11 +685,13 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmp['corredor baixo'] = thresholds['typ.real.curve']['baixo']
             dftmp['corredor mediano'] = thresholds['typ.real.curve']['mediano']
             dftmp['corredor alto'] = thresholds['typ.real.curve']['alto']
-            dftmp['se típica do início do surto'] = np.nan
+            dftmp['SE típica do início do surto'] = np.nan
             dftmp['duração típica do surto'] = np.nan
             dftmp['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
-            dftmp['IC da se típica do início do surto'] = np.nan
-            dftmp['IC da duração típica do surto'] = np.nan
+            dftmp['SE típica do início do surto - IC inferior (2,5%)'] = np.nan
+            dftmp['SE típica do início do surto - IC superior (97,5%)'] = np.nan
+            dftmp['duração típica do surto - IC inferior (2,5%)'] = cimin
+            dftmp['duração típica do surto - IC superior (97,5%)'] = cimax
             dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
 
             dftmp.to_csv('./mem-data/%s-memfailed-%s-dropgdist%s-%s_method.csv' %
@@ -702,8 +708,8 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmpinset['corredor baixo'] = thresholdsinset['typ.real.curve']['baixo']
             dftmpinset['corredor mediano'] = thresholdsinset['typ.real.curve']['mediano']
             dftmpinset['corredor alto'] = thresholdsinset['typ.real.curve']['alto']
-            dftmpinset['se relativa ao início do surto'] = np.nan
-            dftmpinset['se típica do início do surto'] = np.nan
+            dftmpinset['SE relativa ao início do surto'] = np.nan
+            dftmpinset['SE típica do início do surto'] = np.nan
             dftmpinset['duração típica do surto'] = np.nan
             dftmpinset['curva epi. baixa'] = np.nan
             dftmpinset['curva epi. mediana'] = np.nan
@@ -740,9 +746,12 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
         dfreport = dfreport.append(dftmp[['UF', 'População', 'Média geométrica do pico de infecção das temporadas '
                                                              'regulares',
                                           'limiar pré-epidêmico', 'intensidade alta', 'intensidade muito alta',
-                                          'se típica do início do surto',
-                                          'IC da se típica do início do surto', 'duração típica do surto',
-                                          'IC da duração típica do surto']].head(1), ignore_index=True)
+                                          'SE típica do início do surto',
+                                          'SE típica do início do surto - IC inferior (2,5%)',
+                                          'SE típica do início do surto - IC superior (97,5%)',
+                                          'duração típica do surto',
+                                          'duração típica do surto - IC inferior (2,5%)',
+                                          'duração típica do surto - IC superior (97,5%)']].head(1), ignore_index=True)
         dfcorredor = dfcorredor.append(dftmp[['UF', 'População', 'epiweek', 'corredor baixo', 'corredor mediano',
                                               'corredor alto']],
                                        ignore_index=True)

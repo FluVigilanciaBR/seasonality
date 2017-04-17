@@ -60,6 +60,8 @@ def applysinanfilter(df):
             # Convert all date columns to datetime format. Output will have the format YYYY-MM-DD
             df[col] = pd.to_datetime(df[col], errors='coerce', format=dtformat)
 
+    # Discard those neither hospitalized nor deceased
+    df = df[(~pd.isnull(df.DT_INTERNA)) | (df.EVOLUCAO == 2)]
     # Create columns related to lab result
     
     # Rows with lab test:
@@ -149,12 +151,15 @@ def applysinanfilter(df):
     return(df)
 
 
-def main(flist, sep=','):
+def main(flist, sep=',', yearmax=None):
     df = pd.DataFrame()
     for fname in flist:
         print(fname)
         dftmp = readtable(fname, sep)
         df = df.append(applysinanfilter(dftmp), ignore_index=True)
+
+    if (yearmax):
+        df = df[df.SEM_NOT <= int(str(yearmax)+'53')]
 
     df.to_csv('clean_data.csv', index=False)
 
@@ -166,6 +171,7 @@ if __name__ == '__main__':
                                      formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--path', nargs='*', action='append', help='Path to data file')
     parser.add_argument('--sep', help='Column separator', default=',')
+    parser.add_argument('--year', help='Maximum year', default=None)
     args = parser.parse_args()
     print(args)
-    main(args.path[0], args.sep)
+    main(args.path[0], args.sep, args.year)
