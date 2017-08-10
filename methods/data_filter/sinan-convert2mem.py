@@ -11,20 +11,6 @@ age_cols = ['Idade desconhecida', '0-4 anos', '5-9 anos', '10-19 anos', '20-29 a
             '50-59 anos', '60+ anos']
 
 
-def lastepiweek(year):
-    # Calcula o valor da última semana do ano
-
-    day = datetime.datetime(int(year), 12, 31)  # Ultimo dia do ano
-    day_week = episem.extractweekday(day)  # dia semana do ultimo dia
-
-    if day_week < 3:
-        day = day - datetime.timedelta(days=(day_week+1))
-    else:
-        day = day + datetime.timedelta(days=(6-day_week))
-
-    return(int(episem.episem(day, out='W')))
-
-
 def readtable(fname, sep=','):
 
     target_col = ['SG_UF_NOT', 'DT_NOTIFIC_epiyear', 'DT_NOTIFIC_epiweek', 'CS_SEXO', 'idade_em_anos']
@@ -65,7 +51,7 @@ def readtable(fname, sep=','):
     sexlist = ['M', 'F', 'I', 'Total']
     tmpdict = []
     for year in yearlist[:-1]:
-        for week in range(1, (lastepiweek(year)+1)):
+        for week in range(1, (int(episem.lastepiweek(year))+1)):
             for uf in uflist:
                 tmpdict.extend([{'UF': uf, 'epiyear': year, 'epiweek': week, 'sexo': sex} for sex in sexlist])
     tmpdict.extend([{'UF': uf, 'epiyear': yearlist[-1], 'epiweek': week, 'sexo': sex} for sex in sexlist for week in

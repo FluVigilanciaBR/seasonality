@@ -8,7 +8,6 @@ import datetime
 Return Brazilian epidemiological week from passed date
 '''
 
-
 def extractweekday(x=datetime.datetime):
     # Extract weekday as [Sun-Sat] |-> [0-6]
     w = x.isoweekday() % 7  # isoweekday() returns weekday with [Mon-Sun] as [1-7]
@@ -94,3 +93,8 @@ def episem(x, sep='W', out='YW'):
 
     return(out_format(epiyear, epiweek, out))
 
+
+def lastepiweek(year):
+    # Calculate number of year's last week
+
+    return(episem(lastepiday(year), out='W'))

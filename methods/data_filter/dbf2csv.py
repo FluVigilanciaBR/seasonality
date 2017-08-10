@@ -15,8 +15,11 @@ def dbf2csv(fin, fout):
     writer = csv.writer(open(fout,'w'))
 
     writer.writerow(table.field_names)
+    i = 1
     for record in table:
+        print(i)
         writer.writerow(list(record.values()))
+        i += 1
 
     return
 
