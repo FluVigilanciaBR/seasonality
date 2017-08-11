@@ -81,7 +81,7 @@ delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = funct
 
 # Read activity thresholds:
 df.thresholds <- read.csv('../clean_data/mem-report.csv', check.names = F, encoding='utf-8')
-low.activity <- df.thresholds[is.na(df.thresholds$`se típica do início do surto`),'UF']
+low.activity <- df.thresholds[is.na(df.thresholds$`SE típica do início do surto`),'UF']
 
 # Read weekly data:
 d_weekly <- read.csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', check.names = F, encoding='utf-8')

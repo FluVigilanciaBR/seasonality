@@ -508,6 +508,8 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
         dftmpinset = dfinset[dfinset.UF == uf].reset_index().drop('index', axis=1).copy()
         seasons = sort(list(dftmp.columns.drop(['UF', 'epiweek'])))
         lastseason = seasons[-1]
+        dftmp['ano'] = lastseason.strip('SRAG')
+        dftmpinset['ano'] = lastseason.strip('SRAG')
         seasons = list(np.delete(seasons, -1))
 
         # Select "regular seasons" by comparing geometric distance of corresponding peaks
@@ -690,8 +692,8 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmp['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
             dftmp['SE típica do início do surto - IC inferior (2,5%)'] = np.nan
             dftmp['SE típica do início do surto - IC superior (97,5%)'] = np.nan
-            dftmp['duração típica do surto - IC inferior (2,5%)'] = cimin
-            dftmp['duração típica do surto - IC superior (97,5%)'] = cimax
+            dftmp['duração típica do surto - IC inferior (2,5%)'] = np.nan
+            dftmp['duração típica do surto - IC superior (97,5%)'] = np.nan
             dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
 
             dftmp.to_csv('./mem-data/%s-memfailed-%s-dropgdist%s-%s_method.csv' %
@@ -751,9 +753,10 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                                           'SE típica do início do surto - IC superior (97,5%)',
                                           'duração típica do surto',
                                           'duração típica do surto - IC inferior (2,5%)',
-                                          'duração típica do surto - IC superior (97,5%)']].head(1), ignore_index=True)
+                                          'duração típica do surto - IC superior (97,5%)',
+                                          'ano']].head(1), ignore_index=True)
         dfcorredor = dfcorredor.append(dftmp[['UF', 'População', 'epiweek', 'corredor baixo', 'corredor mediano',
-                                              'corredor alto']],
+                                              'corredor alto', 'ano']],
                                        ignore_index=True)
 
     dfreport['Unidade da Federação'] = dfreport.UF.map(tabela_ufnome)
