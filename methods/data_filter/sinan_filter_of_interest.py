@@ -25,6 +25,14 @@ def applysinanfilter(df):
                'HEM_TIPO_H', 'HEM_TIPO_N','VACINA','DT_UT_DOSE','ANT_PNEUMO','DT_PNEUM', 'CO_UF_INTE','CO_MU_INTE',
                'CO_UN_INTE','DT_ENCERRA','NU_NOTIFIC','ID_AGRAVO','ID_MUNICIP', 'ID_REGIONA', 'ID_UNIDADE',
                'NU_IDADE_N','CS_SEXO','CS_GESTANT','CS_RACA','SG_UF','ID_MN_RESI', 'ID_RG_RESI']
+
+    cols = df.columns
+    if ('RES_VRS' in cols):
+        df.rename(columns={'RES_VRS': 'RES_VSR'}, inplace=True)
+
+    for col in set(tgtcols).difference(cols):
+        df[col] = None
+
     df = df[tgtcols].copy()
 
     # Filter by notification date
@@ -43,10 +51,10 @@ def applysinanfilter(df):
     cols = df.columns
     # Check date input format
     dtsep = '-'
-    sample = df.DT_DIGITA.iloc[0]
+    sample = df.DT_NOTIFIC.iloc[0]
     if '/' in sample:
         dtsep = '/'
-    dttest = pd.DataFrame(list(df.DT_DIGITA.str.split(dtsep)))
+    dttest = pd.DataFrame(list(df.DT_NOTIFIC.str.split(dtsep)))
     maxvals = [int(dttest[i].max()) for i in range(3)]
     del(dttest)
     yearpos = maxvals.index(max(maxvals))

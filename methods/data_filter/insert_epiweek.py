@@ -1,5 +1,5 @@
 import pandas as pd
-from episem import episem
+from episem import episem, lastepiweek
 import argparse
 # coding:utf8
 __author__ = 'Marcelo Ferreira da Costa Gomes'
@@ -15,6 +15,12 @@ def main(fname, sep=','):
     df[yearweek_cols] = df[target_cols].applymap(episem)
     df[year_cols] = df[target_cols].applymap(lambda x: episem(x, out='Y'))
     df[week_cols] = df[target_cols].applymap(lambda x: episem(x, out='W'))
+
+    # Calculate opportunity between notification and upload:
+    df['DelayWeeks'] = df['DT_DIGITA_epiweek'].astype(int) - df['DT_NOTIFIC_epiweek'].astype(int) +\
+        (df['DT_DIGITA_epiyear'].astype(int) - df['DT_NOTIFIC_epiyear'].astype(int)) *\
+        (df['DT_NOTIFIC_epiyear'].apply(lastepiweek)).astype(int)
+
 
     fout = '../clean_data/%s_epiweek.csv' % fname.split('/')[-1][:-4]
     df.to_csv(fout, index=False, encoding='utf-8')

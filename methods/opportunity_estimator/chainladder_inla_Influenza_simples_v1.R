@@ -40,8 +40,9 @@ args <- parser$parse_args()
 quantile.target <- args$percentile / 100
 
 # Read data and filter columns
-d <- droplevels(subset(read.csv("../clean_data/clean_data_epiweek.csv", check.names = F, encoding='utf-8'),
-                       select=c(SG_UF_NOT, DT_NOTIFIC_epiyearweek, DT_NOTIFIC_epiyear,
+d <- droplevels(subset(read.csv("../clean_data/clean_data_epiweek.csv", check.names = F, encoding='utf-8',
+                                stringsAsFactors=FALSE),
+                       select=c(SG_UF_NOT, DT_NOTIFIC, DT_NOTIFIC_epiyearweek, DT_NOTIFIC_epiyear,
                                 DT_NOTIFIC_epiweek, DT_DIGITA_epiyear, DT_DIGITA_epiweek)))
 
 # Discard years before 2013:
@@ -55,11 +56,20 @@ d$DelayWeeks <- d$DT_DIGITA_epiweek - d$DT_NOTIFIC_epiweek +
 d <- na.exclude(d[d$DelayWeeks < 27, ])
 
 # Latest week with closed counts on DT_DIGITA is actualy the previous one
-today <- episem(args$date)
+if (args$date == 'max'){
+  today <- as.Date(max(d$DT_NOTIFIC)) - 7
+  today <- as.Date(today,origin = '1970-01-01')
+  print(today)
+  today <- episem(today)
+} else {
+  today <- as.Date(args$date) - 7
+  today <- as.Date(today,origin = '1970-01-01')
+  today <- episem(args$date)
+}
 lyear <- as.integer(strsplit(today, 'W')[[1]][1])
 today.week <- as.integer(strsplit(today, 'W')[[1]][2])
-today.week <- ifelse(today.week > 1, today.week-1, as.integer(lastepiweek(lyear-1)))
 today <- paste0(lyear,'W',today.week)
+print(today)
 
 # Discar incomplete data from the current week
 d <- d[d$DT_DIGITA_epiyear < lyear | (d$DT_DIGITA_epiyear==lyear & d$DT_DIGITA_epiweek<=today.week), ]
@@ -73,11 +83,11 @@ d$Country <- 'BR'
 
 # Grab target quantile from delay distribution for each UF
 delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = function(x,...) max(8,quantile(x,...)),
-                                            probs=quantile.target))),
+                                            probs=quantile.target, rm.na=TRUE))),
                        ceiling(with(d, tapply(DelayWeeks, Region, FUN = function(x,...) max(8,quantile(x,...)),
-                                              probs=quantile.target))),
+                                              probs=quantile.target, rm.na=TRUE))),
                        ceiling(with(d, tapply(DelayWeeks, Country, FUN = function(x,...) max(8,quantile(x,...)),
-                                              probs=quantile.target))))
+                                              probs=quantile.target, rm.na=TRUE))))
 
 # Read activity thresholds:
 df.thresholds <- read.csv('../clean_data/mem-report.csv', check.names = F, encoding='utf-8')
@@ -87,10 +97,12 @@ low.activity <- df.thresholds[is.na(df.thresholds$`SE típica do início do surt
 d_weekly <- read.csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', check.names = F, encoding='utf-8')
 d_weekly <- d_weekly[d_weekly$sexo == 'Total', c('UF', 'epiyear', 'epiweek', 'SRAG', 'Tipo')]
 d_weekly['DT_NOTIFIC_epiyearweek'] <- mapply(function(x,y) paste0(x,'W',sprintf("%02d",y)), d_weekly$epiyear,d_weekly$epiweek)
+
 # # Fill all epiweeks:
 fyear <- min(d_weekly$epiyear)
 years.list <- c(fyear:lyear)
 df.epiweeks <- data.frame(DT_NOTIFIC_epiyearweek=character(), UF=factor())
+
 # List of locations:
 uf_list <- unique(d_weekly$UF)
 for (y in years.list){
