@@ -42,15 +42,15 @@ quantile.target <- args$percentile / 100
 # Read data and filter columns
 d <- droplevels(subset(read.csv("../clean_data/clean_data_epiweek.csv", check.names = F, encoding='utf-8',
                                 stringsAsFactors=FALSE),
-                       select=c(SG_UF_NOT, DT_NOTIFIC, DT_NOTIFIC_epiyearweek, DT_NOTIFIC_epiyear,
-                                DT_NOTIFIC_epiweek, DT_DIGITA_epiyear, DT_DIGITA_epiweek)))
+                       select=c(SG_UF_NOT, DT_NOTIFIC, DT_SIN_PRI, DT_SIN_PRI_epiyearweek, DT_SIN_PRI_epiyear,
+                                DT_SIN_PRI_epiweek, DT_DIGITA_epiyearweek, DT_DIGITA_epiyear, DT_DIGITA_epiweek,
+                       SinPri2Digita_DelayWeeks)))
 
 # Discard years before 2013:
-d <- droplevels(subset(d, DT_NOTIFIC_epiyear >= 2013))
+d <- droplevels(subset(d, DT_SIN_PRI_epiyear >= 2013))
 
-# Calculate opportunity between notification and upload:
-d$DelayWeeks <- d$DT_DIGITA_epiweek - d$DT_NOTIFIC_epiweek +
-  (d$DT_DIGITA_epiyear - d$DT_NOTIFIC_epiyear)*as.integer(sapply(d$DT_NOTIFIC_epiyear,lastepiweek))
+# Opportunity between first symptoms and upload:
+colnames(d)[colnames(d)=='SinPri2Digita_DelayWeeks'] <- 'DelayWeeks'
 
 # Discard notifications with delay greater than 6 months (> 26 weeks)
 d <- na.exclude(d[d$DelayWeeks < 27, ])
@@ -72,57 +72,35 @@ today <- paste0(lyear,'W',today.week)
 print(today)
 
 # Discar incomplete data from the current week
-d <- d[d$DT_DIGITA_epiyear < lyear | (d$DT_DIGITA_epiyear==lyear & d$DT_DIGITA_epiweek<=today.week), ]
+d <- d[d$DT_DIGITA_epiyearweek <= today, ]
 
 # Read population profile:
-d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', check.names = F, encoding='utf-8')
+d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', check.names = F, encoding='utf-8',
+                     stringsAsFactors = FALSE)
 
 # Create entries for regional aggregates:
 d$Region <- mapply(function(x) as.character(unique(d_pop[d_pop$`Código`==as.character(x),'Região'])), d$SG_UF_NOT)
 d$Country <- 'BR'
 
 # Grab target quantile from delay distribution for each UF
-delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = function(x,...) max(8,quantile(x,...)),
+delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = function(x,...) quantile(x,...),
                                             probs=quantile.target, rm.na=TRUE))),
-                       ceiling(with(d, tapply(DelayWeeks, Region, FUN = function(x,...) max(8,quantile(x,...)),
+                       ceiling(with(d, tapply(DelayWeeks, Region, FUN = function(x,...) quantile(x,...),
                                               probs=quantile.target, rm.na=TRUE))),
-                       ceiling(with(d, tapply(DelayWeeks, Country, FUN = function(x,...) max(8,quantile(x,...)),
+                       ceiling(with(d, tapply(DelayWeeks, Country, FUN = function(x,...) quantile(x,...),
                                               probs=quantile.target, rm.na=TRUE))))
 
 # Read activity thresholds:
-df.thresholds <- read.csv('../clean_data/mem-report.csv', check.names = F, encoding='utf-8')
+df.thresholds <- read.csv('../clean_data/mem-report.csv', check.names = F, encoding='utf-8',
+                     stringsAsFactors = FALSE)
 low.activity <- df.thresholds[is.na(df.thresholds$`SE típica do início do surto`),'UF']
 
 # Read weekly data:
-d_weekly <- read.csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', check.names = F, encoding='utf-8')
-d_weekly <- d_weekly[d_weekly$sexo == 'Total', c('UF', 'epiyear', 'epiweek', 'SRAG', 'Tipo')]
-d_weekly['DT_NOTIFIC_epiyearweek'] <- mapply(function(x,y) paste0(x,'W',sprintf("%02d",y)), d_weekly$epiyear,d_weekly$epiweek)
+d_weekly <- read.csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', check.names = F, encoding='utf-8',
+                     stringsAsFactors = FALSE)
+d_weekly <- d_weekly[d_weekly$sexo == 'Total' & d_weekly$epiyearweek <= today, c('UF', 'epiyear', 'epiweek', 'SRAG',
+'Tipo')]
 
-# # Fill all epiweeks:
-fyear <- min(d_weekly$epiyear)
-years.list <- c(fyear:lyear)
-df.epiweeks <- data.frame(DT_NOTIFIC_epiyearweek=character(), UF=factor())
-
-# List of locations:
-uf_list <- unique(d_weekly$UF)
-for (y in years.list){
-  epiweeks <- c()
-  lweek <- ifelse(y < lyear, as.integer(lastepiweek(y)), today.week)
-  for (w in c(1:lweek)){
-    epiweeks <- c(epiweeks, paste0(y,'W',sprintf('%02d', w)))
-  }
-  for (uf in uf_list){
-    df.epiweeks <- rbind(df.epiweeks, data.frame(list(DT_NOTIFIC_epiyearweek=epiweeks, UF=uf)))
-  }
-}
-
-d_weekly <- merge(df.epiweeks, d_weekly, by=c('DT_NOTIFIC_epiyearweek', 'UF'), all.x=T)
-d_weekly[is.na(d_weekly$epiweek), 'epiweek'] <- mapply(function (x) as.integer(strsplit(as.character(x[[1]]), 'W')[[1]][2]), 
-                                                       d_weekly[is.na(d_weekly$epiweek), 'DT_NOTIFIC_epiyearweek'])
-d_weekly[is.na(d_weekly$epiyear), 'epiyear'] <- mapply(function (x) as.integer(strsplit(as.character(x[[1]]), 'W')[[1]][1]), 
-                                                       d_weekly[is.na(d_weekly$epiyear), 'DT_NOTIFIC_epiyearweek'])
-
-d_weekly[is.na(d_weekly)] <- 0
 d_weekly$Situation <- 'stable'
 d_weekly[,c("mean","50%","2.5%","97.5%")] <- d_weekly$SRAG
 
@@ -145,18 +123,18 @@ cores <- colorRampPalette((brewer.pal(9, 'Oranges')))(27)
 
 # Prepare filled epiweeks data frame:
 # # Fill all epiweeks:
-fyear <- min(d$DT_NOTIFIC_epiyear)
+fyear <- min(d$DT_SIN_PRI_epiyear)
 years.list <- c(fyear:lyear)
-df.epiweeks <- data.frame(DT_NOTIFIC_epiyearweek=character())
+df.epiweeks <- data.frame(DT_SIN_PRI_epiyearweek=character())
 for (y in years.list){
   epiweeks <- c()
   lweek <- ifelse(y < lyear, as.integer(lastepiweek(y)), today.week)
   for (w in c(1:lweek)){
     epiweeks <- c(epiweeks, paste0(y,'W',sprintf('%02d', w)))
   }
-  df.epiweeks <- rbind(df.epiweeks, data.frame(list(DT_NOTIFIC_epiyearweek=epiweeks)))
+  df.epiweeks <- rbind(df.epiweeks, data.frame(list(DT_SIN_PRI_epiyearweek=epiweeks)))
 }
-rownames(df.epiweeks) <- df.epiweeks$DT_NOTIFIC_epiyearweek
+rownames(df.epiweeks) <- df.epiweeks$DT_SIN_PRI_epiyearweek
 
 # List of locations:
 uf_list <- unique(d$SG_UF_NOT)
@@ -187,11 +165,11 @@ for (uf in c(uf_list, reg_list, cntry_list)){
   dev.off()
   
   # Prepare delay table
-  aux <- tapply(d.tmp$DelayWeeks >= 0, INDEX = list(d.tmp$DT_NOTIFIC_epiyearweek), FUN = sum, na.rm = T)
+  aux <- tapply(d.tmp$DelayWeeks >= 0, INDEX = list(d.tmp$DT_SIN_PRI_epiyearweek), FUN = sum, na.rm = T)
   delay.tbl.tmp <- data.frame(Notifications = aux[order(rownames(aux))])
   
   for(k in 0:26){  
-    aux <- tapply(d.tmp$DelayWeeks == k, INDEX = d.tmp$DT_NOTIFIC_epiyearweek, FUN = sum, na.rm = T)
+    aux <- tapply(d.tmp$DelayWeeks == k, INDEX = d.tmp$DT_SIN_PRI_epiyearweek, FUN = sum, na.rm = T)
     delay.tbl.tmp[paste("d",k, sep="")] <- aux[order(rownames(aux))]
   }
   
@@ -202,8 +180,8 @@ for (uf in c(uf_list, reg_list, cntry_list)){
   # Plot UF's time series
   svg(paste0('./plots/',uf,'/timeseries.svg'))
   # # Time series
-  fyear = min(d.tmp$DT_NOTIFIC_epiyear)
-  lyear = max(d.tmp$DT_NOTIFIC_epiyear)
+  fyear = min(d.tmp$DT_SIN_PRI_epiyear)
+  lyear = max(d.tmp$DT_SIN_PRI_epiyear)
   plot(delay.tbl.tmp$Notifications , type = "l", axes=F, xlab="Time", ylab="Notifications")
   axis(2)
   axis(1, at = seq(0,52*(lyear-fyear+1),52) ,labels = fyear:(lyear+1))

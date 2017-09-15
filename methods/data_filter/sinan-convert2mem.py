@@ -2,6 +2,7 @@
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 import pandas as pd
+import numpy as np
 import argparse
 import episem
 import datetime
@@ -13,10 +14,14 @@ age_cols = ['Idade desconhecida', '0-4 anos', '5-9 anos', '10-19 anos', '20-29 a
 
 def readtable(fname, sep=','):
 
-    target_col = ['SG_UF_NOT', 'DT_NOTIFIC_epiyear', 'DT_NOTIFIC_epiweek', 'CS_SEXO', 'idade_em_anos']
+    target_col = ['SG_UF_NOT', 'DT_SIN_PRI_epiyearweek', 'DT_SIN_PRI_epiyear', 'DT_SIN_PRI_epiweek', 'CS_SEXO',
+                  'idade_em_anos', 'FLU_A', 'FLU_B', 'VSR', 'OTHERS', 'NEGATIVE', 'INCONCLUSIVE', 'TESTING_IGNORED',
+                  'NOTTESTED', 'DELAYED']
     df = pd.read_csv(fname, sep=sep, low_memory=False, encoding='utf-8')[target_col].rename(columns={'CS_SEXO': 'sexo',
-                                                                                   'DT_NOTIFIC_epiyear': 'epiyear',
-                                                                                   'DT_NOTIFIC_epiweek': 'epiweek'})
+                                                                                   'DT_SIN_PRI_epiyearweek':
+                                                                                       'epiyearweek',
+                                                                                   'DT_SIN_PRI_epiyear': 'epiyear',
+                                                                                   'DT_SIN_PRI_epiweek': 'epiweek'})
     df['Idade desconhecida'] = pd.isnull(df.idade_em_anos).astype(int)
     df['0-4 anos'] = (df.idade_em_anos < 5).astype(int)
     df['5-9 anos'] = ((df.idade_em_anos >= 5) & (df.idade_em_anos < 10)).astype(int)
@@ -27,17 +32,26 @@ def readtable(fname, sep=','):
     df['50-59 anos'] = ((df.idade_em_anos >= 50) & (df.idade_em_anos < 60)).astype(int)
     df['60+ anos'] = (df.idade_em_anos >= 60).astype(int)
 
+    tgt_cols = {'Agentes infecciosos detectados': ['FLU_A', 'FLU_B', 'VSR', 'OTHERS'],
+                'Exames laboratoriais': ['POSITIVE_CASES', 'NEGATIVE', 'INCONCLUSIVE',
+                                         'TESTING_IGNORED', 'NOTTESTED', 'DELAYED']}
+
+    df['POSITIVE_CASES'] = np.logical_not(df['NOTTESTED'] | df['TESTING_IGNORED'] | df['NEGATIVE'] |
+                                          df['DELAYED'] | df['INCONCLUSIVE']).astype(int)
+
     df.rename(columns={'SG_UF_NOT': 'UF'}, inplace=True)
-    grp_cols = ['UF', 'epiyear', 'epiweek'] + age_cols
+    grp_cols = ['UF', 'epiyearweek', 'epiyear', 'epiweek'] + age_cols + tgt_cols['Agentes infecciosos detectados'] + \
+               tgt_cols['Exames laboratoriais']
 
     # Aggregate independent of sex:
-    dftmp = df[grp_cols].groupby(['UF', 'epiyear', 'epiweek'], as_index=False).agg(sum)
+    dftmp = df[grp_cols].groupby(['UF', 'epiyearweek', 'epiyear', 'epiweek'], as_index=False).agg(sum)
     dftmp['SRAG'] = dftmp[age_cols].apply(sum, axis=1)
     dftmp['sexo'] = 'Total'
 
     # Aggregate separeting by sex:
-    grp_cols = ['UF', 'epiyear', 'epiweek', 'sexo'] + age_cols
-    df = df[grp_cols].groupby(['UF', 'epiyear', 'epiweek', 'sexo'], as_index=False).agg(sum)
+    grp_cols = ['UF', 'epiyearweek','epiyear', 'epiweek', 'sexo'] + age_cols + \
+               tgt_cols['Agentes infecciosos detectados'] + tgt_cols['Exames laboratoriais']
+    df = df[grp_cols].groupby(['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'], as_index=False).agg(sum)
     df['SRAG'] = df[age_cols].apply(sum, axis=1)
 
     df = df.append(dftmp, ignore_index=True)
@@ -53,9 +67,11 @@ def readtable(fname, sep=','):
     for year in yearlist[:-1]:
         for week in range(1, (int(episem.lastepiweek(year))+1)):
             for uf in uflist:
-                tmpdict.extend([{'UF': uf, 'epiyear': year, 'epiweek': week, 'sexo': sex} for sex in sexlist])
-    tmpdict.extend([{'UF': uf, 'epiyear': yearlist[-1], 'epiweek': week, 'sexo': sex} for sex in sexlist for week in
-                    range(1,(lastweek+1)) for uf in uflist])
+                tmpdict.extend([{'UF': uf, 'epiyearweek': '%sW%02d' % (year, week), 'epiyear': year, 'epiweek': week,
+                                 'sexo': sex} for sex in sexlist])
+    tmpdict.extend([{'UF': uf, 'epiyearweek': '%sW%02d' % (yearlist[-1], week), 'epiyear': yearlist[-1], 'epiweek': week,
+                     'sexo': sex} for sex in sexlist for week in
+                    range(1, (lastweek+1)) for uf in uflist])
     dftmp = pd.DataFrame(tmpdict)
 
     dffull = pd.merge(dftmp, df, how='left').fillna(0)
@@ -64,15 +80,19 @@ def readtable(fname, sep=','):
     dfreg = pd.read_csv('../data/regioesclimaticas.csv', encoding='utf-8')
 
     dffull = pd.merge(dffull, dfreg[['Código', 'Região']].rename(columns={'Código': 'UF'}), how='left')
-    dffull_reg = dffull.drop('UF', axis=1).groupby(['Região', 'epiyear', 'epiweek', 'sexo'], as_index=False).sum()
-    dfBR = dffull_reg.drop('Região', axis=1).groupby(['epiyear', 'epiweek', 'sexo'], as_index=False).sum()
+    dffull_reg = dffull.drop('UF', axis=1).groupby(['Região', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'],
+                                                   as_index=False).sum()
+    dfBR = dffull_reg.drop('Região', axis=1).groupby(['epiyearweek', 'epiyear', 'epiweek', 'sexo'],
+                                                     as_index=False).sum()
     dfBR['Região'] = 'BR'
     dffull_reg = dffull_reg.append(dfBR, ignore_index=True).rename(columns={'Região': 'UF'})
 
     dffull = dffull.drop('Região', axis=1).append(dffull_reg, ignore_index=True)
-    dffull = dffull[['UF', 'epiyear', 'epiweek', 'sexo', 'SRAG'] + age_cols]
+    dffull = dffull[['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo', 'SRAG'] + age_cols +
+                    tgt_cols['Agentes infecciosos detectados'] + tgt_cols['Exames laboratoriais']]
 
-    dffull = dffull.sort_values(by=['UF', 'epiyear', 'epiweek', 'sexo'], axis=0).reset_index().drop('index', axis=1)
+    dffull = dffull.sort_values(by=['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'],
+                                axis=0).reset_index().drop('index', axis=1)
 
     return(dffull)
 
@@ -121,8 +141,8 @@ def uf4mem(dfin=pd.DataFrame()):
         lbl = 'SRAG' + str(year)
         dftmp = pd.merge(dftmp, df[(df.epiyear == year) & (df.sexo == 'Total')][['UF', 'epiweek', 'SRAG']].rename(
             columns={'SRAG': lbl}), on=['UF', 'epiweek'], how='left')
-        dftmpinc = pd.merge(dftmpinc, dfinc[(df.epiyear == year) & (df.sexo == 'Total')][['UF', 'epiweek',
-                                                                                          'SRAG']].rename(columns={'SRAG': lbl}),
+        dftmpinc = pd.merge(dftmpinc, dfinc[(dfinc.epiyear == year) & (dfinc.sexo == 'Total')][['UF', 'epiweek',
+                                                                            'SRAG']].rename(columns={'SRAG': lbl}),
                             on=['UF', 'epiweek'], how='left')
         if year != yearlist[-1]:
             dftmp[lbl] = dftmp[lbl].fillna(0)
@@ -167,14 +187,16 @@ def main(fname, sep=','):
     dfinc['Tipo'] = 'Estado'
     dfinc.loc[dfinc['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
     dfinc.loc[dfinc['UF'] == 'BR' ,'Tipo'] = 'País'
-    dfinc = dfinc.sort_values(by=['UF', 'epiyear', 'epiweek', 'sexo'], axis=0).reset_index().drop('index', axis=1)
+    dfinc = dfinc.sort_values(by=['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'],
+                              axis=0).reset_index().drop('index', axis=1)
     dfinc.to_csv(fnameout, index=False, encoding='utf-8')
 
     fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly.csv'
     df['Tipo'] = 'Estado'
     df.loc[df['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
     df.loc[df['UF'] == 'BR' ,'Tipo'] = 'País'
-    df = df.sort_values(by=['UF', 'epiyear', 'epiweek', 'sexo'], axis=0).reset_index().drop('index', axis=1)
+    df = df.sort_values(by=['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'],
+                        axis=0).reset_index().drop('index', axis=1)
     df.to_csv(fnameout, index=False, encoding='utf-8')
 
 

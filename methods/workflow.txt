@@ -12,7 +12,7 @@ cd ../mem/
 python3 sinan-mem-inset-thresholds.py --path ../clean_data/clean_data_epiweek4mem-incidence.csv
 # Apply opportunity estimates
 cd ../opportunity_estimator/
-Rscript --vanilla chainladder_inla_Influenza_simples_v1.R
+Rscript --vanilla chainladder_inla_Influenza_simples_v1.R -d max
 # Add situation to weekly data
 python3 add_situation2weekly_data.py
 cd ../

@@ -123,8 +123,10 @@ def discardseasons(df, seasons, gdthres=2.0, smin=5):
 def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     rdf = pandas2ri.py2ri(df)
     seasons = sorted(list(df.columns.drop(['UF', 'epiweek'])))[:-1]
+
     # Discard 2009 season if present:
     seasons = sorted(set(seasons).difference(discarded_seasons))
+
     rseasons = ro.StrVector(seasons)
     ro.globalenv['df'] = rdf
     ro.globalenv['seasons'] = rseasons
@@ -518,6 +520,8 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
         tmpseasons.remove('SRAG2009')
         discarded_seasons = discardseasons(df=dftmp, seasons=tmpseasons, gdthres=2.8, smin=4)
         discarded_seasons.extend(['SRAG2009'])
+        discarded_seasons.extend([lastseason])
+
 
         # Calculate incidence normalization factor, per 100.000
         incidence_norm = np.float(100000 / dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
@@ -528,10 +532,13 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             if dftmpinset[list(set(seasons).difference(discarded_seasons))].max().max() < 3:
                 print(uf, 'max < 3')
                 raise
-            thresholds, lowseasons = applymem(dftmp, discarded_seasons, wdw_method, lower_bound=5 * incidence_norm)
-            thresholdsinset, lowseasons = applymem(dftmpinset, discarded_seasons, wdw_method, lower_bound=5)
+            # thresholds, lowseasons = applymem(dftmp, discarded_seasons, wdw_method, lower_bound=5 * incidence_norm)
+            # thresholdsinset, lowseasons = applymem(dftmpinset, discarded_seasons, wdw_method, lower_bound=5)
+            thresholds, lowseasons = applymem(dftmp, discarded_seasons, wdw_method, lower_bound=1 * incidence_norm)
+            thresholdsinset, lowseasons = applymem(dftmpinset, discarded_seasons, wdw_method, lower_bound=1)
 
-            if (thresholds['pre.post.intervals'].loc['pre', 2] >= 5 * incidence_norm):
+            # if (thresholds['pre.post.intervals'].loc['pre', 2] >= 5 * incidence_norm):
+            if (thresholds['pre.post.intervals'].loc['pre', 2] >= 0 * incidence_norm):
                 dftmp['mediana pré-epidêmica'] = thresholds['pre.post.intervals'].loc['pre', 1]
                 dftmp['limiar pré-epidêmico'] = thresholds['pre.post.intervals'].loc['pre', 2]
                 dftmp['SE relativa ao início do surto'] = dftmp['epiweek'] - thresholds['mean.start'][0]
@@ -566,8 +573,11 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
 
             dftmp['limiar pós-epidêmico'] = thresholds['pre.post.intervals'].loc['post', 2]
             dftmp['intensidade baixa'] = thresholds['epi.intervals'].loc[0, 3]
-            dftmp['intensidade alta'] = max(10 * incidence_norm, thresholds['epi.intervals'].loc[1, 3])
-            dftmp['intensidade muito alta'] = max(20 * incidence_norm, thresholds['epi.intervals'].loc[2, 3])
+            # dftmp['intensidade alta'] = max(10 * incidence_norm, thresholds['epi.intervals'].loc[1, 3])
+            # dftmp['intensidade muito alta'] = max(20 * incidence_norm, thresholds['epi.intervals'].loc[2, 3])
+            dftmp['intensidade alta'] = max(0 * incidence_norm, thresholds['epi.intervals'].loc[1, 3])
+            dftmp['intensidade muito alta'] = max(0 * incidence_norm, thresholds['epi.intervals'].loc[2, 3])
+
             dftmp['corredor baixo'] = thresholds['typ.real.curve']['baixo']
             dftmp['corredor mediano'] = thresholds['typ.real.curve']['mediano']
             dftmp['corredor alto'] = thresholds['typ.real.curve']['alto']
@@ -609,26 +619,26 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                          index=False, encoding='utf-8')
 
             dftmpinset['limiar pré-epidêmico absoluto'] = thresholdsinset['pre.post.intervals'].loc['pre', 2]
-            if dftmpinset['limiar pré-epidêmico absoluto'].unique() < 5:
-                dftmp['limiar pré-epidêmico'] = 5 * incidence_norm
-                dftmpinset['limiar pré-epidêmico absoluto'] = 5
-
-            dftmpinset['limiar pós-epidêmico absoluto'] = thresholdsinset['pre.post.intervals'].loc['post', 2]
-            if dftmpinset['limiar pós-epidêmico absoluto'].unique() < 5:
-                dftmp['limiar pós-epidêmico'] = 5 * incidence_norm
-                dftmpinset['limiar pós-epidêmico absoluto'] = 5
-
-            dftmpinset['intensidade baixa absoluto'] = thresholdsinset['epi.intervals'].loc[0, 3]
-
-            dftmpinset['intensidade alta absoluto'] = thresholdsinset['epi.intervals'].loc[1, 3]
-            if dftmpinset['intensidade alta absoluto'].unique() < 10:
-                dftmp['intensidade alta absoluto'] = 10 * incidence_norm
-                dftmpinset['intensidade alta absoluto'] = 10
-
-            dftmpinset['intensidade muito alta absoluto'] = thresholdsinset['epi.intervals'].loc[2, 3]
-            if dftmpinset['intensidade muito alta absoluto'].unique() < 20:
-                dftmp['intensidade muito alta'] = 20 * incidence_norm
-                dftmpinset['intensidade muito alta absoluto'] = 20
+            # if dftmpinset['limiar pré-epidêmico absoluto'].unique() < 5:
+            #     dftmp['limiar pré-epidêmico'] = 5 * incidence_norm
+            #     dftmpinset['limiar pré-epidêmico absoluto'] = 5
+            #
+            # dftmpinset['limiar pós-epidêmico absoluto'] = thresholdsinset['pre.post.intervals'].loc['post', 2]
+            # if dftmpinset['limiar pós-epidêmico absoluto'].unique() < 5:
+            #     dftmp['limiar pós-epidêmico'] = 5 * incidence_norm
+            #     dftmpinset['limiar pós-epidêmico absoluto'] = 5
+            #
+            # dftmpinset['intensidade baixa absoluto'] = thresholdsinset['epi.intervals'].loc[0, 3]
+            #
+            # dftmpinset['intensidade alta absoluto'] = thresholdsinset['epi.intervals'].loc[1, 3]
+            # if dftmpinset['intensidade alta absoluto'].unique() < 10:
+            #     dftmp['intensidade alta absoluto'] = 10 * incidence_norm
+            #     dftmpinset['intensidade alta absoluto'] = 10
+            #
+            # dftmpinset['intensidade muito alta absoluto'] = thresholdsinset['epi.intervals'].loc[2, 3]
+            # if dftmpinset['intensidade muito alta absoluto'].unique() < 20:
+            #     dftmp['intensidade muito alta'] = 20 * incidence_norm
+            #     dftmpinset['intensidade muito alta absoluto'] = 20
 
             dftmpinset['corredor baixo'] = thresholdsinset['typ.real.curve']['baixo']
             dftmpinset['corredor mediano'] = thresholdsinset['typ.real.curve']['mediano']

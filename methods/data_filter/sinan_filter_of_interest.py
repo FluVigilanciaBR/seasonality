@@ -17,7 +17,8 @@ def readtable(fname, sep):
 def applysinanfilter(df):
 
     # Filter columns of interest
-    tgtcols = ['SEM_NOT', 'DT_NOTIFIC', 'SG_UF_NOT', 'DT_INTERNA', 'DT_SIN_PRI', 'SRAG2012', 'DT_DIGITA', 'FEBRE',
+    tgtcols = ['SEM_NOT', 'DT_NOTIFIC', 'SG_UF_NOT', 'DT_INTERNA', 'DT_SIN_PRI', 'SRAG2012', 'DT_DIGITA', 'HOSPITAL',
+               'FEBRE',
                'TOSSE', 'GARGANTA', 'DISPNEIA', 'SATURACAO', 'DESC_RESP', 'EVOLUCAO', 'DT_COLETA', 'IFI', 'DT_IFI',
                'PCR', 'OUT_METODO', 'DS_OUTMET', 'DT_OUTMET', 'RES_FLUA', 'RES_FLUASU', 'RES_FLUB', 'RES_VSR',
                'RES_PARA1', 'RES_PARA2', 'RES_PARA3', 'RES_ADNO', 'RES_OUTRO', 'DT_PCR', 'PCR_RES', 'PCR_ETIOL',
@@ -36,11 +37,12 @@ def applysinanfilter(df):
     df = df[tgtcols].copy()
 
     # Filter by notification date
-    df.dropna(subset=["SEM_NOT", "DT_NOTIFIC"], inplace=True)
+    df.dropna(subset=["DT_SIN_PRI", "DT_NOTIFIC"], inplace=True)
 
 
     # Filter by symptoms
     df = df[(
+                (df.HOSPITAL == 1) &
                 (df.FEBRE == 1) &
                 ((df.TOSSE == 1) | (df.GARGANTA == 1)) &
                 ((df.DISPNEIA == 1) | (df.SATURACAO == 1) | (df.DESC_RESP == 1))
@@ -71,7 +73,7 @@ def applysinanfilter(df):
     # Discard those neither hospitalized nor deceased
     df = df[(~pd.isnull(df.DT_INTERNA)) | (df.EVOLUCAO == 2)]
     # Create columns related to lab result
-    
+
     # Rows with lab test:
     labrows = ( (df.PCR_RES.isin([1, 2, 3])) |
                 (df.CULT_RES.isin([1, 2])) |
@@ -80,15 +82,25 @@ def applysinanfilter(df):
                 (df.PCR == 1) |
                 (df.OUT_METODO == 1) )
 
-    nottestedrows = ((df.PCR_RES.isin([4])) |
-                     (df.CULT_RES.isin([3])) |
-                     (df.HEMA_RES.isin([4])) |
-                     (pd.isnull(df.IFI) | df.IFI == 2) &
-                     (pd.isnull(df.PCR) | df.PCR == 2) &
-                     (pd.isnull(df.OUT_METODO) | df.OUT_METODO == 2))
+    notknownrows = (
+        pd.isnull(df.PCR_RES) &
+        pd.isnull(df.CULT_RES) &
+        pd.isnull(df.HEMA_RES) &
+        pd.isnull(df.IFI) &
+        pd.isnull(df.PCR) &
+        pd.isnull(df.OUT_METODO)
+    )
 
+    nottestedrows = (
+        ~(notknownrows) &
+        (pd.isnull(df.PCR_RES) | (df.PCR_RES.isin([4]))) &
+        (pd.isnull(df.CULT_RES) | (df.CULT_RES.isin([3]))) &
+        (pd.isnull(df.HEMA_RES) | (df.HEMA_RES.isin([4]))) &
+        (pd.isnull(df.IFI) | (df.IFI == 2)) &
+        (pd.isnull(df.PCR) | (df.PCR == 2)) &
+        (pd.isnull(df.OUT_METODO) | (df.OUT_METODO == 2))
+    )
 
-    notknownrows = ~(labrows | nottestedrows)
 
     df['FLU_A'] = None
     df['FLU_B'] = None
@@ -167,7 +179,7 @@ def main(flist, sep=',', yearmax=None):
         df = df.append(applysinanfilter(dftmp), ignore_index=True)
 
     if (yearmax):
-        df = df[df.SEM_NOT <= int(str(yearmax)+'53')]
+        df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) <= yearmax)]
 
     df.to_csv('clean_data.csv', index=False)
 
