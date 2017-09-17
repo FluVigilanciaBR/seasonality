@@ -1,7 +1,6 @@
 # coding:utf8
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
-# TODO: include usual geopolitical aggregation level
 
 import pandas as pd
 import numpy as np
@@ -25,6 +24,8 @@ def readtable(fname, sep=','):
                                                                                    'DT_SIN_PRI_epiyear': 'epiyear',
                                                                                    'DT_SIN_PRI_epiweek': 'epiweek'})
     df['Idade desconhecida'] = pd.isnull(df.idade_em_anos).astype(int)
+    df['< 2 anos'] = (df.idade_em_anos < 2).astype(int)
+    df['2-4 anos'] = ((df.idade_em_anos >= 2) & (df.idade_em_anos < 5)).astype(int)
     df['0-4 anos'] = (df.idade_em_anos < 5).astype(int)
     df['5-9 anos'] = ((df.idade_em_anos >= 5) & (df.idade_em_anos < 10)).astype(int)
     df['10-19 anos'] = ((df.idade_em_anos >= 10) & (df.idade_em_anos < 20)).astype(int)
@@ -42,8 +43,8 @@ def readtable(fname, sep=','):
                                           df['DELAYED'] | df['INCONCLUSIVE']).astype(int)
 
     df.rename(columns={'SG_UF_NOT': 'UF'}, inplace=True)
-    grp_cols = ['UF', 'epiyearweek', 'epiyear', 'epiweek'] + age_cols + tgt_cols['Agentes infecciosos detectados'] + \
-               tgt_cols['Exames laboratoriais']
+    grp_cols = ['UF', 'epiyearweek', 'epiyear', 'epiweek', '< 2 anos', '2-4 anos'] + age_cols + \
+               tgt_cols['Agentes infecciosos detectados'] + tgt_cols['Exames laboratoriais']
 
     # Aggregate independent of sex:
     dftmp = df[grp_cols].groupby(['UF', 'epiyearweek', 'epiyear', 'epiweek'], as_index=False).agg(sum)
@@ -51,7 +52,7 @@ def readtable(fname, sep=','):
     dftmp['sexo'] = 'Total'
 
     # Aggregate separating by sex:
-    grp_cols = ['UF', 'epiyearweek','epiyear', 'epiweek', 'sexo'] + age_cols + \
+    grp_cols = ['UF', 'epiyearweek','epiyear', 'epiweek', 'sexo', '< 2 anos', '2-4 anos'] + age_cols + \
                tgt_cols['Agentes infecciosos detectados'] + tgt_cols['Exames laboratoriais']
     df = df[grp_cols].groupby(['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'], as_index=False).agg(sum)
     df['SRAG'] = df[age_cols].apply(sum, axis=1)
@@ -90,7 +91,7 @@ def readtable(fname, sep=','):
     dffull_reg = dffull_reg.append(dfBR, ignore_index=True).rename(columns={'Região': 'UF'})
 
     dffull = dffull.drop('Região', axis=1).append(dffull_reg, ignore_index=True)
-    dffull = dffull[['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo', 'SRAG'] + age_cols +
+    dffull = dffull[['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo', 'SRAG', '< 2 anos', '2-4 anos'] + age_cols +
                     tgt_cols['Agentes infecciosos detectados'] + tgt_cols['Exames laboratoriais']]
 
     dffull = dffull.sort_values(by=['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'],
@@ -111,27 +112,19 @@ def uf4mem(dfin=pd.DataFrame()):
     # Calculate incidence:
     yearlist = sorted(list(df.epiyear.unique()))
     uflist = list(df.UF.unique())
-    dfinc = df[~(df.sexo == 'I')].rename(columns={'SRAG': 'Total'}).drop(['Idade desconhecida'], axis=1)
+    dfinc = df[~(df.sexo == 'I')].rename(columns={'SRAG': 'Total'}).drop(['Idade desconhecida', '< 2 anos', '2-4 anos'],
+                                                                         axis=1)
     tgt_cols = ['Total'] + age_cols
     tgt_cols.remove('Idade desconhecida')
     dfpop.set_index('Ano', inplace=True)
     for uf in uflist:
         for year in yearlist:
-            # Males:
-            tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == 'M')
-            dfpop_tgt_rows = (dfpop.UF==str(uf)) & (dfpop.Sexo == 'M') & (dfpop.index == year)
-            dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
-                div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
-            # Females:
-            tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == 'F')
-            dfpop_tgt_rows = (dfpop.UF == str(uf)) & (dfpop.Sexo == 'F') & (dfpop.index == year)
-            dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
-                div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
-            # Total:
-            tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == 'Total')
-            dfpop_tgt_rows = (dfpop.UF == str(uf)) & (dfpop.Sexo == 'Total') & (dfpop.index == year)
-            dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
-                div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
+            for sex in ['M', 'F', 'Total']:
+                tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == sex)
+                dfpop_tgt_rows = (dfpop.UF==str(uf)) & (dfpop.Sexo == sex) & (dfpop.index == year)
+                dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
+                    div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
+
     dfinc.rename(columns={'Total': 'SRAG'}, inplace=True)
 
     # Structure data in the format accepted by MEM algorithm:
@@ -198,7 +191,7 @@ def main(fname, sep=','):
     df.loc[df['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
     df.loc[df['UF'] == 'BR' ,'Tipo'] = 'País'
     df = df.sort_values(by=['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'],
-                        axis=0).reset_index().drop('index', axis=1)
+                        axis=0).reset_index().drop(['index', '0-4 anos'], axis=1)
     df.to_csv(fnameout, index=False, encoding='utf-8')
 
 
