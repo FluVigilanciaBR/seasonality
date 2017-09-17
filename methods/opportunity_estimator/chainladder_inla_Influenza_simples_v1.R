@@ -28,6 +28,7 @@ suppressPackageStartupMessages(library("argparse"))
 parser <- ArgumentParser()
 # specify our desired options
 # by default ArgumentParser will add an help option
+parser$add_argument("-t", "--type", type="character", default='srag')
 parser$add_argument("-p", "--percentile", type="double", default=95,
                     help="Percentile to use as delay distribution threshold [default %(default)s]")
 parser$add_argument("-d", "--date", type="character", default=format(Sys.Date(), '%Y-%m-%d'),
@@ -40,7 +41,8 @@ args <- parser$parse_args()
 quantile.target <- args$percentile / 100
 
 # Read data and filter columns
-d <- droplevels(subset(read.csv("../clean_data/clean_data_epiweek.csv", check.names = F, encoding='utf-8',
+d <- droplevels(subset(read.csv(paste0("../clean_data/clean_data_",args$type,"_epiweek.csv"), check.names = F,
+                                encoding='utf-8',
                                 stringsAsFactors=FALSE),
                        select=c(SG_UF_NOT, DT_NOTIFIC, DT_SIN_PRI, DT_SIN_PRI_epiyearweek, DT_SIN_PRI_epiyear,
                                 DT_SIN_PRI_epiweek, DT_DIGITA_epiyearweek, DT_DIGITA_epiyear, DT_DIGITA_epiweek,
@@ -91,12 +93,13 @@ delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = funct
                                               probs=quantile.target, rm.na=TRUE))))
 
 # Read activity thresholds:
-df.thresholds <- read.csv('../clean_data/mem-report.csv', check.names = F, encoding='utf-8',
+df.thresholds <- read.csv(paste0('../clean_data/', args$type, '_mem-report.csv'), check.names = F, encoding='utf-8',
                      stringsAsFactors = FALSE)
-low.activity <- df.thresholds[is.na(df.thresholds$`SE típica do início do surto`),'UF']
+low.activity <- df.thresholds[df.thresholds$`região de baixa atividade típica` == 1,'UF']
 
 # Read weekly data:
-d_weekly <- read.csv('../clean_data/clean_data_epiweek-weekly-incidence.csv', check.names = F, encoding='utf-8',
+d_weekly <- read.csv(paste0('../clean_data/clean_data_', args$type, '_epiweek-weekly-incidence.csv'), check.names = F,
+encoding='utf-8',
                      stringsAsFactors = FALSE)
 d_weekly <- d_weekly[d_weekly$sexo == 'Total' & d_weekly$epiyearweek <= today, c('UF', 'epiyear', 'epiweek', 'SRAG',
 'Tipo')]
@@ -141,9 +144,13 @@ uf_list <- unique(d$SG_UF_NOT)
 reg_list <- unique(d$Region)
 cntry_list <- unique(d$Country)
 
+if (!dir.exists(file.path('./plots',args$type))) {
+    dir.create(file.path('./plots',args$type), showWarnings = FALSE)
+}
+
 for (uf in c(uf_list, reg_list, cntry_list)){
-  if (!dir.exists(file.path('./plots',uf))) {
-    dir.create(file.path('./plots',uf), showWarnings = FALSE)
+  if (!dir.exists(file.path('./plots',args$type,uf))) {
+    dir.create(file.path('./plots',args$type,uf), showWarnings = FALSE)
   }
   
   # Plot UF's delay distribution
@@ -155,7 +162,7 @@ for (uf in c(uf_list, reg_list, cntry_list)){
   } else {
     d.tmp <- droplevels(subset(d, Country==uf))
   }
-  svg(paste0('./plots/',uf,'/delay_pattern.svg'))
+  svg(paste0('./plots/',args$type, '/',uf,'/delay_pattern.svg'))
   histo <- hist(d.tmp$DelayWeeks, breaks=c(0:27), plot=F)
   barplot.fig <- barplot(histo$density, xlab = "Delay (weeks)", ylab = "Notifications frequency",
                          xaxs='i', yaxs='i')
@@ -178,7 +185,7 @@ for (uf in c(uf_list, reg_list, cntry_list)){
   rownames(delay.tbl.tmp) <- delay.tbl.tmp$Row.names
   
   # Plot UF's time series
-  svg(paste0('./plots/',uf,'/timeseries.svg'))
+  svg(paste0('./plots/',args$type, '/', uf,'/timeseries.svg'))
   # # Time series
   fyear = min(d.tmp$DT_SIN_PRI_epiyear)
   lyear = max(d.tmp$DT_SIN_PRI_epiyear)
@@ -188,7 +195,7 @@ for (uf in c(uf_list, reg_list, cntry_list)){
   dev.off()
 
   # Plot time series with delay profile
-  svg(paste0('./plots/',uf,'/delay_timeseries.svg'))
+  svg(paste0('./plots/',args$type, '/', uf,'/delay_timeseries.svg'))
   delay.week <- paste("d",0:26, sep="")
   barplot.fig <- barplot(t(as.matrix(delay.tbl.tmp[,delay.week])), beside = F, col=cores, axisnames = F,
                          xlab  =  "Time", ylab = "Notifications", border = NA)
@@ -201,7 +208,9 @@ for (uf in c(uf_list, reg_list, cntry_list)){
   # Preparing the data to be modelled
   ##################################################################
   
-  # Time index of the unknown counts (Dmax+1,...,Tactual) 
+  # Time index of the unknown counts (Dmax+1,...,Tactual)
+
+  qthreshold <- max(8, qthreshold)
   uf.indexes <- rownames(d_weekly[d_weekly$UF==as.character(uf),])
   Tactual <- length(uf.indexes)
   index.time <- uf.indexes[(Tactual-qthreshold+1):Tactual]
@@ -209,7 +218,7 @@ for (uf in c(uf_list, reg_list, cntry_list)){
   if (!(uf %in% low.activity)) {
     
     # Calculate estimates
-    df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold, do.plots=T, uf=uf)
+    df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold, do.plots=T, uf=paste0(args$type,'/', uf))
     
     # Generate quantiles estimates
     aux2 <- round(t(apply(df.tbl.tmp.estimates$samples,1,FUN = post.sum)))
@@ -241,17 +250,18 @@ if (!dir.exists(file.path('../clean_data'))) {
   dir.create(file.path('../clean_data'), showWarnings = FALSE)
 }
 
+
 d_weekly[,'Run date'] <- Sys.Date()
-con<-file(file.path('../clean_data/',paste0(today,'estimated_values.csv')), encoding="UTF-8")
+con<-file(file.path('../clean_data/',paste0(args$type,'_', today, 'estimated_values.csv')), encoding="UTF-8")
 write.csv(d_weekly, file=con, na='', row.names = F)
 
-con<-file(file.path('../clean_data/current_estimated_values.csv'), encoding="UTF-8")
+con<-file(file.path(paste0('../clean_data/', args$type, '_current_estimated_values.csv')), encoding="UTF-8")
 write.csv(d_weekly, file=con, na='', row.names = F)
 
 df.Dmax <- data.frame(list(UF=names(delay.topquantile), epiyearweek=today, Dmax=delay.topquantile, Execution=Sys.Date()))
 
-fname <- file.path('../clean_data/Dmax.csv')
-ifelse(file.exists(fname), print.col.names <- F, print.col.names <- T)
+fname <- file.path('../clean_data/', paste0(args$type, '_Dmax.csv'))
+ifelse(file.exists(fname), print.col.names <- FALSE, print.col.names <- TRUE)
 con <- file(fname, encoding='UTF-8')
 write.table(df.Dmax, file=con, sep=',', quote=F, na='', row.names = F, col.names = print.col.names,
             append=T)

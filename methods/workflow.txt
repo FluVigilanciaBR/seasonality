@@ -1,18 +1,38 @@
 # Convert from DBF to csv
 cd data_filter/
 python3 dbf2csv.py ../data/INFLUD*.DBF
+
 # Agreggate and filter columns
 python3 sinan_filter_of_interest.py --path ../data/INFLUD*.csv
+
 # Add epiweek columns
-python3 insert_epiweek.py --path  clean_data.csv 
+python3 insert_epiweek.py --path  clean_data_srag.csv
+python3 insert_epiweek.py --path  clean_data_sragflu.csv
+python3 insert_epiweek.py --path  clean_data_obitoflu.csv
+
 # Convert to MEM structure
-python3 sinan-convert2mem.py --path ../clean_data/clean_data_epiweek.csv
+python3 sinan-convert2mem.py --path ../clean_data/clean_data_srag_epiweek.csv
+python3 sinan-convert2mem.py --path ../clean_data/clean_data_sragflu_epiweek.csv
+python3 sinan-convert2mem.py --path ../clean_data/clean_data_obitoflu_epiweek.csv
+
 # Apply MEM
 cd ../mem/
-python3 sinan-mem-inset-thresholds.py --path ../clean_data/clean_data_epiweek4mem-incidence.csv
+python3 sinan-mem-inset-thresholds.py --path ../clean_data/clean_data_srag_epiweek4mem-incidence.csv
+mv -f ../clean_data/mem-report.csv ../clean_data/srag_mem-report.csv
+mv -f ../clean_data/mem-typical.csv ../clean_data/srag_mem-typical.csv
+python3 sinan-mem-inset-thresholds.py --path ../clean_data/clean_data_sragflu_epiweek4mem-incidence.csv
+mv -f ../clean_data/mem-report.csv ../clean_data/sragflu_mem-report.csv
+mv -f ../clean_data/mem-typical.csv ../clean_data/sragflu_mem-typical.csv
+python3 sinan-mem-inset-thresholds.py --path ../clean_data/clean_data_obitoflu_epiweek4mem-incidence.csv
+mv -f ../clean_data/mem-report.csv ../clean_data/obitoflu_mem-report.csv
+mv -f ../clean_data/mem-typical.csv ../clean_data/obitoflu_mem-typical.csv
+
 # Apply opportunity estimates
 cd ../opportunity_estimator/
-Rscript --vanilla chainladder_inla_Influenza_simples_v1.R -d max
+Rscript --vanilla chainladder_inla_Influenza_simples_v1.R -d max -t srag
+Rscript --vanilla chainladder_inla_Influenza_simples_v1.R -d max -t sragflu
+Rscript --vanilla chainladder_inla_Influenza_simples_v1.R -d max -t obitoflu
+
 # Add situation to weekly data
 python3 add_situation2weekly_data.py
 cd ../

@@ -1,6 +1,8 @@
 # coding:utf8
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
+# TODO: include usual geopolitical aggregation level
+
 import pandas as pd
 import numpy as np
 import argparse
@@ -48,7 +50,7 @@ def readtable(fname, sep=','):
     dftmp['SRAG'] = dftmp[age_cols].apply(sum, axis=1)
     dftmp['sexo'] = 'Total'
 
-    # Aggregate separeting by sex:
+    # Aggregate separating by sex:
     grp_cols = ['UF', 'epiyearweek','epiyear', 'epiweek', 'sexo'] + age_cols + \
                tgt_cols['Agentes infecciosos detectados'] + tgt_cols['Exames laboratoriais']
     df = df[grp_cols].groupby(['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'], as_index=False).agg(sum)

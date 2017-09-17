@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib.projections.polar import PolarAxes
 from matplotlib.projections import register_projection
 
+# TODO: transpose current plot structure. Keep only results regardless of gender.
+
 tabela_ufnome = {'11': 'Rondônia',
                  '12': 'Acre',
                  '13': 'Amazonas',
