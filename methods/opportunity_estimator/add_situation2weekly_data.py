@@ -6,15 +6,26 @@ import argparse
 from argparse import RawDescriptionHelpFormatter
 
 def main(preflist):
+
+    def mergesituation(dfa, dfb):
+        dfa = dfa.merge(dfb, on=['UF', 'epiyear', 'epiweek'], how='left')
+        dfa.dropna(axis=0, inplace=True)
+        dfa.loc[dfa.Situation != 'stable', 'Situation'] = 'unknown'
+        return dfa
+
     for pref in preflist:
         df_est = pd.read_csv('../clean_data/%s_current_estimated_values.csv' % pref, low_memory=False, encoding='utf-8')
-        df_age = pd.read_csv('../clean_data/clean_data_%s_epiweek-weekly-incidence.csv' % pref, low_memory=False, encoding='utf-8')
+        df_age = pd.read_csv('../clean_data/clean_data_%s_epiweek-weekly-incidence.csv' % pref, low_memory=False,
+                             encoding='utf-8')
+        df_age_cases = pd.read_csv('../clean_data/clean_data_%s_epiweek-weekly.csv' % pref, low_memory=False,
+                              encoding='utf-8')
         df_est_simp = df_est[['UF', 'epiyear', 'epiweek', 'Situation']]
-        df_age_full = df_age.merge(df_est_simp, on=['UF', 'epiyear', 'epiweek'], how='left')
-        df_age_full.dropna(axis=0, inplace=True)
-        df_age_full.loc[df_age_full.Situation != 'stable', 'Situation'] = 'unknown'
+        df_age = mergesituation(df_age, df_est_simp)
+        df_age_cases = mergesituation(df_age_cases, df_est_simp)
 
-        df_age_full.to_csv('../clean_data/clean_data_%s_epiweek-weekly-incidence_w_situation.csv' % pref, index=False,
+        df_age.to_csv('../clean_data/clean_data_%s_epiweek-weekly-incidence_w_situation.csv' % pref, index=False,
+                           encoding='utf-8')
+        df_age_cases.to_csv('../clean_data/clean_data_%s_epiweek-weekly_w_situation.csv' % pref, index=False,
                            encoding='utf-8')
 
 

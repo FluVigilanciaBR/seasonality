@@ -498,6 +498,20 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
     dfpop = pd.read_csv('../data/populacao_uf_regional_atual.csv', encoding='utf-8')
     dfreport = pd.DataFrame()
     dfcorredor = pd.DataFrame()
+    dfreport_cases = pd.DataFrame()
+    dfcorredor_cases = pd.DataFrame()
+    cols_report = ['UF', 'População', 'Média geométrica do pico de infecção das temporadas regulares',
+                   'região de baixa atividade típica',
+                   'limiar pré-epidêmico', 'intensidade alta', 'intensidade muito alta',
+                   'SE típica do início do surto',
+                   'SE típica do início do surto - IC inferior (2,5%)',
+                   'SE típica do início do surto - IC superior (97,5%)',
+                   'duração típica do surto',
+                   'duração típica do surto - IC inferior (2,5%)',
+                   'duração típica do surto - IC superior (97,5%)',
+                   'temporadas utilizadas para os corredores endêmicos',
+                   'ano']
+    cols_corredor = ['UF', 'População', 'epiweek', 'corredor baixo', 'corredor mediano', 'corredor alto', 'ano']
 
     # Define outbreak window method.
     # Check epitiming function from MEM package for detail
@@ -536,18 +550,10 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             if dftmpinset[list(set(seasons).difference(discarded_seasons))].max().max() < 3:
                 dftmp['região de baixa atividade típica'] = 1
 
-            #     print(uf, 'max < 3')
-            #     raise
-
-
-            # thresholds, lowseasons = applymem(dftmp, discarded_seasons, wdw_method, lower_bound=5 * incidence_norm)
-            # thresholdsinset, lowseasons = applymem(dftmpinset, discarded_seasons, wdw_method, lower_bound=5)
             thresholds, lowseasons = applymem(dftmp[seasons], discarded_seasons, wdw_method, lower_bound=1 *
-                                                                                                      incidence_norm)
-            thresholdsinset, lowseasons = applymem(dftmpinset[seasons], discarded_seasons, wdw_method, lower_bound=1)
+                                                                                                         incidence_norm)
 
-            # if (thresholds['pre.post.intervals'].loc['pre', 2] >= 5 * incidence_norm):
-            if (thresholds['pre.post.intervals'].loc['pre', 2] >= 1*incidence_norm):
+            if thresholds['pre.post.intervals'].loc['pre', 2] >= 1*incidence_norm:
                 dftmp['mediana pré-epidêmica'] = thresholds['pre.post.intervals'].loc['pre', 1]
                 dftmp['limiar pré-epidêmico'] = thresholds['pre.post.intervals'].loc['pre', 2]
                 dftmp['SE relativa ao início do surto'] = dftmp['epiweek'] - thresholds['mean.start'][0]
@@ -572,8 +578,8 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                 # Confidence interval for epi.start
                 cimin = np.nan
                 cimax = np.nan
-                dftmp['SE típica do início do surto - IC inferior (2,5%)'] = np.nan
-                dftmp['SE típica do início do surto - IC superior (97,5%)'] = np.nan
+                dftmp['SE típica do início do surto - IC inferior (2,5%)'] = cimin
+                dftmp['SE típica do início do surto - IC superior (97,5%)'] = cimax
                 dftmp['duração típica do surto'] = np.nan
                 # Confidence interval for epi.length
                 cimin = np.nan
@@ -583,10 +589,8 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
 
             dftmp['limiar pós-epidêmico'] = thresholds['pre.post.intervals'].loc['post', 2]
             dftmp['intensidade baixa'] = thresholds['epi.intervals'].loc[0, 3]
-            # dftmp['intensidade alta'] = max(10 * incidence_norm, thresholds['epi.intervals'].loc[1, 3])
-            # dftmp['intensidade muito alta'] = max(20 * incidence_norm, thresholds['epi.intervals'].loc[2, 3])
-            dftmp['intensidade alta'] = max(1 * incidence_norm, thresholds['epi.intervals'].loc[1, 3])
-            dftmp['intensidade muito alta'] = max(2 * incidence_norm, thresholds['epi.intervals'].loc[2, 3])
+            dftmp['intensidade alta'] = max([2*incidence_norm, thresholds['epi.intervals'].loc[1, 3]])
+            dftmp['intensidade muito alta'] = max([3*incidence_norm, thresholds['epi.intervals'].loc[2, 3]])
 
             dftmp['corredor baixo'] = thresholds['typ.real.curve']['baixo']
             dftmp['corredor mediano'] = thresholds['typ.real.curve']['mediano']
@@ -599,6 +603,9 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             epicols = list(thresholds['moving.epidemics'].columns)
             dftmp[epicols] = thresholds['moving.epidemics']
             dftmp['n.seasons'] = thresholds['n.seasons'][0]
+            dftmp['temporadas utilizadas para os corredores endêmicos'] = ', '.join(str(x).strip('SRAG') for x in
+                                                                                    sorted(set(
+                seasons).difference(discarded_seasons)))
 
             # Geometric mean of regular seasons' peak:
             dftmp_peaks = dftmp[seasons].max()
@@ -623,46 +630,45 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                 dftmpinset['Distância geométrica do pico na temporada %s' % lbl] = textval_inset
 
             dftmp.to_csv('./mem-data/%s-mem-%s-incidencia-dropgdist%s-droplow%s-%s_method.csv' % (
-            pref, tabela_ufnome[uf].replace(' ', '_'),
-            '-'.join(discarded_seasons).replace('SRAG', ''),
-            '-'.join(lowseasons).replace('SRAG', ''),
-            wdw_method_lbl[wdw_method]),
+                pref, tabela_ufnome[uf].replace(' ', '_'),
+                '-'.join(discarded_seasons).replace('SRAG', ''),
+                '-'.join(lowseasons).replace('SRAG', ''),
+                wdw_method_lbl[wdw_method]),
                          index=False, encoding='utf-8')
 
-            dftmpinset['limiar pré-epidêmico absoluto'] = thresholdsinset['pre.post.intervals'].loc['pre', 2]
-            # if dftmpinset['limiar pré-epidêmico absoluto'].unique() < 5:
-            #     dftmp['limiar pré-epidêmico'] = 5 * incidence_norm
-            #     dftmpinset['limiar pré-epidêmico absoluto'] = 5
-
-            dftmpinset['limiar pós-epidêmico absoluto'] = thresholdsinset['pre.post.intervals'].loc['post', 2]
-            # if dftmpinset['limiar pós-epidêmico absoluto'].unique() < 5:
-            #     dftmp['limiar pós-epidêmico'] = 5 * incidence_norm
-            #     dftmpinset['limiar pós-epidêmico absoluto'] = 5
-
-            dftmpinset['intensidade baixa absoluto'] = thresholdsinset['epi.intervals'].loc[0, 3]
-
-            dftmpinset['intensidade alta absoluto'] = thresholdsinset['epi.intervals'].loc[1, 3]
-            # if dftmpinset['intensidade alta absoluto'].unique() < 10:
-            #     dftmp['intensidade alta absoluto'] = 10 * incidence_norm
-            #     dftmpinset['intensidade alta absoluto'] = 10
-
-            dftmpinset['intensidade muito alta absoluto'] = thresholdsinset['epi.intervals'].loc[2, 3]
-            # if dftmpinset['intensidade muito alta absoluto'].unique() < 20:
-            #     dftmp['intensidade muito alta'] = 20 * incidence_norm
-            #     dftmpinset['intensidade muito alta absoluto'] = 20
-
-            dftmpinset['corredor baixo'] = thresholdsinset['typ.real.curve']['baixo']
-            dftmpinset['corredor mediano'] = thresholdsinset['typ.real.curve']['mediano']
-            dftmpinset['corredor alto'] = thresholdsinset['typ.real.curve']['alto']
-            dftmpinset['SE relativa ao início do surto'] = dftmpinset['epiweek'] - thresholdsinset['mean.start'][0]
-            dftmpinset['SE típica do início do surto'] = thresholdsinset['mean.start'][0]
-            dftmpinset['duração típica do surto'] = thresholdsinset['mean.length'][0]
-            dftmpinset['curva epi. baixa'] = thresholdsinset['typ.curve']['baixo']
-            dftmpinset['curva epi. mediana'] = thresholdsinset['typ.curve']['mediano']
-            dftmpinset['curva epi. alta'] = thresholdsinset['typ.curve']['alto']
-            epicols = list(thresholdsinset['moving.epidemics'].columns)
-            dftmpinset[epicols] = thresholdsinset['moving.epidemics']
-            dftmpinset['n.seasons'] = thresholdsinset['n.seasons'][0]
+            dftmpinset['região de baixa atividade típica'] = dftmp['região de baixa atividade típica']
+            dftmpinset['limiar pré-epidêmico'] = max([.5, floor(
+                thresholds['pre.post.intervals'].loc['pre', 2]/incidence_norm)])
+            dftmpinset['limiar pós-epidêmico'] = max([0.5, floor(
+                thresholds['pre.post.intervals'].loc['post', 2]/incidence_norm)])
+            dftmpinset['intensidade baixa'] = floor(thresholds['epi.intervals'].loc[0, 3]/incidence_norm)
+            dftmpinset['intensidade alta'] = max([2, floor(
+                thresholds['epi.intervals'].loc[1, 3]/incidence_norm)])
+            dftmpinset['intensidade muito alta'] = max([3, floor(
+                thresholds['epi.intervals'].loc[2, 3]/incidence_norm)])
+            dftmpinset['corredor baixo'] = floor(dftmp['corredor baixo']/incidence_norm)
+            dftmpinset['corredor mediano'] = floor(dftmp['corredor mediano']/incidence_norm)
+            dftmpinset['corredor alto'] = floor(dftmp['corredor alto']/incidence_norm)
+            dftmpinset['SE relativa ao início do surto'] = dftmp['SE relativa ao início do surto']
+            dftmpinset['SE típica do início do surto'] = dftmp['SE típica do início do surto']
+            dftmpinset['SE típica do início do surto - IC inferior (2,5%)'] = \
+                dftmp['SE típica do início do surto - IC inferior (2,5%)']
+            dftmpinset['SE típica do início do surto - IC superior (97,5%)'] = \
+                dftmp['SE típica do início do surto - IC superior (97,5%)']
+            dftmpinset['duração típica do surto'] = dftmp['duração típica do surto']
+            dftmpinset['duração típica do surto - IC inferior (2,5%)'] = \
+                dftmp['duração típica do surto - IC inferior (2,5%)']
+            dftmpinset['duração típica do surto - IC superior (97,5%)'] = \
+                dftmp['duração típica do surto - IC superior (97,5%)']
+            dftmpinset['curva epi. baixa'] = floor(dftmp['curva epi. baixa']/incidence_norm)
+            dftmpinset['curva epi. mediana'] = floor(dftmp['curva epi. mediana']/incidence_norm)
+            dftmpinset['curva epi. alta'] = floor(dftmp['curva epi. alta']/incidence_norm)
+            epicols = list(thresholds['moving.epidemics'].columns)
+            dftmpinset[epicols] = thresholds['moving.epidemics']
+            dftmpinset['n.seasons'] = thresholds['n.seasons'][0]
+            dftmpinset['População'] = dftmp['População']
+            dftmpinset['temporadas utilizadas para os corredores endêmicos'] = \
+                dftmp['temporadas utilizadas para os corredores endêmicos']
             dftmpinset.to_csv(
                 './mem-data/%s-mem-%s-dropgdist%s-droplow%s-%s_method.csv' % (pref, tabela_ufnome[uf].replace(' ', '_'),
                                                                               '-'.join(discarded_seasons).replace(
@@ -671,7 +677,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                                                                               wdw_method_lbl[wdw_method]),
                 index=False, encoding='utf-8')
 
-            if (plot_curves == True):
+            if plot_curves == True:
                 fig = plotmemcurve(uf=uf, dftmp=dftmp, dftmpinset=dftmpinset, thresholds=thresholds, seasons=seasons,
                                    lastseason=lastseason, epicols=epicols)
                 fig.savefig(
@@ -691,21 +697,20 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                 plt.clf()
                 plt.close()
 
-
         except:
             print('MEM Failed', uf)
             dftmp['região de baixa atividade típica'] = 1
+            dftmpinset['região de baixa atividade típica'] = 1
             thresholds = extract_typ_real_curve(dftmp[seasons], discarded_seasons, wdw_method,
-                                                            lower_bound=1*incidence_norm)
-            thresholdsinset = extract_typ_real_curve(dftmpinset[seasons], discarded_seasons, wdw_method,
-                                                                 lower_bound=1)
+                                                lower_bound=1*incidence_norm)
 
+            dftmp['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
             dftmp['mediana pré-epidêmica'] = np.nan
             dftmp['limiar pré-epidêmico'] = 0.5 * incidence_norm
             dftmp['limiar pós-epidêmico'] = 0.5 * incidence_norm
-            dftmp['intensidade baixa'] = np.nan
-            dftmp['intensidade alta'] = 1 * incidence_norm
-            dftmp['intensidade muito alta'] = 2 * incidence_norm
+            dftmp['intensidade baixa'] = 0
+            dftmp['intensidade alta'] = 2 * incidence_norm
+            dftmp['intensidade muito alta'] = 3 * incidence_norm
             dftmp['corredor baixo'] = thresholds['typ.real.curve']['baixo']
             dftmp['corredor mediano'] = thresholds['typ.real.curve']['mediano']
             dftmp['corredor alto'] = thresholds['typ.real.curve']['alto']
@@ -717,28 +722,36 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmp['duração típica do surto - IC inferior (2,5%)'] = np.nan
             dftmp['duração típica do surto - IC superior (97,5%)'] = np.nan
             dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
+            dftmp['temporadas utilizadas para os corredores endêmicos'] = np.nan
 
             dftmp.to_csv('./mem-data/%s-memfailed-%s-dropgdist%s-%s_method.csv' %
                          (pref, tabela_ufnome[uf].replace(' ', '_'),
                           '-'.join(discarded_seasons).replace('SRAG', ''), wdw_method_lbl[wdw_method]), index=False,
                          encoding='utf-8')
 
-            dftmpinset['limiar pré-epidêmico absoluto'] = 0
-            dftmpinset['limiar pós-epidêmico absoluto'] = 0
-            dftmpinset['intensidade baixa absoluta'] = np.nan
-            dftmpinset['intensidade alta absoluta'] = 1
-            dftmpinset['intensidade muito alta absoluta'] = 2
-
-            dftmpinset['corredor baixo'] = thresholdsinset['typ.real.curve']['baixo']
-            dftmpinset['corredor mediano'] = thresholdsinset['typ.real.curve']['mediano']
-            dftmpinset['corredor alto'] = thresholdsinset['typ.real.curve']['alto']
+            dftmpinset['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
+            dftmpinset['limiar pré-epidêmico absoluto'] = 0.5
+            dftmpinset['limiar pós-epidêmico absoluto'] = 0.5
+            dftmpinset['intensidade baixa absoluta'] = 0
+            dftmpinset['intensidade alta absoluta'] = 2
+            dftmpinset['intensidade muito alta absoluta'] = 3
+            dftmpinset['corredor baixo'] = floor(dftmp['corredor baixo']/incidence_norm)
+            dftmpinset['corredor mediano'] = floor(dftmp['corredor mediano']/incidence_norm)
+            dftmpinset['corredor alto'] = floor(dftmp['corredor alto']/incidence_norm)
             dftmpinset['SE relativa ao início do surto'] = np.nan
             dftmpinset['SE típica do início do surto'] = np.nan
-            dftmpinset['duração típica do surto'] = np.nan
+            dftmpinset['SE típica do início do surto - IC inferior (2,5%)'] = np.nan
+            dftmpinset['SE típica do início do surto - IC superior (97,5%)'] = np.nan
+            dftmpinset['duração típica do surto'] = dftmp['duração típica do surto']
+            dftmpinset['duração típica do surto - IC inferior (2,5%)'] = np.nan
+            dftmpinset['duração típica do surto - IC superior (97,5%)'] = np.nan
             dftmpinset['curva epi. baixa'] = np.nan
             dftmpinset['curva epi. mediana'] = np.nan
             dftmpinset['curva epi. alta'] = np.nan
             dftmpinset['n.seasons'] = 0
+            dftmpinset['População'] = dftmp['População']
+            dftmpinset['temporadas utilizadas para os corredores endêmicos'] = np.nan
+
             dftmpinset.to_csv(
                 './mem-data/%s-memfailed-%s-dropgdist%s-%s_method.csv' % (pref, tabela_ufnome[uf].
                                                                                     replace(' ', '_'),
@@ -767,34 +780,30 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                 plt.clf()
                 plt.close()
 
-        dfreport = dfreport.append(dftmp[['UF', 'População', 'Média geométrica do pico de infecção das temporadas '
-                                                             'regulares', 'região de baixa atividade típica',
-                                          'limiar pré-epidêmico', 'intensidade alta', 'intensidade muito alta',
-                                          'SE típica do início do surto',
-                                          'SE típica do início do surto - IC inferior (2,5%)',
-                                          'SE típica do início do surto - IC superior (97,5%)',
-                                          'duração típica do surto',
-                                          'duração típica do surto - IC inferior (2,5%)',
-                                          'duração típica do surto - IC superior (97,5%)',
-                                          'ano']].head(1), ignore_index=True)
-        dfcorredor = dfcorredor.append(dftmp[['UF', 'População', 'epiweek', 'corredor baixo', 'corredor mediano',
-                                              'corredor alto', 'ano']],
-                                       ignore_index=True)
+        dfreport = dfreport.append(dftmp[cols_report].head(1), ignore_index=True)
+        dfcorredor = dfcorredor.append(dftmp[cols_corredor], ignore_index=True)
+        dfreport_cases = dfreport_cases.append(dftmpinset[cols_report].head(1), ignore_index=True)
+        dfcorredor_cases = dfcorredor_cases.append(dftmpinset[cols_corredor], ignore_index=True)
 
-    dfreport['Unidade da Federação'] = dfreport.UF.map(tabela_ufnome)
-    dfreport['Tipo'] = 'Estado'
-    dfreport.loc[dfreport['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
-    dfreport.loc[dfreport['UF'] == 'BR' ,'Tipo'] = 'País'
+    for dfloop in [dfreport, dfcorredor]:
+        dfloop['Unidade da Federação'] = dfloop.UF.map(tabela_ufnome)
+        dfloop['Tipo'] = 'Estado'
+        dfloop.loc[dfloop['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
+        dfloop.loc[dfloop['UF'] == 'BR' ,'Tipo'] = 'País'
+
     dfreport.to_csv('./mem-data/%s-mem-report-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
     dfreport.to_csv('../clean_data/mem-report.csv', index=False)
+    dfreport_cases[['Unidade da Federação', 'Tipo']] = dfreport[['Unidade da Federação', 'Tipo']]
+    dfreport_cases.to_csv('./mem-data/%s-mem-report_cases-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]),
+                          index=False)
+    dfreport_cases.to_csv('../clean_data/mem-report_cases.csv', index=False)
 
-    dfcorredor['Unidade da Federação'] = dfcorredor.UF.map(tabela_ufnome)
-    dfcorredor['Tipo'] = 'Estado'
-    dfcorredor.loc[dfcorredor['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
-    dfcorredor.loc[dfcorredor['UF'] == 'BR' ,'Tipo'] = 'País'
     dfcorredor.to_csv('./mem-data/%s-mem-typical-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
     dfcorredor.to_csv('../clean_data/mem-typical.csv', index=False)
-
+    dfcorredor_cases[['Unidade da Federação', 'Tipo']] = dfcorredor[['Unidade da Federação', 'Tipo']]
+    dfcorredor_cases.to_csv('./mem-data/%s-mem-typical_cases-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]),
+                          index=False)
+    dfcorredor_cases.to_csv('../clean_data/mem-typical_cases.csv', index=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generate MEM analysis from cleaned SINAN-SRAG data,\n" +

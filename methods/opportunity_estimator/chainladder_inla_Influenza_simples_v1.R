@@ -252,10 +252,10 @@ if (!dir.exists(file.path('../clean_data'))) {
 
 
 d_weekly[,'Run date'] <- Sys.Date()
-con<-file(file.path('../clean_data/',paste0(args$type,'_', today, 'estimated_values.csv')), encoding="UTF-8")
+con<-file(file.path('../clean_data/',paste0(args$type,'_', today, 'estimated_incidence.csv')), encoding="UTF-8")
 write.csv(d_weekly, file=con, na='', row.names = F)
 
-con<-file(file.path(paste0('../clean_data/', args$type, '_current_estimated_values.csv')), encoding="UTF-8")
+con<-file(file.path(paste0('../clean_data/', args$type, '_current_estimated_incidence.csv')), encoding="UTF-8")
 write.csv(d_weekly, file=con, na='', row.names = F)
 
 df.Dmax <- data.frame(list(UF=names(delay.topquantile), epiyearweek=today, Dmax=delay.topquantile, Execution=Sys.Date()))
