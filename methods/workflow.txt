@@ -35,4 +35,9 @@ Rscript --vanilla chainladder_inla_Influenza_simples_v1.R -d max -t obitoflu
 
 # Add situation to weekly data
 python3 add_situation2weekly_data.py
+
+# Consolidate datasets
+cd ../data_filter
+python3 consolidate_datasets.py
+
 cd ../

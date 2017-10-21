@@ -14,7 +14,8 @@ def main(preflist):
         return dfa
 
     for pref in preflist:
-        df_est = pd.read_csv('../clean_data/%s_current_estimated_values.csv' % pref, low_memory=False, encoding='utf-8')
+        df_est = pd.read_csv('../clean_data/%s_current_estimated_incidence.csv' % pref, low_memory=False,
+                             encoding='utf-8')
         df_age = pd.read_csv('../clean_data/clean_data_%s_epiweek-weekly-incidence.csv' % pref, low_memory=False,
                              encoding='utf-8')
         df_age_cases = pd.read_csv('../clean_data/clean_data_%s_epiweek-weekly.csv' % pref, low_memory=False,

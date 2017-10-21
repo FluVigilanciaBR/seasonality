@@ -262,6 +262,13 @@ df.Dmax <- data.frame(list(UF=names(delay.topquantile), epiyearweek=today, Dmax=
 
 fname <- file.path('../clean_data/', paste0(args$type, '_Dmax.csv'))
 ifelse(file.exists(fname), print.col.names <- FALSE, print.col.names <- TRUE)
-con <- file(fname, encoding='UTF-8')
-write.table(df.Dmax, file=con, sep=',', quote=F, na='', row.names = F, col.names = print.col.names,
-            append=T)
+write.table(df.Dmax, file=fname, sep=',', quote=F, na='', row.names = F, col.names = print.col.names,
+            append=T, fileEncoding='UTF-8')
+
+fname <- file.path('../clean_data/', paste0(args$type, '_historical_estimated_incidence.csv'))
+ifelse(file.exists(fname), print.col.names <- FALSE, print.col.names <- TRUE)
+d_weekly['base_epiyearweek'] <- today
+d_weekly['base_epiyear'] <- strsplit(today, 'W')[[1]][1]
+d_weekly['base_epiweek'] <- strsplit(today, 'W')[[1]][2]
+write.table(d_weekly[d_weekly$Situation != 'stable', ], file=fname, sep=',', quote=F, na='', row.names = F,
+            col.names = print.col.names, append=T, fileEncoding='UTF-8')

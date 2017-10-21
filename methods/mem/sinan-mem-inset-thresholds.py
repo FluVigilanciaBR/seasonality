@@ -724,17 +724,17 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
             dftmp['temporadas utilizadas para os corredores endêmicos'] = np.nan
 
-            dftmp.to_csv('./mem-data/%s-memfailed-%s-dropgdist%s-%s_method.csv' %
+            dftmp.to_csv('./mem-data/%s-memfailed-%s-incidencia-dropgdist%s-%s_method.csv' %
                          (pref, tabela_ufnome[uf].replace(' ', '_'),
                           '-'.join(discarded_seasons).replace('SRAG', ''), wdw_method_lbl[wdw_method]), index=False,
                          encoding='utf-8')
 
             dftmpinset['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
-            dftmpinset['limiar pré-epidêmico absoluto'] = 0.5
-            dftmpinset['limiar pós-epidêmico absoluto'] = 0.5
-            dftmpinset['intensidade baixa absoluta'] = 0
-            dftmpinset['intensidade alta absoluta'] = 2
-            dftmpinset['intensidade muito alta absoluta'] = 3
+            dftmpinset['limiar pré-epidêmico'] = 0.5
+            dftmpinset['limiar pós-epidêmico'] = 0.5
+            dftmpinset['intensidade baixa'] = 0
+            dftmpinset['intensidade alta'] = 2
+            dftmpinset['intensidade muito alta'] = 3
             dftmpinset['corredor baixo'] = floor(dftmp['corredor baixo']/incidence_norm)
             dftmpinset['corredor mediano'] = floor(dftmp['corredor mediano']/incidence_norm)
             dftmpinset['corredor alto'] = floor(dftmp['corredor alto']/incidence_norm)

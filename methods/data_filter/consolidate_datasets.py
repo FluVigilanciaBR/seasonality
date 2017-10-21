@@ -17,10 +17,7 @@ def mergedata_scale(df, df_cases):
     return df
 
 
-def convert_estimates(pref, dfpop):
-    # Files current_estimated_values
-    df = pd.read_csv(basedir + '%s_current_estimated_values.csv' % pref, encoding='utf-8', low_memory=False)
-    df['dado'] = pref
+def convert_estimates(df, dfpop):
     df_cases = df.copy()
 
     tgt_cols = ['SRAG', 'mean', '50%', '2.5%',  '97.5%']
@@ -70,7 +67,7 @@ def clean_data_merge(pref):
     df = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly-incidence_w_situation.csv' % pref, encoding='utf-8',
                      low_memory=False)
     df['dado'] = pref
-    df_cases = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly-incidence_w_situation_cases.csv' % pref,
+    df_cases = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly_w_situation.csv' % pref,
                            encoding='utf-8', low_memory=False)
     df_cases['dado'] = pref
     df = mergedata_scale(df, df_cases)
@@ -86,11 +83,19 @@ def main():
 
     preflist = ['srag', 'sragflu', 'obitoflu']
 
-    df_new = convert_estimates(preflist[0], dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
-    for pref in preflist[1:]:
-        df = convert_estimates(pref, dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
-        df_new = df_new.append(df, ignore_index=True)
-    df_new.to_csv(basedir + 'current_estimated_values.csv', index=False)
+    for estimate_file in ['current_estimated', 'historical_estimated']:
+        # Files current_estimated_values
+        pref = preflist[0]
+        df = pd.read_csv(basedir + '%s_%s_incidence.csv' % (pref, estimate_file), encoding='utf-8', low_memory=False)
+        df['dado'] = pref
+        df_new = convert_estimates(df, dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
+        for pref in preflist[1:]:
+            df = pd.read_csv(basedir + '%s_%s_incidence.csv' % (pref, estimate_file), encoding='utf-8',
+                             low_memory=False)
+            df['dado'] = pref
+            df = convert_estimates(df, dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
+            df_new = df_new.append(df, ignore_index=True)
+        df_new.to_csv(basedir + '%s_values.csv' %estimate_file, index=False)
 
     df_new = convert_report(preflist[0])
     for pref in preflist[1:]:
