@@ -1,29 +1,29 @@
-UF,Sigla,Código,Região,Região oficial,Tipo
-Rondônia,RO,11,RegN,Norte,Estado
-Acre,AC,12,RegN,Norte,Estado
-Amazonas,AM,13,RegN,Norte,Estado
-Roraima,RR,14,RegN,Norte,Estado
-Pará,PA,15,RegN,Norte,Estado
-Amapá,AP,16,RegN,Norte,Estado
-Ceará,CE,23,RegL,Nordeste,Estado
-Rio Grande do Norte,RN,24,RegL,Nordeste,Estado
-Paraíba,PB,25,RegL,Nordeste,Estado
-Pernambuco,PE,26,RegL,Nordeste,Estado
-Alagoas,AL,27,RegL,Nordeste,Estado
-Sergipe,SE,28,RegL,Nordeste,Estado
-Bahia,BA,29,RegL,Nordeste,Estado
-Espírito Santo,ES,32,RegL,Sudeste,Estado
-Rio de Janeiro,RJ,33,RegL,Sudeste,Estado
-Tocantins,TO,17,RegC,Norte,Estado
-Maranhão,MA,21,RegC,Nordeste,Estado
-Piauí,PI,22,RegC,Nordeste,Estado
-Mato Grosso do Sul,MS,50,RegC,Centro-oeste,Estado
-Mato Grosso,MT,51,RegC,Centro-oeste,Estado
-Goiás,GO,52,RegC,Centro-oeste,Estado
-Distrito Federal,DF,53,RegC,Centro-oeste,Estado
-Minas Gerais,MG,31,RegS,Sudeste,Estado
-São Paulo,SP,35,RegS,Sudeste,Estado
-Paraná,PR,41,RegS,Sul,Estado
-Santa Catarina,SC,42,RegS,Sul,Estado
-Rio Grande do Sul,RS,43,RegS,Sul,Estado
-Brasil,BR,0,BR,Brasil,País
+"UF","Sigla","Código","Região","Região oficial","Tipo"
+"Rondônia","RO",11,"RegN","N","Estado"
+"Acre","AC",12,"RegN","N","Estado"
+"Amazonas","AM",13,"RegN","N","Estado"
+"Roraima","RR",14,"RegN","N","Estado"
+"Pará","PA",15,"RegN","N","Estado"
+"Amapá","AP",16,"RegN","N","Estado"
+"Ceará","CE",23,"RegL","NE","Estado"
+"Rio Grande do Norte","RN",24,"RegL","NE","Estado"
+"Paraíba","PB",25,"RegL","NE","Estado"
+"Pernambuco","PE",26,"RegL","NE","Estado"
+"Alagoas","AL",27,"RegL","NE","Estado"
+"Sergipe","SE",28,"RegL","NE","Estado"
+"Bahia","BA",29,"RegL","NE","Estado"
+"Espírito Santo","ES",32,"RegL","SE","Estado"
+"Rio de Janeiro","RJ",33,"RegL","SE","Estado"
+"Tocantins","TO",17,"RegC","N","Estado"
+"Maranhão","MA",21,"RegC","NE","Estado"
+"Piauí","PI",22,"RegC","NE","Estado"
+"Mato Grosso do Sul","MS",50,"RegC","CO","Estado"
+"Mato Grosso","MT",51,"RegC","CO","Estado"
+"Goiás","GO",52,"RegC","CO","Estado"
+"Distrito Federal","DF",53,"RegC","CO","Estado"
+"Minas Gerais","MG",31,"RegS","SE","Estado"
+"São Paulo","SP",35,"RegS","SE","Estado"
+"Paraná","PR",41,"RegS","S","Estado"
+"Santa Catarina","SC",42,"RegS","S","Estado"
+"Rio Grande do Sul","RS",43,"RegS","S","Estado"
+"Brasil","BR",0,"BR","BR","País"
