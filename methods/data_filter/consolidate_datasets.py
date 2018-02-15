@@ -147,13 +147,14 @@ def typical_db(df, conn):
     return
 
 
-def main():
+def main(update_db = False):
     dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_v3_agebracket.csv', encoding='utf-8',
                         low_memory=False)
     dfpop.rename(columns={'UF': 'Unidade da Federação'}, inplace=True)
     dfpop.rename(columns={'Código': 'UF'}, inplace=True)
 
-    conn = sqlite3.connect('../../data/data/infogripe.db')
+    if update_db:
+        conn = sqlite3.connect('../../data/data/infogripe.db')
 
     preflist = ['srag', 'sragflu', 'obitoflu']
 
@@ -176,11 +177,12 @@ def main():
             '97.5%': 'limite superior', 'L0': 'baixa', 'L1': 'epidêmica', 'L2': 'alta',
             'L3': 'muito alta', 'Run date': 'data de execução', 'Situation': 'situação',
         }, inplace=True)
-        if estimate_file == 'historical_estimated':
-            estimates_db(df_new, conn)
-        else:
-            incidence_and_case_db(df_new, conn)
-            situation_db(df_new, conn)
+        if update_db:
+            if estimate_file == 'historical_estimated':
+                estimates_db(df_new, conn)
+            else:
+                incidence_and_case_db(df_new, conn)
+                situation_db(df_new, conn)
 
     df_new = convert_report(preflist[0])
     for pref in preflist[1:]:
@@ -188,7 +190,8 @@ def main():
         df_new = df_new.append(df, ignore_index=True)
     df_new.to_csv(basedir + 'mem-report.csv', index=False)
     df_new.rename(columns={'UF': 'código'}, inplace=True)
-    report_db(df_new, conn)
+    if update_db:
+        report_db(df_new, conn)
 
     df_new = convert_typical(preflist[0])
     for pref in preflist[1:]:
@@ -196,7 +199,8 @@ def main():
         df_new = df_new.append(df, ignore_index=True)
     df_new.to_csv(basedir + 'mem-typical.csv', index=False)
     df_new.rename(columns={'UF': 'código'}, inplace=True)
-    typical_db(df_new, conn)
+    if update_db:
+        typical_db(df_new, conn)
 
     df_new = clean_data_merge(preflist[0])
     for pref in preflist[1:]:
@@ -204,8 +208,9 @@ def main():
         df_new = df_new.append(df, ignore_index=True)
     df_new.to_csv(basedir + 'clean_data_epiweek-weekly-incidence_w_situation.csv', index=False)
     df_new.rename(columns={'UF': 'código'}, inplace=True)
-    age_and_gender_db(df_new, conn)
-    conn.close()
+    if update_db:
+        age_and_gender_db(df_new, conn)
+        conn.close()
 
 
 
@@ -214,4 +219,6 @@ if __name__ == '__main__':
                                      "Exemple usage:\n" +
                                      "python3 consolidate_datasets.py",
                                      formatter_class=RawDescriptionHelpFormatter)
-    main()
+    parser.add_argument('--db', help='Update database or not.', default=False)
+    args = parser.parse_args()
+    main(args.db)

@@ -82,15 +82,23 @@ def readtable(fname, sep=','):
     # Load Federal Units aggregation:
     dfreg = pd.read_csv('../data/regioesclimaticas.csv', encoding='utf-8')
 
-    dffull = pd.merge(dffull, dfreg[['Código', 'Região']].rename(columns={'Código': 'UF'}), how='left')
-    dffull_reg = dffull.drop('UF', axis=1).groupby(['Região', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'],
+    dffull = pd.merge(dffull, dfreg[['Código', 'Região', 'Região oficial']].rename(columns={'Código': 'UF'}),
+                      how='left')
+    dffull_reg = dffull.drop(['UF', 'Região oficial'], axis=1).groupby(['Região', 'epiyearweek', 'epiyear', 'epiweek',
+                                                                  'sexo'],
                                                    as_index=False).sum()
-    dfBR = dffull_reg.drop('Região', axis=1).groupby(['epiyearweek', 'epiyear', 'epiweek', 'sexo'],
-                                                     as_index=False).sum()
+    dffull_reg_ofi = dffull.drop(['UF', 'Região'], axis=1).groupby(['Região oficial', 'epiyearweek', 'epiyear',
+                                                                  'epiweek', 'sexo'], as_index=False).sum()
+    dfBR = dffull.drop(['UF', 'Região', 'Região oficial'], axis=1).groupby(['epiyearweek', 'epiyear', 'epiweek',
+                                                                            'sexo'], as_index=False).sum()
     dfBR['Região'] = 'BR'
-    dffull_reg = dffull_reg.append(dfBR, ignore_index=True).rename(columns={'Região': 'UF'})
+    dffull_reg.rename(columns={'Região': 'UF'}, inplace=True)
+    dfBR.rename(columns={'Região': 'UF'}, inplace=True)
+    dffull_reg_ofi.rename(columns={'Região oficial': 'UF'}, inplace=True)
+    dffull_reg = dffull_reg.append(dffull_reg_ofi, ignore_index=True)
+    dffull_reg = dffull_reg.append(dfBR, ignore_index=True)
 
-    dffull = dffull.drop('Região', axis=1).append(dffull_reg, ignore_index=True)
+    dffull = dffull.drop(['Região', 'Região oficial'], axis=1).append(dffull_reg, ignore_index=True)
     dffull = dffull[['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo', 'SRAG', '< 2 anos', '2-4 anos'] + age_cols +
                     tgt_cols['Agentes infecciosos detectados'] + tgt_cols['Exames laboratoriais']]
 
@@ -181,6 +189,7 @@ def main(fname, sep=','):
     fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly-incidence.csv'
     dfinc['Tipo'] = 'Estado'
     dfinc.loc[dfinc['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
+    dfinc.loc[dfinc['UF'].isin(['N', 'S', 'NE', 'SE', 'CO']), 'Tipo'] = 'Região'
     dfinc.loc[dfinc['UF'] == 'BR' ,'Tipo'] = 'País'
     dfinc = dfinc.sort_values(by=['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'],
                               axis=0).reset_index().drop('index', axis=1)
@@ -189,6 +198,7 @@ def main(fname, sep=','):
     fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly.csv'
     df['Tipo'] = 'Estado'
     df.loc[df['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
+    df.loc[df['UF'].isin(['N', 'S', 'NE', 'SE', 'CO']), 'Tipo'] = 'Região'
     df.loc[df['UF'] == 'BR' ,'Tipo'] = 'País'
     df = df.sort_values(by=['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'],
                         axis=0).reset_index().drop(['index', '0-4 anos'], axis=1)

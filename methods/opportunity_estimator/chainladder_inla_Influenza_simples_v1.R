@@ -82,12 +82,15 @@ d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', che
 
 # Create entries for regional aggregates:
 d$Region <- mapply(function(x) as.character(unique(d_pop[d_pop$`Código`==as.character(x),'Região'])), d$SG_UF_NOT)
+d$Region_offi <- mapply(function(x) as.character(unique(d_pop[d_pop$`Código`==as.character(x),'Região oficial'])), d$SG_UF_NOT)
 d$Country <- 'BR'
 
 # Grab target quantile from delay distribution for each UF
 delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = function(x,...) quantile(x,...),
                                             probs=quantile.target, rm.na=TRUE))),
                        ceiling(with(d, tapply(DelayWeeks, Region, FUN = function(x,...) quantile(x,...),
+                                              probs=quantile.target, rm.na=TRUE))),
+                       ceiling(with(d, tapply(DelayWeeks, Region_offi, FUN = function(x,...) quantile(x,...),
                                               probs=quantile.target, rm.na=TRUE))),
                        ceiling(with(d, tapply(DelayWeeks, Country, FUN = function(x,...) quantile(x,...),
                                               probs=quantile.target, rm.na=TRUE))))
@@ -142,13 +145,14 @@ rownames(df.epiweeks) <- df.epiweeks$DT_SIN_PRI_epiyearweek
 # List of locations:
 uf_list <- unique(d$SG_UF_NOT)
 reg_list <- unique(d$Region)
+reg_offi_list <- unique(d$Region_offi)
 cntry_list <- unique(d$Country)
 
 if (!dir.exists(file.path('./plots',args$type))) {
     dir.create(file.path('./plots',args$type), showWarnings = FALSE)
 }
 
-for (uf in c(uf_list, reg_list, cntry_list)){
+for (uf in c(uf_list, reg_list, reg_offi_list, cntry_list)){
   if (!dir.exists(file.path('./plots',args$type,uf))) {
     dir.create(file.path('./plots',args$type,uf), showWarnings = FALSE)
   }
@@ -159,6 +163,8 @@ for (uf in c(uf_list, reg_list, cntry_list)){
     d.tmp <- droplevels(subset(d, SG_UF_NOT==uf))
   } else if (uf %in% reg_list){
     d.tmp <- droplevels(subset(d, Region==uf))
+  } else if (uf %in% reg_offi_list){
+    d.tmp <- droplevels(subset(d, Region_offi==uf))
   } else {
     d.tmp <- droplevels(subset(d, Country==uf))
   }
@@ -210,7 +216,7 @@ for (uf in c(uf_list, reg_list, cntry_list)){
   
   # Time index of the unknown counts (Dmax+1,...,Tactual)
 
-  qthreshold <- max(8, qthreshold)
+  #qthreshold <- max(8, qthreshold)
   uf.indexes <- rownames(d_weekly[d_weekly$UF==as.character(uf),])
   Tactual <- length(uf.indexes)
   index.time <- uf.indexes[(Tactual-qthreshold+1):Tactual]

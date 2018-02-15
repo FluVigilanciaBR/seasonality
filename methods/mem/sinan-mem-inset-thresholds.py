@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import argparse
 from argparse import RawDescriptionHelpFormatter
 import matplotlib.font_manager as fm
-from mpl_toolkits.axes_grid.inset_locator import inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib.ticker as ticker
 from scipy.stats.mstats import gmean
 
@@ -57,7 +57,12 @@ tabela_ufnome = {'11': 'Rondônia',
                  'RegC': 'Regional Centro',
                  'RegL': 'Regional Leste',
                  'RegS': 'Regional Sul',
-                 'BR': 'Brasil'}
+                 'BR': 'Brasil',
+                 'S': 'Região Sul',
+                 'N': 'Região Norte',
+                 'CO': 'Região Centro-oeste',
+                 'NE': 'Região Nordeste',
+                 'SE': 'Região Sudeste'}
 tabela_ufcod = {v: k for k, v in tabela_ufnome.items()}
 fontproplgd = fm.FontProperties('Oswald')
 fontproplgd.set_size(28)
@@ -169,8 +174,8 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
                       'i.type.intensity=par.type.intensity, i.level.intensity=par.level.intensity)')
 
     # Pre-epidemic threshold:
-    epithreshold = max(lower_bound, pandas2ri.ri2py_dataframe(epimemrslt.rx2('pre.post.intervals')).loc[0, 2])
-    typrealcurve = pandas2ri.ri2py_dataframe(epimemrslt.rx2('typ.real.curve'))
+    epithreshold = max(lower_bound, pandas2ri.ri2py(epimemrslt.rx2('pre.post.intervals'))[0, 2])
+    typrealcurve = pd.DataFrame(pandas2ri.ri2py(epimemrslt.rx2('typ.real.curve')))
 
     # Check for seasons below threshold:
     dropseasons = set()
@@ -188,7 +193,7 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
         #                   'i.type.other=par.type.other, i.n.max=par.n.max, i.level.curve=par.level.curve,' +
         #                   'i.level.threshold=par.level.threshold, i.level.intensity=par.level.intensity)')
 
-        epimemrslt = ro.r('memmodel(i.data=subset(df, select=episeasons), i.type.curve=par.type.curve,' +
+        epimemrslt = ro.r('memmodel(i.data=df[episeasons], i.type.curve=par.type.curve,' +
                           'i.method=par.method,' +
                           'i.n.max=par.n.max, i.level.curve=par.level.curve, i.level.threshold=par.level.threshold,' +
                           'i.type.intensity=par.type.intensity, i.level.intensity=par.level.intensity)')
@@ -196,14 +201,26 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     # Store results in python dictionary of objects
     pyepimemrslt = {}
     rovector = [ro.vectors.StrVector, ro.vectors.IntVector, ro.vectors.FloatVector, ro.vectors.Vector]
-    for name in epimemrslt.names:
+    tgt_names = [
+        'pre.post.intervals',
+        'mean.start',
+        'ci.start',
+        'mean.length',
+        'ci.length',
+        'epi.intervals',
+        'typ.real.curve',
+        'typ.curve',
+        'moving.epidemics',
+        'n.seasons'
+    ]
+    for name in tgt_names:
         rdata = epimemrslt.rx2(name)
         if name == 'call':
             pyepimemrslt.update({name: str(rdata)})
         elif type(rdata) in rovector:
             pyepimemrslt.update({name: pandas2ri.ri2py_vector(rdata)})
         else:
-            pyepimemrslt.update({name: pandas2ri.ri2py_dataframe(rdata)})
+            pyepimemrslt.update({name: pd.DataFrame(pandas2ri.ri2py(rdata))})
 
     # typ.curve is the typical curve obtained from averaging over epidemic seasons with time rescaled
     # so that the start of the epidemic period coincides with mean.start
@@ -216,18 +233,6 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
         where((-pyepimemrslt['typ.curve']['baixo'].isnull()), other=pyepimemrslt['typ.curve']['mediano'])
     pyepimemrslt['typ.curve']['alto'] = pyepimemrslt['typ.curve']['alto']. \
         where((-pyepimemrslt['typ.curve']['alto'].isnull()), other=pyepimemrslt['typ.curve']['mediano'])
-
-    pyepimemrslt['typ.threshold.curve'].rename(columns={0: 'baixo', 1: 'mediano', 2: 'alto'}, inplace=True)
-    pyepimemrslt['typ.threshold.curve']['mediano'].fillna(0, inplace=True)
-    pyepimemrslt['typ.threshold.curve']['baixo'] = pyepimemrslt['typ.threshold.curve']['baixo']. \
-        where(pyepimemrslt['typ.threshold.curve']['baixo'] >= 0, other=0)
-    pyepimemrslt['typ.threshold.curve']['baixo'] = pyepimemrslt['typ.threshold.curve']['baixo']. \
-        where((-pyepimemrslt['typ.threshold.curve']['baixo'].isnull()),
-              other=pyepimemrslt['typ.threshold.curve']['mediano'])
-    pyepimemrslt['typ.threshold.curve']['alto'] = pyepimemrslt['typ.threshold.curve']['alto']. \
-        where((-pyepimemrslt['typ.threshold.curve']['alto'].isnull()),
-              other=pyepimemrslt['typ.threshold.curve']['mediano'])
-
     pyepimemrslt['pre.post.intervals'].rename(index={0: 'pre', 1: 'post'}, inplace=True)
 
     # typ.real.curve is the typical curve without time shift, that is, respecting the original weeks from data
@@ -343,7 +348,7 @@ def plotmemcurve(uf, dftmp, dftmpinset, thresholds, seasons, lastseason, epicols
 
     dftmpinset.plot(ax=axinset, x='epiweek', y=seasons)
     dftmpinset.plot(ax=axinset, x='epiweek', y=lastseason, color='k', lw=3)
-    dftmpinset.plot(ax=axinset, x='epiweek', y='limiar pré-epidêmico absoluto', style='--', color='red', alpha=0.8)
+    dftmpinset.plot(ax=axinset, x='epiweek', y='limiar pré-epidêmico', style='--', color='red', alpha=0.8)
     axinset.legend_.remove()
     axinset.set_xlabel('SE', fontproperties=fontproplblinset)
     axinset.set_ylabel('Casos', fontproperties=fontproplblinset)
@@ -456,7 +461,7 @@ def plotmemfailedcurve(uf, dftmp, dftmpinset, seasons, lastseason):
 
     dftmpinset.plot(ax=axinset, x='epiweek', y=seasons)
     dftmpinset.plot(ax=axinset, x='epiweek', y=lastseason, color='k', lw=3)
-    dftmpinset.plot(ax=axinset, x='epiweek', y='limiar pré-epidêmico absoluto', style='--', color='red', alpha=0.8)
+    dftmpinset.plot(ax=axinset, x='epiweek', y='limiar pré-epidêmico', style='--', color='red', alpha=0.8)
     axinset.legend_.remove()
     axinset.set_xlabel('SE', fontproperties=fontproplblinset)
     axinset.set_ylabel('Casos', fontproperties=fontproplblinset)
@@ -789,6 +794,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
         dfloop['Unidade da Federação'] = dfloop.UF.map(tabela_ufnome)
         dfloop['Tipo'] = 'Estado'
         dfloop.loc[dfloop['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
+        dfloop.loc[dfloop['UF'].isin(['N', 'S', 'CO', 'SE', 'NE']) ,'Tipo'] = 'Região'
         dfloop.loc[dfloop['UF'] == 'BR' ,'Tipo'] = 'País'
 
     dfreport.to_csv('./mem-data/%s-mem-report-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)

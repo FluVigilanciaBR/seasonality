@@ -4,6 +4,44 @@ import pandas as pd
 import argparse
 from argparse import RawDescriptionHelpFormatter
 
+tabela_ufnome = {'11': 'Rondônia',
+                 '12': 'Acre',
+                 '13': 'Amazonas',
+                 '14': 'Roraima',
+                 '15': 'Pará',
+                 '16': 'Amapá',
+                 '17': 'Tocantins',
+                 '21': 'Maranhão',
+                 '22': 'Piauí',
+                 '23': 'Ceará',
+                 '24': 'Rio Grande do Norte',
+                 '25': 'Paraíba',
+                 '26': 'Pernambuco',
+                 '27': 'Alagoas',
+                 '28': 'Sergipe',
+                 '29': 'Bahia',
+                 '31': 'Minas Gerais',
+                 '32': 'Espírito Santo',
+                 '33': 'Rio de Janeiro',
+                 '35': 'São Paulo',
+                 '41': 'Paraná',
+                 '42': 'Santa Catarina',
+                 '43': 'Rio Grande do Sul',
+                 '50': 'Mato Grosso do Sul',
+                 '51': 'Mato Grosso',
+                 '52': 'Goiás',
+                 '53': 'Distrito Federal',
+                 'RegN': 'Regional Norte',
+                 'RegC': 'Regional Centro',
+                 'RegL': 'Regional Leste',
+                 'RegS': 'Regional Sul',
+                 'BR': 'Brasil',
+                 'S': 'Região Sul',
+                 'N': 'Região Norte',
+                 'CO': 'Região Centro-oeste',
+                 'NE': 'Região Nordeste',
+                 'SE': 'Região Sudeste'}
+
 
 def create_brackets(fname):
     '''
@@ -29,20 +67,23 @@ def create_brackets(fname):
     dfibge = dfibge.merge(dfreg)
 
     dfibge_regs = dfibge.groupby(['Região', 'Ano', 'Sexo'], as_index=False).sum()[['Região', 'Ano', 'Sexo',
-                                                                                   'Total']+age_cols]
+                                                                                   'Total'] + age_cols]
     dfibge_regs.rename(columns={'Região': 'Código'}, inplace=True)
+    dfibge_regs['UF'] = dfibge_regs['Código'].map(tabela_ufnome)
 
-    dfibge = dfibge.append(dfibge_regs)
+    dfibge_regs_ofi = dfibge.groupby(['Região oficial', 'Ano', 'Sexo'], as_index=False).sum()[['Região oficial',
+                                                                                               'Ano', 'Sexo',
+                                                                                   'Total']+age_cols]
+    dfibge_regs_ofi.rename(columns={'Região oficial': 'Código'}, inplace=True)
+    dfibge_regs_ofi['UF'] = dfibge_regs_ofi['Código'].map(tabela_ufnome)
+    dfibge_regs_ofi = dfibge_regs_ofi[~(dfibge_regs_ofi['Código'] == 'BR')]
+
     dfibge = dfibge[~(dfibge['Código'] == 0)]
+    dfibge = dfibge.append(dfibge_regs)
+    dfibge = dfibge.append(dfibge_regs_ofi)
 
     dfibge = dfibge[['Código', 'Sigla', 'UF', 'Região', 'Região oficial', 'Ano', 'Sexo', 'Total']+age_cols].copy()
     dfibge = dfibge.sort_values(by=['Código', 'Ano', 'Sexo'], axis=0).reset_index().drop('index', axis=1)
-
-    dfibge.loc[dfibge['Código'] == 'BR', 'UF'] = 'Brasil'
-    dfibge.loc[dfibge['Código'] == 'RegN', 'UF'] = 'Região Norte'
-    dfibge.loc[dfibge['Código'] == 'RegC', 'UF'] = 'Região Centro'
-    dfibge.loc[dfibge['Código'] == 'RegL', 'UF'] = 'Região Leste'
-    dfibge.loc[dfibge['Código'] == 'RegS', 'UF'] = 'Região Sul'
 
     fout = fname[:-4]+'_agebracket.csv'
     dfibge.to_csv(fout, index=False, encoding='utf-8')
@@ -57,7 +98,8 @@ def main(fname):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generate appropriate age brackets.\n" +
-                                     "python3 anual_age_brackets.py --path ../data/PROJECOES_2013_POPULACAO-simples.csv --sep ,\n",
+                                     "python3 anual_age_brackets.py --path "
+                                     "../data/PROJECOES_2013_POPULACAO-simples_v3.csv --sep ,\n",
                                      formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--path', help='Path to data file', default='../data/PROJECOES_2013_POPULACAO-simples.csv')
     args = parser.parse_args()
