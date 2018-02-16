@@ -106,14 +106,17 @@ def radar_factory(num_vars, frame='circle'):
 if __name__ == '__main__':
 
     df = pd.read_csv('../clean_data/clean_data_epiweek-weekly.csv', low_memory=False)[
-        ['epiweek', 'epiyear', 'UF', 'sexo', 'POSITIVE_CASES', 'FLU_A', 'FLU_B', 'VSR', 'OTHERS', 'SRAG', 'NEGATIVE',
-         'INCONCLUSIVE', 'TESTING_IGNORED', 'NOTTESTED']]
+        ['epiweek', 'epiyear', 'UF', 'sexo', 'POSITIVE_CASES', 'FLU_A', 'FLU_B', 'VSR', 'PARA1', 'PARA2', 'PARA3',
+         'ADNO', 'OTHERS', 'SRAG', 'NEGATIVE', 'INCONCLUSIVE', 'TESTING_IGNORED', 'NOTTESTED']]
 
-    tgt_cols = {'Agentes infecciosos detectados': ['FLU_A', 'FLU_B', 'VSR', 'OTHERS'],
+    tgt_cols = {'Agentes infecciosos detectados': ['FLU_A', 'FLU_B', 'VSR', 'PARA1', 'PARA2', 'PARA3', 'ADNO',
+                                                   'OTHERS'],
                 'Exames laboratoriais': ['POSITIVE_CASES', 'NEGATIVE', 'INCONCLUSIVE',
                                          'TESTING_IGNORED', 'NOTTESTED']}
     print(len(tgt_cols['Agentes infecciosos detectados']))
-    spoke_labels = {'Agentes infecciosos detectados': ['Flu A', 'Flu B', 'VSR', 'Outros'],
+    spoke_labels = {'Agentes infecciosos detectados': ['Flu A', 'Flu B', 'VSR', 'Paraflu1', 'Paraflu2', 'Paraflu3',
+                                                       'Adeno',
+                                                       'Outros'],
                     'Exames laboratoriais': ['Positivo', 'Negativo', 'Inconclusivo', 'Não informado', 'Não testado']}
     sex_lbl = {'M': 'Homens', 'F': 'Mulheres', 'Total': 'Total'}
     sex_row = {'M': 1, 'F': 2, 'Total': 0}

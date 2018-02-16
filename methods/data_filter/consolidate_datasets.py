@@ -7,6 +7,7 @@ import argparse
 from argparse import RawDescriptionHelpFormatter
 
 basedir = '../clean_data/'
+outdir = '../../data/data/'
 
 
 def mergedata_scale(df, df_cases):
@@ -170,7 +171,7 @@ def main(update_db = False):
             df['dado'] = pref
             df = convert_estimates(df, dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
             df_new = df_new.append(df, ignore_index=True)
-        df_new.to_csv(basedir + '%s_values.csv' %estimate_file, index=False)
+        df_new.to_csv(outdir + '%s_values.csv' %estimate_file, index=False)
 
         df_new.rename(columns={
             'UF': 'código', 'SRAG': 'registros', '50%': 'mediana', '2.5%': 'limite inferior',
@@ -188,7 +189,7 @@ def main(update_db = False):
     for pref in preflist[1:]:
         df = convert_report(pref)
         df_new = df_new.append(df, ignore_index=True)
-    df_new.to_csv(basedir + 'mem-report.csv', index=False)
+    df_new.to_csv(outdir + 'mem-report.csv', index=False)
     df_new.rename(columns={'UF': 'código'}, inplace=True)
     if update_db:
         report_db(df_new, conn)
@@ -197,7 +198,7 @@ def main(update_db = False):
     for pref in preflist[1:]:
         df = convert_typical(pref)
         df_new = df_new.append(df, ignore_index=True)
-    df_new.to_csv(basedir + 'mem-typical.csv', index=False)
+    df_new.to_csv(outdir + 'mem-typical.csv', index=False)
     df_new.rename(columns={'UF': 'código'}, inplace=True)
     if update_db:
         typical_db(df_new, conn)
@@ -206,7 +207,7 @@ def main(update_db = False):
     for pref in preflist[1:]:
         df = clean_data_merge(pref)
         df_new = df_new.append(df, ignore_index=True)
-    df_new.to_csv(basedir + 'clean_data_epiweek-weekly-incidence_w_situation.csv', index=False)
+    df_new.to_csv(outdir + 'clean_data_epiweek-weekly-incidence_w_situation.csv', index=False)
     df_new.rename(columns={'UF': 'código'}, inplace=True)
     if update_db:
         age_and_gender_db(df_new, conn)

@@ -216,7 +216,7 @@ for (uf in c(uf_list, reg_list, reg_offi_list, cntry_list)){
   
   # Time index of the unknown counts (Dmax+1,...,Tactual)
 
-  #qthreshold <- max(8, qthreshold)
+  qthreshold <- min(8, max(4, qthreshold))
   uf.indexes <- rownames(d_weekly[d_weekly$UF==as.character(uf),])
   Tactual <- length(uf.indexes)
   index.time <- uf.indexes[(Tactual-qthreshold+1):Tactual]

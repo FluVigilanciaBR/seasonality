@@ -16,7 +16,7 @@ def readtable(fname, sep):
 def applysinanfilter(df):
     # Filter columns of interest
     tgtcols = ['SEM_NOT', 'DT_NOTIFIC', 'SG_UF_NOT', 'DT_INTERNA', 'DT_SIN_PRI', 'SRAG2012', 'DT_DIGITA', 'HOSPITAL',
-               'FEBRE', 'CLASSI_FIN', 'CRITERIO', 'SG_UF', 'ID_MN_RESI', 'ID_RG_RESI',
+               'FEBRE', 'CLASSI_FIN', 'CRITERIO', 'SG_UF', 'ID_MN_RESI', 'ID_RG_RESI', 'SEM_PRI',
                'TOSSE', 'GARGANTA', 'DISPNEIA', 'SATURACAO', 'DESC_RESP', 'EVOLUCAO', 'DT_COLETA', 'IFI', 'DT_IFI',
                'PCR', 'OUT_METODO', 'DS_OUTMET', 'DT_OUTMET', 'RES_FLUA', 'RES_FLUASU', 'RES_FLUB', 'RES_VSR',
                'RES_PARA1', 'RES_PARA2', 'RES_PARA3', 'RES_ADNO', 'RES_OUTRO', 'DT_PCR', 'PCR_RES', 'PCR_ETIOL',
@@ -105,6 +105,11 @@ def applysinanfilter(df):
     df['FLU_A'] = None
     df['FLU_B'] = None
     df['VSR'] = None
+    df['PARA1'] = None
+    df['PARA2'] = None
+    df['PARA3'] = None
+    df['ADNO'] = None
+
     df['OTHERS'] = None
     df['NEGATIVE'] = None
     df['INCONCLUSIVE'] = None
@@ -118,10 +123,15 @@ def applysinanfilter(df):
     df.loc[labrows, 'FLU_B'] = ((df.PCR_ETIOL[labrows] == 3) | (df.HEMA_ETIOL[labrows] == 3) |
                                 (df.RES_FLUB[labrows] == 1)).astype(int)
     df.loc[labrows, 'VSR'] = (df.RES_VSR[labrows] == 1).astype(int)
+    df.loc[labrows, 'PARA1'] = (df.RES_PARA1[labrows] == 1).astype(int)
+    df.loc[labrows, 'PARA2'] = (df.RES_PARA2[labrows] == 1).astype(int)
+    df.loc[labrows, 'PARA3'] = (df.RES_PARA3[labrows] == 1).astype(int)
+    df.loc[labrows, 'ADNO'] = (df.RES_ADNO[labrows] == 1).astype(int)
+
     df.loc[labrows, 'OTHERS'] = (
-    (df.PCR_ETIOL[labrows] == 5) | (df.HEMA_ETIOL[labrows] == 5) | (df.RES_PARA1[labrows] == 1) |
-    (df.RES_PARA2[labrows] == 1) | (df.RES_PARA3[labrows] == 1) | (df.RES_ADNO[labrows] == 1) |
-    (df.RES_OUTRO[labrows] == 1)).astype(int)
+        (df.PCR_ETIOL[labrows] == 5) |
+        (df.HEMA_ETIOL[labrows] == 5) |
+        (df.RES_OUTRO[labrows] == 1)).astype(int)
     df.loc[labrows, 'DELAYED'] = ((pd.isnull(df.PCR_RES[labrows]) | df.PCR_RES[labrows] == 4) &
                                   (pd.isnull(df.HEMA_RES[labrows]) | df.HEMA_RES[labrows] == 4) &
                                   (pd.isnull(df.RES_FLUA[labrows]) | df.RES_FLUA[labrows] == 4) &
@@ -145,7 +155,8 @@ def applysinanfilter(df):
                                        (pd.isnull(df.RES_OUTRO[labrows]) | df.RES_OUTRO[labrows].isin([3, 4]))).astype(
         int)
     df.loc[labrows, 'NEGATIVE'] = ((df.FLU_A[labrows] == 0) & (df.FLU_B[labrows] == 0) & (df.VSR[labrows] == 0) &
-                                   (df.OTHERS[labrows] == 0) & (df.DELAYED[labrows] == 0) &
+                                   (df.PARA1[labrows] == 0) & (df.PARA2[labrows] == 0) & (df.PARA3[labrows] == 0) &
+                                   (df.ADNO[labrows] == 0) & (df.OTHERS[labrows] == 0) & (df.DELAYED[labrows] == 0) &
                                    (df.INCONCLUSIVE[labrows] == 0)).astype(int)
 
     # Clinical and clinical-epidemiological diagnose:
