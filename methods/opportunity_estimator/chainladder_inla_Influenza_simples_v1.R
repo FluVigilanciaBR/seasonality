@@ -46,7 +46,7 @@ d <- droplevels(subset(read.csv(paste0("../clean_data/clean_data_",args$type,"_e
                                 stringsAsFactors=FALSE),
                        select=c(SG_UF_NOT, DT_NOTIFIC, DT_SIN_PRI, DT_SIN_PRI_epiyearweek, DT_SIN_PRI_epiyear,
                                 DT_SIN_PRI_epiweek, DT_DIGITA_epiyearweek, DT_DIGITA_epiyear, DT_DIGITA_epiweek,
-                       SinPri2Digita_DelayWeeks)))
+                       SinPri2Digita_DelayWeeks, DT_DIGITA)))
 
 # Discard years before 2013:
 d <- droplevels(subset(d, DT_SIN_PRI_epiyear >= 2013))
@@ -59,18 +59,17 @@ d <- na.exclude(d[d$DelayWeeks < 27, ])
 
 # Latest week with closed counts on DT_DIGITA is actualy the previous one
 if (args$date == 'max'){
-  today <- as.Date(max(d$DT_NOTIFIC)) - 7
+  today <- as.Date(max(d$DT_DIGITA)) - 7
   today <- as.Date(today,origin = '1970-01-01')
   print(today)
   today <- episem(today)
 } else {
   today <- as.Date(args$date) - 7
   today <- as.Date(today,origin = '1970-01-01')
-  today <- episem(args$date)
+  today <- episem(today)
 }
 lyear <- as.integer(strsplit(today, 'W')[[1]][1])
 today.week <- as.integer(strsplit(today, 'W')[[1]][2])
-today <- paste0(lyear,'W',today.week)
 print(today)
 
 # Discar incomplete data from the current week
