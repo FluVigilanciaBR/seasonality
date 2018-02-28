@@ -52,7 +52,7 @@ def main():
         dftmp['dado'] = dataset_name
         df = df.append(dftmp)
 
-    df.loc[pd.isnull(df.UF), 'UF'] = 9999
+    df.loc[pd.isnull(df.UF), 'UF'] = 99
 
     # Insert region info:
     df_reg = pd.read_csv('../data/regioesclimaticas.csv', low_memory=False)[['Código', 'Região', 'Região oficial']]
