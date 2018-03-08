@@ -30,7 +30,6 @@ def readtable(fname):
                 'Notific2Encerra_DelayDays',
                 'Coleta2IFI_DelayDays',
                 'Coleta2PCR_DelayDays',
-                'Notific2Digita_DelayDays'
                 ]
     df = pd.read_csv(fname, low_memory=False)[tgt_cols].rename(columns={'DT_NOTIFIC_epiyear': 'epiyear',
                                                                         'DT_NOTIFIC_epiweek': 'epiweek',
