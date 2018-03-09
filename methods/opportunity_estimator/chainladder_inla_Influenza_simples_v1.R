@@ -44,7 +44,7 @@ quantile.target <- args$percentile / 100
 d <- droplevels(subset(read.csv(paste0("../clean_data/clean_data_",args$type,"_epiweek.csv"), check.names = F,
                                 encoding='utf-8',
                                 stringsAsFactors=FALSE),
-                       select=c(SG_UF_NOT, DT_NOTIFIC, DT_SIN_PRI, DT_SIN_PRI_epiyearweek, DT_SIN_PRI_epiyear,
+                       select=c(SG_UF_NOT, DT_SIN_PRI_epiyearweek, DT_SIN_PRI_epiyear,
                                 DT_SIN_PRI_epiweek, DT_DIGITA_epiyearweek, DT_DIGITA_epiyear, DT_DIGITA_epiweek,
                        SinPri2Digita_DelayWeeks, DT_DIGITA)))
 
@@ -100,22 +100,23 @@ df.thresholds <- read.csv(paste0('../clean_data/', args$type, '_mem-report.csv')
 low.activity <- df.thresholds[df.thresholds$`região de baixa atividade típica` == 1,'UF']
 
 # Read weekly data:
+d_weekly <- aggregate.data.frame(x=d$SG_UF_NOT, by=list(UF=d$SG_UF_NOT, epiyear=d$DT_SIN_PRI_epiyear, epiweek=d$DT_SIN_PRI_epiweek), FUN=length)
+d_weekly$Tipo <- 1
+d_weekly_tmp <- aggregate.data.frame(x=d$Region, by=list(UF=d$Region, epiyear=d$DT_SIN_PRI_epiyear, epiweek=d$DT_SIN_PRI_epiweek), FUN=length)
+d_weekly_tmp$Tipo <- 2
+d_weekly <- rbind(d_weekly, d_weekly_tmp)
+d_weekly_tmp <- aggregate.data.frame(x=d$Region_offi, by=list(UF=d$Region_offi, epiyear=d$DT_SIN_PRI_epiyear, epiweek=d$DT_SIN_PRI_epiweek), FUN=length)
+d_weekly_tmp$Tipo <- 3
+d_weekly <- rbind(d_weekly, d_weekly_tmp)
+d_weekly_tmp <- aggregate.data.frame(x=d$Country, by=list(UF=d$Country, epiyear=d$DT_SIN_PRI_epiyear, epiweek=d$DT_SIN_PRI_epiweek), FUN=length)
+d_weekly_tmp$Tipo <- 4
+d_weekly <- rbind(d_weekly, d_weekly_tmp)
+
 d_weekly <- read.csv(paste0('../clean_data/clean_data_', args$type, '_epiweek-weekly-incidence.csv'), check.names = F,
 encoding='utf-8',
                      stringsAsFactors = FALSE)
 d_weekly <- d_weekly[d_weekly$sexo == 'Total' & d_weekly$epiyearweek <= today, c('UF', 'epiyear', 'epiweek', 'SRAG',
 'Tipo')]
-
-d_weekly$Situation <- 'stable'
-d_weekly[,c("mean","50%","2.5%","97.5%")] <- d_weekly$SRAG
-
-# Thresholds:
-thres.cols <- c('limiar pré-epidêmico','intensidade alta','intensidade muito alta')
-aux2 <- t(mapply(FUN=function(uf, inc) 
-  post.thresholds(inc, lims=as.numeric(df.thresholds[df.thresholds$UF==as.character(uf),thres.cols])),
-  d_weekly$UF, d_weekly$SRAG) )
-thres.prob.cols <- colnames(aux2)
-d_weekly[,thres.prob.cols] <- aux2
 
 # Check if plot folder exists
 require(scales)
@@ -131,15 +132,41 @@ cores <- colorRampPalette((brewer.pal(9, 'Oranges')))(27)
 fyear <- min(d$DT_SIN_PRI_epiyear)
 years.list <- c(fyear:lyear)
 df.epiweeks <- data.frame(DT_SIN_PRI_epiyearweek=character())
+dtmp <- data.frame(epiyear=integer(), epiweek=integer())
 for (y in years.list){
   epiweeks <- c()
+  year <- c()
+  weeks <- c()
   lweek <- ifelse(y < lyear, as.integer(lastepiweek(y)), today.week)
   for (w in c(1:lweek)){
     epiweeks <- c(epiweeks, paste0(y,'W',sprintf('%02d', w)))
+    year <- c(year, y)
+    weeks <- c(weeks, w)
   }
   df.epiweeks <- rbind(df.epiweeks, data.frame(list(DT_SIN_PRI_epiyearweek=epiweeks)))
+  dtmp <- rbind(dtmp, data.frame(list(epiyear=year, epiweek=weeks)))
 }
+
 rownames(df.epiweeks) <- df.epiweeks$DT_SIN_PRI_epiyearweek
+
+for (uf in unique(d_weekly$UF)){
+  dtmp$UF <- uf
+  dtmp$Tipo <- unique(d_weekly$Tipo[d_weekly$UF == uf])
+  d_weekly <- merge.data.frame(d_weekly, dtmp, all=TRUE)
+}
+
+names(d_weekly)[5] <- 'SRAG'
+d_weekly$Situation <- 'stable'
+d_weekly[,c("mean","50%","2.5%","97.5%")] <- d_weekly$SRAG
+rm(dtmp)
+
+# Thresholds:
+thres.cols <- c('limiar pré-epidêmico','intensidade alta','intensidade muito alta')
+aux2 <- t(mapply(FUN=function(uf, inc) 
+  post.thresholds(inc, lims=as.numeric(df.thresholds[df.thresholds$UF==as.character(uf),thres.cols])),
+  d_weekly$UF, d_weekly$SRAG) )
+thres.prob.cols <- colnames(aux2)
+d_weekly[,thres.prob.cols] <- aux2
 
 # List of locations:
 uf_list <- unique(d$SG_UF_NOT)
