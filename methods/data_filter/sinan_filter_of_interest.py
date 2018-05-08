@@ -52,6 +52,7 @@ def applysinanfilter(df):
             ) |
             (df.EVOLUCAO == 2)].copy()
 
+
     # Convert all date related columns to datetime format
     cols = df.columns
     # Check date input format

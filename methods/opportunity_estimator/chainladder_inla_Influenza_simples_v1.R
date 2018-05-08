@@ -112,12 +112,10 @@ d_weekly_tmp <- aggregate.data.frame(x=d$Country, by=list(UF=d$Country, epiyear=
 d_weekly_tmp$Tipo <- 4
 d_weekly <- rbind(d_weekly, d_weekly_tmp)
 
-d_weekly <- read.csv(paste0('../clean_data/clean_data_', args$type, '_epiweek-weekly-incidence.csv'), check.names = F,
-encoding='utf-8',
-                     stringsAsFactors = FALSE)
-d_weekly <- d_weekly[d_weekly$sexo == 'Total' & d_weekly$epiyearweek <= today, c('UF', 'epiyear', 'epiweek', 'SRAG',
-'Tipo')]
-
+# convert to incidence:
+d_weekly$x <- 100000*apply(d_weekly[,c('UF', 'epiyear', 'x')], MARGIN=1,
+                           FUN = function(y) as.numeric(y[3])/d_pop$Total[d_pop$`Código`==y[1] & d_pop$Ano==y[2]])
+  
 # Check if plot folder exists
 require(scales)
 if (!dir.exists('./plots')) {
@@ -157,6 +155,7 @@ for (uf in unique(d_weekly$UF)){
 
 names(d_weekly)[5] <- 'SRAG'
 d_weekly$Situation <- 'stable'
+d_weekly$SRAG[is.na(d_weekly$SRAG)] <- 0
 d_weekly[,c("mean","50%","2.5%","97.5%")] <- d_weekly$SRAG
 rm(dtmp)
 

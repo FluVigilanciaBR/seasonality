@@ -126,13 +126,33 @@ def uf4mem(dfin=pd.DataFrame()):
     tgt_cols = ['Total'] + age_cols
     tgt_cols.remove('Idade desconhecida')
     dfpop.set_index('Ano', inplace=True)
+    # Incidence from lab results:
+    lab_cols = ['FLU_A',
+                'FLU_B',
+                'VSR',
+                'PARA1',
+                'PARA2',
+                'PARA3',
+                'ADNO',
+                'OTHERS',
+                'POSITIVE_CASES',
+                'NEGATIVE',
+                'INCONCLUSIVE',
+                'DELAYED',
+                'TESTING_IGNORED',
+                'NOTTESTED']
     for uf in uflist:
         for year in yearlist:
             for sex in ['M', 'F', 'Total']:
                 tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == sex)
                 dfpop_tgt_rows = (dfpop.UF==str(uf)) & (dfpop.Sexo == sex) & (dfpop.index == year)
+                # Cases by age:
                 dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
                     div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
+                # Lab results:
+                dfinc.loc[tgt_rows, lab_cols] = (100000*dfinc.loc[tgt_rows, lab_cols] /
+                    dfpop.loc[dfpop_tgt_rows, 'Total'].ix[year])
+
 
     dfinc.rename(columns={'Total': 'SRAG'}, inplace=True)
 
