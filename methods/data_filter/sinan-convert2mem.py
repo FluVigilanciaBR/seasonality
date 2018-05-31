@@ -16,8 +16,8 @@ age_cols = ['Idade desconhecida', '0-4 anos', '5-9 anos', '10-19 anos', '20-29 a
 def readtable(fname, sep=','):
 
     target_col = ['SG_UF_NOT', 'DT_SIN_PRI_epiyearweek', 'DT_SIN_PRI_epiyear', 'DT_SIN_PRI_epiweek', 'CS_SEXO',
-                  'idade_em_anos', 'FLU_A', 'FLU_B', 'VSR', 'OTHERS', 'NEGATIVE', 'INCONCLUSIVE', 'TESTING_IGNORED',
-                  'NOTTESTED', 'DELAYED']
+                  'idade_em_anos', 'FLU_A', 'FLU_B', 'VSR', 'PARA1', 'PARA2', 'PARA3', 'ADNO', 'OTHERS', 'NEGATIVE',
+                  'INCONCLUSIVE', 'TESTING_IGNORED', 'NOTTESTED', 'DELAYED']
     df = pd.read_csv(fname, sep=sep, low_memory=False, encoding='utf-8')[target_col].rename(columns={'CS_SEXO': 'sexo',
                                                                                    'DT_SIN_PRI_epiyearweek':
                                                                                        'epiyearweek',
@@ -35,7 +35,8 @@ def readtable(fname, sep=','):
     df['50-59 anos'] = ((df.idade_em_anos >= 50) & (df.idade_em_anos < 60)).astype(int)
     df['60+ anos'] = (df.idade_em_anos >= 60).astype(int)
 
-    tgt_cols = {'Agentes infecciosos detectados': ['FLU_A', 'FLU_B', 'VSR', 'OTHERS'],
+    tgt_cols = {'Agentes infecciosos detectados': ['FLU_A', 'FLU_B', 'VSR', 'PARA1', 'PARA2', 'PARA3', 'ADNO',
+                                                   'OTHERS'],
                 'Exames laboratoriais': ['POSITIVE_CASES', 'NEGATIVE', 'INCONCLUSIVE',
                                          'TESTING_IGNORED', 'NOTTESTED', 'DELAYED']}
 
@@ -125,13 +126,33 @@ def uf4mem(dfin=pd.DataFrame()):
     tgt_cols = ['Total'] + age_cols
     tgt_cols.remove('Idade desconhecida')
     dfpop.set_index('Ano', inplace=True)
+    # Incidence from lab results:
+    lab_cols = ['FLU_A',
+                'FLU_B',
+                'VSR',
+                'PARA1',
+                'PARA2',
+                'PARA3',
+                'ADNO',
+                'OTHERS',
+                'POSITIVE_CASES',
+                'NEGATIVE',
+                'INCONCLUSIVE',
+                'DELAYED',
+                'TESTING_IGNORED',
+                'NOTTESTED']
     for uf in uflist:
         for year in yearlist:
             for sex in ['M', 'F', 'Total']:
                 tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == sex)
                 dfpop_tgt_rows = (dfpop.UF==str(uf)) & (dfpop.Sexo == sex) & (dfpop.index == year)
+                # Cases by age:
                 dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
                     div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
+                # Lab results:
+                dfinc.loc[tgt_rows, lab_cols] = (100000*dfinc.loc[tgt_rows, lab_cols] /
+                    dfpop.loc[dfpop_tgt_rows, 'Total'].ix[year])
+
 
     dfinc.rename(columns={'Total': 'SRAG'}, inplace=True)
 

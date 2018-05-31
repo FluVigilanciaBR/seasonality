@@ -1,16 +1,26 @@
-#' Function written by Oswaldo C.
-#' hosted at http://www.procc.fiocruz.br/~oswaldo/ocmisc.r
-episem <- function(x,separa='W',retorna='YW') {
-  
-  # retorna='YW' retorna 'YYYYseparaWW'
-  # retorna='W' retorna 'WW'
-  # retorna='Y' retorna 'YYYY'
+# episem ---------------------------------------------------------------------
+#' @description Find to which epidemiological week belongs a given day 
+#' @author Oswaldo Cruz
+#' @title Define Epidemiological Week
+#' @param date date to be converted (class Date)
+#' @param separa symbol between year and week
+#' @param retorna What should be return, if epidemiological year and week ('YW'), epi. year only ('Y') or epi. week only ('W').
+#'   Default: 'YW'.
+#' @return epidemiological week or year. If separa = '', the output is numeric; otherwise is a character.
+#' @examples
+#' episem(x= as.Date("2015-01-01", format="%Y-%m-%d"))
+#' episem(x= as.Date("2015-01-01", format="%Y-%m-%d"), separa='-')
+#' episem(x= as.Date("2015-01-01", format="%Y-%m-%d"), retorna='Y')
+
+episem <- function(x, format="%Y-%m-%d", separa='W', retorna='YW') {
   # semana epi 1 de 2000 02/01/2000
-  if (is.na(x) | as.character(x) == '') {return(NA)}
+  if (is.na(x) | as.character(x) == '') {
+    message("episem: Date not valid, returning NA")
+    return(NA)
+  }
   
   if (class(x)!= "Date") {
-    
-    x <- as.Date(x)
+    x <- as.Date(x, format = format)
     #warning("Precisa ser do tipo Date - Convertendo de texto")
   }
   
@@ -23,7 +33,7 @@ episem <- function(x,separa='W',retorna='YW') {
   ## Inicio 
   
   ano <- year(x) # extrai ano
-  dia1 <- as.Date(paste(ano,'01','01',sep='-')) # primeiro do ano 
+  dia1 <- as.Date(paste(ano,'01','01',sep='-'),format = "%Y-%m-%d") # primeiro do ano 
   
   diasem <- wday(dia1)  #descobre o dia da semana do dia1 
   

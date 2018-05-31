@@ -9,6 +9,7 @@ python3 sinan_filter_of_interest.py --path ../data/INFLUD*.csv
 python3 insert_epiweek.py --path  clean_data_srag.csv
 python3 insert_epiweek.py --path  clean_data_sragflu.csv
 python3 insert_epiweek.py --path  clean_data_obitoflu.csv
+python3 delay_datasets.py
 
 # Convert to MEM structure
 python3 sinan-convert2mem.py --path ../clean_data/clean_data_srag_epiweek.csv
