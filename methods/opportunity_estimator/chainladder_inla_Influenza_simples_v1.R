@@ -28,14 +28,24 @@ suppressPackageStartupMessages(library("argparse"))
 parser <- ArgumentParser()
 # specify our desired options
 # by default ArgumentParser will add an help option
-parser$add_argument("-t", "--type", type="character", default='srag')
+parser$add_argument("-t", "--type", type="character", default='srag',
+                    help="Type of data input [srag, sragflu, obitoflu]. Default %(default)s")
 parser$add_argument("-p", "--percentile", type="double", default=95,
                     help="Percentile to use as delay distribution threshold [default %(default)s]")
 parser$add_argument("-d", "--date", type="character", default=format(Sys.Date(), '%Y-%m-%d'),
                     help="Date to use as base, in format YYYY-MM-DD [default Sys.Date()]")
+parser$add_argument("-g", "--graphs", type="character", default="F",
+                    help="If graphs should be created [T] or not [F]. Default %(default)s")
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults,
 args <- parser$parse_args()
+
+# Normalize logical arg:
+if (args$graphs %in% c('F', 'False', 'f', 'false')){
+    args$graphs <- FALSE
+} else {
+    args$graphs <- TRUE
+}
 
 # Set quantile target for delay distribution:
 quantile.target <- args$percentile / 100
@@ -47,15 +57,6 @@ d <- droplevels(subset(read.csv(paste0("../clean_data/clean_data_",args$type,"_e
                        select=c(SG_UF_NOT, DT_SIN_PRI_epiyearweek, DT_SIN_PRI_epiyear,
                                 DT_SIN_PRI_epiweek, DT_DIGITA_epiyearweek, DT_DIGITA_epiyear, DT_DIGITA_epiweek,
                        SinPri2Digita_DelayWeeks, DT_DIGITA)))
-
-# Discard years before 2013:
-d <- droplevels(subset(d, DT_SIN_PRI_epiyear >= 2013))
-
-# Opportunity between first symptoms and upload:
-colnames(d)[colnames(d)=='SinPri2Digita_DelayWeeks'] <- 'DelayWeeks'
-
-# Discard notifications with delay greater than 6 months (> 26 weeks)
-d <- na.exclude(d[d$DelayWeeks < 27, ])
 
 # Latest week with closed counts on DT_DIGITA is actualy the previous one
 if (args$date == 'max'){
@@ -72,9 +73,6 @@ lyear <- as.integer(strsplit(today, 'W')[[1]][1])
 today.week <- as.integer(strsplit(today, 'W')[[1]][2])
 print(today)
 
-# Discar incomplete data from the current week
-d <- d[d$DT_DIGITA_epiyearweek <= today, ]
-
 # Read population profile:
 d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', check.names = F, encoding='utf-8',
                      stringsAsFactors = FALSE)
@@ -83,6 +81,19 @@ d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', che
 d$Region <- mapply(function(x) as.character(unique(d_pop[d_pop$`Código`==as.character(x),'Região'])), d$SG_UF_NOT)
 d$Region_offi <- mapply(function(x) as.character(unique(d_pop[d_pop$`Código`==as.character(x),'Região oficial'])), d$SG_UF_NOT)
 d$Country <- 'BR'
+
+# Discard years before 2013:
+d.orig <- d
+d <- droplevels(subset(d, DT_SIN_PRI_epiyear >= 2013))
+
+# Opportunity between first symptoms and upload:
+colnames(d)[colnames(d)=='SinPri2Digita_DelayWeeks'] <- 'DelayWeeks'
+
+# Discard notifications with delay greater than 6 months (> 26 weeks)
+d <- na.exclude(d[d$DelayWeeks < 27, ])
+
+# Discar incomplete data from the current week
+d <- d[d$DT_DIGITA_epiyearweek <= today, ]
 
 # Grab target quantile from delay distribution for each UF
 delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = function(x,...) quantile(x,...),
@@ -100,15 +111,19 @@ df.thresholds <- read.csv(paste0('../clean_data/', args$type, '_mem-report.csv')
 low.activity <- df.thresholds[df.thresholds$`região de baixa atividade típica` == 1,'UF']
 
 # Read weekly data:
-d_weekly <- aggregate.data.frame(x=d$SG_UF_NOT, by=list(UF=d$SG_UF_NOT, epiyear=d$DT_SIN_PRI_epiyear, epiweek=d$DT_SIN_PRI_epiweek), FUN=length)
+d_weekly <- aggregate.data.frame(x=d.orig$SG_UF_NOT, by=list(UF=d.orig$SG_UF_NOT, epiyear=d.orig$DT_SIN_PRI_epiyear,
+    epiweek=d.orig$DT_SIN_PRI_epiweek), FUN=length)
 d_weekly$Tipo <- 1
-d_weekly_tmp <- aggregate.data.frame(x=d$Region, by=list(UF=d$Region, epiyear=d$DT_SIN_PRI_epiyear, epiweek=d$DT_SIN_PRI_epiweek), FUN=length)
+d_weekly_tmp <- aggregate.data.frame(x=d.orig$Region, by=list(UF=d.orig$Region, epiyear=d.orig$DT_SIN_PRI_epiyear,
+    epiweek=d.orig$DT_SIN_PRI_epiweek), FUN=length)
 d_weekly_tmp$Tipo <- 2
 d_weekly <- rbind(d_weekly, d_weekly_tmp)
-d_weekly_tmp <- aggregate.data.frame(x=d$Region_offi, by=list(UF=d$Region_offi, epiyear=d$DT_SIN_PRI_epiyear, epiweek=d$DT_SIN_PRI_epiweek), FUN=length)
+d_weekly_tmp <- aggregate.data.frame(x=d.orig$Region_offi, by=list(UF=d.orig$Region_offi,
+    epiyear=d.orig$DT_SIN_PRI_epiyear, epiweek=d.orig$DT_SIN_PRI_epiweek), FUN=length)
 d_weekly_tmp$Tipo <- 3
 d_weekly <- rbind(d_weekly, d_weekly_tmp)
-d_weekly_tmp <- aggregate.data.frame(x=d$Country, by=list(UF=d$Country, epiyear=d$DT_SIN_PRI_epiyear, epiweek=d$DT_SIN_PRI_epiweek), FUN=length)
+d_weekly_tmp <- aggregate.data.frame(x=d.orig$Country, by=list(UF=d.orig$Country, epiyear=d.orig$DT_SIN_PRI_epiyear,
+    epiweek=d.orig$DT_SIN_PRI_epiweek), FUN=length)
 d_weekly_tmp$Tipo <- 4
 d_weekly <- rbind(d_weekly, d_weekly_tmp)
 
@@ -116,15 +131,6 @@ d_weekly <- rbind(d_weekly, d_weekly_tmp)
 d_weekly$x <- 100000*apply(d_weekly[,c('UF', 'epiyear', 'x')], MARGIN=1,
                            FUN = function(y) as.numeric(y[3])/d_pop$Total[d_pop$`Código`==y[1] & d_pop$Ano==y[2]])
   
-# Check if plot folder exists
-require(scales)
-if (!dir.exists('./plots')) {
-  dir.create(file.path('./plots'), showWarnings = FALSE)
-}
-# Load palette
-require(RColorBrewer)
-cores <- colorRampPalette((brewer.pal(9, 'Oranges')))(27)
-
 # Prepare filled epiweeks data frame:
 # # Fill all epiweeks:
 fyear <- min(d$DT_SIN_PRI_epiyear)
@@ -173,17 +179,24 @@ reg_list <- unique(d$Region)
 reg_offi_list <- unique(d$Region_offi)
 cntry_list <- unique(d$Country)
 
-if (!dir.exists(file.path('./plots',args$type))) {
+if (args$graphs){
+  # Check if plot folder exists
+  require(scales)
+  if (!dir.exists('./plots')) {
+    dir.create(file.path('./plots'), showWarnings = FALSE)
+  }
+  # Load palette
+  require(RColorBrewer)
+  cores <- colorRampPalette((brewer.pal(9, 'Oranges')))(27)
+
+  if (!dir.exists(file.path('./plots',args$type))) {
     dir.create(file.path('./plots',args$type), showWarnings = FALSE)
+  }
 }
 
 for (uf in c(uf_list, reg_list, reg_offi_list, cntry_list)){
-  if (!dir.exists(file.path('./plots',args$type,uf))) {
-    dir.create(file.path('./plots',args$type,uf), showWarnings = FALSE)
-  }
-  
-  # Plot UF's delay distribution
   qthreshold <- delay.topquantile[as.character(uf)]
+
   if (uf %in% uf_list){
     d.tmp <- droplevels(subset(d, SG_UF_NOT==uf))
   } else if (uf %in% reg_list){
@@ -193,48 +206,57 @@ for (uf in c(uf_list, reg_list, reg_offi_list, cntry_list)){
   } else {
     d.tmp <- droplevels(subset(d, Country==uf))
   }
-  svg(paste0('./plots/',args$type, '/',uf,'/delay_pattern.svg'))
-  histo <- hist(d.tmp$DelayWeeks, breaks=c(0:27), plot=F)
-  barplot.fig <- barplot(histo$density, xlab = "Delay (weeks)", ylab = "Notifications frequency",
-                         xaxs='i', yaxs='i')
-  abline(v=barplot.fig[qthreshold], col='gray')
-  axis(1, at = barplot.fig, labels = c(1:length(barplot.fig)) )
-  text(x=barplot.fig[qthreshold], y=.55*max(histo$density), 'Dmax', srt=90, pos=2)
-  dev.off()
-  
+
   # Prepare delay table
   aux <- tapply(d.tmp$DelayWeeks >= 0, INDEX = list(d.tmp$DT_SIN_PRI_epiyearweek), FUN = sum, na.rm = T)
   delay.tbl.tmp <- data.frame(Notifications = aux[order(rownames(aux))])
-  
-  for(k in 0:26){  
+
+  for(k in 0:26){
     aux <- tapply(d.tmp$DelayWeeks == k, INDEX = d.tmp$DT_SIN_PRI_epiyearweek, FUN = sum, na.rm = T)
     delay.tbl.tmp[paste("d",k, sep="")] <- aux[order(rownames(aux))]
   }
-  
+
   delay.tbl.tmp <- merge(df.epiweeks, delay.tbl.tmp, by=0, all.x=T)
   delay.tbl.tmp[is.na(delay.tbl.tmp)] <- 0
   rownames(delay.tbl.tmp) <- delay.tbl.tmp$Row.names
-  
-  # Plot UF's time series
-  svg(paste0('./plots/',args$type, '/', uf,'/timeseries.svg'))
-  # # Time series
-  fyear = min(d.tmp$DT_SIN_PRI_epiyear)
-  lyear = max(d.tmp$DT_SIN_PRI_epiyear)
-  plot(delay.tbl.tmp$Notifications , type = "l", axes=F, xlab="Time", ylab="Notifications")
-  axis(2)
-  axis(1, at = seq(0,52*(lyear-fyear+1),52) ,labels = fyear:(lyear+1))
-  dev.off()
 
-  # Plot time series with delay profile
-  svg(paste0('./plots/',args$type, '/', uf,'/delay_timeseries.svg'))
-  delay.week <- paste("d",0:26, sep="")
-  barplot.fig <- barplot(t(as.matrix(delay.tbl.tmp[,delay.week])), beside = F, col=cores, axisnames = F,
-                         xlab  =  "Time", ylab = "Notifications", border = NA)
-  lines(x=barplot.fig,y=delay.tbl.tmp$d0, type = "l")
-  axis(1, at = barplot.fig[seq(1,53*(lyear-fyear+1),52)] , labels = c(fyear:(lyear+1)) )
-  #legend(x='topright', legend = c(seq(0,25,5)), fill=cores[seq(1,26,5)], pch = '.')
-  dev.off()
-  
+  if (args$graphs){
+
+    # Check if folder exists
+    if (!dir.exists(file.path('./plots',args$type,uf))) {
+      dir.create(file.path('./plots',args$type,uf), showWarnings = FALSE)
+    }
+    # Plot UF's delay distribution
+    svg(paste0('./plots/',args$type, '/',uf,'/delay_pattern.svg'))
+    histo <- hist(d.tmp$DelayWeeks, breaks=c(0:27), plot=F)
+    barplot.fig <- barplot(histo$density, xlab = "Delay (weeks)", ylab = "Notifications frequency",
+    xaxs='i', yaxs='i')
+    abline(v=barplot.fig[qthreshold], col='gray')
+    axis(1, at = barplot.fig, labels = c(1:length(barplot.fig)) )
+    text(x=barplot.fig[qthreshold], y=.55*max(histo$density), 'Dmax', srt=90, pos=2)
+    dev.off()
+
+    # Plot UF's time series
+    svg(paste0('./plots/',args$type, '/', uf,'/timeseries.svg'))
+    # # Time series
+    fyear = min(d.tmp$DT_SIN_PRI_epiyear)
+    lyear = max(d.tmp$DT_SIN_PRI_epiyear)
+    plot(delay.tbl.tmp$Notifications , type = "l", axes=F, xlab="Time", ylab="Notifications")
+    axis(2)
+    axis(1, at = seq(0,52*(lyear-fyear+1),52) ,labels = fyear:(lyear+1))
+    dev.off()
+
+    # Plot time series with delay profile
+    svg(paste0('./plots/',args$type, '/', uf,'/delay_timeseries.svg'))
+    delay.week <- paste("d",0:26, sep="")
+    barplot.fig <- barplot(t(as.matrix(delay.tbl.tmp[,delay.week])), beside = F, col=cores, axisnames = F,
+    xlab  =  "Time", ylab = "Notifications", border = NA)
+    lines(x=barplot.fig,y=delay.tbl.tmp$d0, type = "l")
+    axis(1, at = barplot.fig[seq(1,53*(lyear-fyear+1),52)] , labels = c(fyear:(lyear+1)) )
+    #legend(x='topright', legend = c(seq(0,25,5)), fill=cores[seq(1,26,5)], pch = '.')
+    dev.off()
+  }
+
   ##################################################################
   # Preparing the data to be modelled
   ##################################################################

@@ -28,7 +28,7 @@ def applysinanfilter(df):
                'ID_RG_RESI', 'DT_ANTIVIR']
 
     cols = df.columns
-    if ('RES_VRS' in cols):
+    if 'RES_VRS' in cols:
         df.rename(columns={'RES_VRS': 'RES_VSR'}, inplace=True)
 
     for col in set(tgtcols).difference(cols):
@@ -52,7 +52,6 @@ def applysinanfilter(df):
             ) |
             (df.EVOLUCAO == 2)].copy()
 
-
     # Convert all date related columns to datetime format
     cols = df.columns
     # Check date input format
@@ -62,7 +61,7 @@ def applysinanfilter(df):
         dtsep = '/'
     dttest = pd.DataFrame(list(df.DT_NOTIFIC.str.split(dtsep)))
     maxvals = [int(dttest[i].max()) for i in range(3)]
-    del (dttest)
+    del dttest
     yearpos = maxvals.index(max(maxvals))
     if yearpos == 2:
         dtformat = '%d' + dtsep + '%m' + dtsep + '%Y'
@@ -74,7 +73,7 @@ def applysinanfilter(df):
             # Convert all date columns to datetime format. Output will have the format YYYY-MM-DD
             df[col] = pd.to_datetime(df[col], errors='coerce', format=dtformat)
 
-    # Discard those neither hospitalized nor deceased. For cases from 2009
+    # Discard those neither hospitalized nor deceased. For cases from 2009, keep all:
     df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) == 2009) | (df.HOSPITAL == 1) | (df.EVOLUCAO == 2)]
 
     # Create columns related to lab result

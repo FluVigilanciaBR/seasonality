@@ -39,6 +39,6 @@ python3 add_situation2weekly_data.py
 
 # Consolidate datasets
 cd ../data_filter
-python3 consolidate_datasets.py
+python3 consolidate_datasets.py --db True
 
 cd ../
