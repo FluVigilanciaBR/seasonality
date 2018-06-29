@@ -59,14 +59,24 @@ generate.estimates <- function(delay.tbl.tmp, Dmax, do.plots=F, uf='tmp'){
   #   f(Delay, model = "rw1", hyper = list("prec" = list(prior = "loggamma", param = c(0.001, 0.001))))
   
   # ajuste, verossimilhanca binomial negativa 
-  output <- inla(model, family = "nbinomial", data = delay.inla.trian,
-                 control.predictor = list(link = 1, compute = T),
-                 control.compute = list( config = T, waic=TRUE, dic=TRUE),
-                 control.family = list( 
-                   hyper = list("theta" = list(prior = "loggamma", param = c(0.1, 0.1)))
-                 )
-  )
-  
+  hess.min <- -1
+  h.value <- 0.01
+  trials <- 0
+  while (hess.min <= 0 & trials < 50){
+    output <- inla(model, family = "nbinomial", data = delay.inla.trian,
+                   control.predictor = list(link = 1, compute = T),
+                   control.compute = list( config = T, waic=TRUE, dic=TRUE),
+                   control.family = list( 
+                     hyper = list("theta" = list(prior = "loggamma", param = c(0.1, 0.1)))
+                   ),
+                   control.inla = list(h = h.value)
+    )
+    hess.start <- which(output$logfile == 'Eigenvalues of the Hessian')
+    hess.min <- min(as.numeric(output$logfile[(hess.start+1):(hess.start+3)]))
+    h.value <- h.value + 0.01
+    trials <- trials + 1
+  }
+  print(paste('Hessian trials:',trials))
   
   # criterios de comparacao de modelo, só são uteis se estivermos comparando modelos!
   # c(WAIC = output$waic$waic, DIC = output$dic$dic)

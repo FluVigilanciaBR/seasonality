@@ -82,8 +82,11 @@ d$Region <- mapply(function(x) as.character(unique(d_pop[d_pop$`Código`==as.cha
 d$Region_offi <- mapply(function(x) as.character(unique(d_pop[d_pop$`Código`==as.character(x),'Região oficial'])), d$SG_UF_NOT)
 d$Country <- 'BR'
 
-# Discard years before 2013:
+# Discar incomplete data from the current week
+d <- d[d$DT_DIGITA_epiyearweek <= today, ]
 d.orig <- d
+
+# Discard years before 2013:
 d <- droplevels(subset(d, DT_SIN_PRI_epiyear >= 2013))
 
 # Opportunity between first symptoms and upload:
@@ -91,9 +94,6 @@ colnames(d)[colnames(d)=='SinPri2Digita_DelayWeeks'] <- 'DelayWeeks'
 
 # Discard notifications with delay greater than 6 months (> 26 weeks)
 d <- na.exclude(d[d$DelayWeeks < 27, ])
-
-# Discar incomplete data from the current week
-d <- d[d$DT_DIGITA_epiyearweek <= today, ]
 
 # Grab target quantile from delay distribution for each UF
 delay.topquantile <- c(ceiling(with(d, tapply(DelayWeeks, SG_UF_NOT, FUN = function(x,...) quantile(x,...),
@@ -133,7 +133,7 @@ d_weekly$x <- 100000*apply(d_weekly[,c('UF', 'epiyear', 'x')], MARGIN=1,
   
 # Prepare filled epiweeks data frame:
 # # Fill all epiweeks:
-fyear <- min(d$DT_SIN_PRI_epiyear)
+fyear <- min(d.orig$DT_SIN_PRI_epiyear)
 years.list <- c(fyear:lyear)
 df.epiweeks <- data.frame(DT_SIN_PRI_epiyearweek=character())
 dtmp <- data.frame(epiyear=integer(), epiweek=integer())
@@ -269,9 +269,9 @@ for (uf in c(uf_list, reg_list, reg_offi_list, cntry_list)){
   index.time <- uf.indexes[(Tactual-qthreshold+1):Tactual]
   
   if (!(uf %in% low.activity)) {
-    
+    print(uf)
     # Calculate estimates
-    df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold, do.plots=T, uf=paste0(args$type,'/', uf))
+    df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold, do.plots=args$graphs, uf=paste0(args$type,'/', uf))
     
     # Generate quantiles estimates
     aux2 <- round(t(apply(df.tbl.tmp.estimates$samples,1,FUN = post.sum)))

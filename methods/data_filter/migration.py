@@ -167,33 +167,7 @@ def get_filename_from_path(file_path: str):
     return file_path.split(os.path.sep)[-1].split('.')[0]
 
 
-def migrate_from_csv_to_psql(dfs=None):
-    """
-
-    :return:
-    """
-
-    pks = {}
-
-    if dfs is None:
-        print('Data files:')
-        dfs = {}
-        path_data_files = os.path.join(PATH, '/../data/data', '*.csv')
-        for file_path in glob.glob(path_data_files):
-            filename = get_filename_from_path(file_path)
-
-            print(filename)
-
-            dfs[filename] = pd.read_csv(file_path)
-
-    # ## 1. Setting IDs
-    # ### 1.1 Datasets
-
-    df_territory.set_index('id', inplace=True)
-
-    # ## 2. current_estimated_values
-
-    dataset = 'current_estimated_values'
+def migrate_current_estimates(df):
 
     migration_rules = {
         'UF': 'territory_id',
@@ -213,36 +187,37 @@ def migrate_from_csv_to_psql(dfs=None):
     }
 
     # rename columns
-    dfs[dataset].rename(
+    df.rename(
         columns=migration_rules, inplace=True
     )
 
     # apply categories
-    dfs[dataset].dataset_id = dfs[dataset].dataset_id.map(dataset_id)
-    dfs[dataset].scale_id = dfs[dataset].scale_id.map(scale_id)
-    dfs[dataset].situation_id = dfs[dataset].situation_id.map(situation_id)
-    regions_indeces = dfs[dataset].territory_id.isin([
+    df.dataset_id = df.dataset_id.map(dataset_id)
+    df.scale_id = df.scale_id.map(scale_id)
+    df.situation_id = df.situation_id.map(situation_id)
+    regions_indeces = df.territory_id.isin([
         'BR', 'RegN', 'RegL', 'RegC', 'RegS', 'RegNI',
         'N', 'NE', 'SE', 'S', 'CO', 'RNI'
     ])
-    dfs[dataset].loc[regions_indeces, 'territory_id'] = dfs[dataset].loc[
+    df.loc[regions_indeces, 'territory_id'] = df.loc[
         regions_indeces, 'territory_id'
     ].map(region_id)
-    dfs[dataset].territory_id = dfs[dataset].territory_id.astype(int)
+    df.territory_id = df.territory_id.astype(int)
 
     # remove unnecessary fields
-    dfs[dataset].drop(['territory_type'], axis=1, inplace=True)
+    df.drop(['territory_type'], axis=1, inplace=True)
 
     # primary_keys
-    pks[dataset] = ['dataset_id', 'scale_id', 'territory_id', 'epiyear',
+    pks = ['dataset_id', 'scale_id', 'territory_id', 'epiyear',
                     'epiweek']
 
-    dfs[dataset].set_index(pks[dataset], inplace=True)
+    df.set_index(pks, inplace=True)
 
-    # ## 3. historical_estimated_values
+    return df
 
-    dataset = 'historical_estimated_values'
 
+def migrate_historical_estimates(df):
+    
     migration_rules = {
         'UF': 'territory_id',
         'SRAG': 'value',
@@ -260,38 +235,39 @@ def migrate_from_csv_to_psql(dfs=None):
         'escala': 'scale_id'
     }
 
-    dfs[dataset].rename(
+    df.rename(
         columns=migration_rules, inplace=True
     )
     # apply categories
-    dfs[dataset].dataset_id = dfs[dataset].dataset_id.map(dataset_id)
-    dfs[dataset].scale_id = dfs[dataset].scale_id.map(scale_id)
-    dfs[dataset].situation_id = dfs[dataset].situation_id.map(situation_id)
-    regions_indeces = dfs[dataset].territory_id.isin([
+    df.dataset_id = df.dataset_id.map(dataset_id)
+    df.scale_id = df.scale_id.map(scale_id)
+    df.situation_id = df.situation_id.map(situation_id)
+    regions_indeces = df.territory_id.isin([
         'BR', 'RegN', 'RegL', 'RegC', 'RegS', 'RegNI',
         'N', 'NE', 'SE', 'S', 'CO', 'RNI'
     ])
-    dfs[dataset].loc[regions_indeces, 'territory_id'] = dfs[dataset].loc[
+    df.loc[regions_indeces, 'territory_id'] = df.loc[
         regions_indeces, 'territory_id'
     ].map(region_id)
-    dfs[dataset].territory_id = dfs[dataset].territory_id.astype(int)
+    df.territory_id = df.territory_id.astype(int)
 
     # remove unnecessary fields
-    dfs[dataset].drop(['territory_type'], axis=1, inplace=True)
+    df.drop(['territory_type'], axis=1, inplace=True)
 
     # primary_keys
-    pks[dataset] = [
+    pks = [
         'dataset_id', 'scale_id', 'territory_id',
         'base_epiyear', 'base_epiweek',
         'epiyear', 'epiweek'
     ]
 
-    dfs[dataset].set_index(pks[dataset], inplace=True)
-    dfs[dataset].head()
+    df.set_index(pks, inplace=True)
+    df.head()
 
-    # ## 4. clean_data_epiweek-weekly-incidence_w_situation
+    return df
 
-    dataset = 'clean_data_epiweek-weekly-incidence_w_situation'
+
+def migrate_clean_data_epiweek(df):
 
     migration_rules = {
         '0-4 anos': 'years_0_4',
@@ -325,37 +301,37 @@ def migrate_from_csv_to_psql(dfs=None):
         'sexo': 'gender'
     }
 
-    dfs[dataset].rename(
+    df.rename(
         columns=migration_rules, inplace=True
     )
     # apply categories
-    dfs[dataset].dataset_id = dfs[dataset].dataset_id.map(dataset_id)
-    dfs[dataset].scale_id = dfs[dataset].scale_id.map(scale_id)
-    dfs[dataset].situation_id = dfs[dataset].situation_id.map(situation_id)
-    regions_indeces = dfs[dataset].territory_id.isin([
+    df.dataset_id = df.dataset_id.map(dataset_id)
+    df.scale_id = df.scale_id.map(scale_id)
+    df.situation_id = df.situation_id.map(situation_id)
+    regions_indeces = df.territory_id.isin([
         'BR', 'RegN', 'RegL', 'RegC', 'RegS', 'RegNI',
         'N', 'NE', 'SE', 'S', 'CO', 'RNI'
     ])
-    dfs[dataset].loc[regions_indeces, 'territory_id'] = dfs[dataset].loc[
+    df.loc[regions_indeces, 'territory_id'] = df.loc[
         regions_indeces, 'territory_id'
     ].map(region_id)
-    dfs[dataset].territory_id = dfs[dataset].territory_id.astype(int)
+    df.territory_id = df.territory_id.astype(int)
 
     # remove unnecessary fields
-    dfs[dataset].drop([
+    df.drop([
         'state_country_name', 'territory_type'
     ], axis=1, inplace=True)
 
     # primary_keys
-    pks[dataset] = ['dataset_id', 'scale_id', 'territory_id', 'epiyear',
+    pks = ['dataset_id', 'scale_id', 'territory_id', 'epiyear',
                     'epiweek']
 
-    dfs[dataset].set_index(pks[dataset], inplace=True)
-    dfs[dataset].head()
+    df.set_index(pks, inplace=True)
 
-    # ## 5. mem-report
+    return df
 
-    dataset = 'mem-report'
+
+def migrate_mem_report(df):
 
     migration_rules = {
         'UF': 'territory_id',
@@ -385,35 +361,36 @@ def migrate_from_csv_to_psql(dfs=None):
         'escala': 'scale_id'
     }
 
-    dfs[dataset].rename(
+    df.rename(
         columns=migration_rules, inplace=True
     )
     # apply categories
-    dfs[dataset].dataset_id = dfs[dataset].dataset_id.map(dataset_id)
-    dfs[dataset].scale_id = dfs[dataset].scale_id.map(scale_id)
-    regions_indeces = dfs[dataset].territory_id.isin([
+    df.dataset_id = df.dataset_id.map(dataset_id)
+    df.scale_id = df.scale_id.map(scale_id)
+    regions_indeces = df.territory_id.isin([
         'BR', 'RegN', 'RegL', 'RegC', 'RegS', 'RegNI',
         'N', 'NE', 'SE', 'S', 'CO', 'RNI'
     ])
-    dfs[dataset].loc[regions_indeces, 'territory_id'] = dfs[dataset].loc[
+    df.loc[regions_indeces, 'territory_id'] = df.loc[
         regions_indeces, 'territory_id'
     ].map(region_id)
-    dfs[dataset].territory_id = dfs[dataset].territory_id.astype(int)
+    df.territory_id = df.territory_id.astype(int)
 
     # remove unnecessary fields
-    dfs[dataset].drop([
+    df.drop([
         'state_country_name', 'territory_type'
     ], axis=1, inplace=True)
 
     # primary_keys
-    pks[dataset] = ['dataset_id', 'scale_id', 'territory_id', 'year']
+    pks = ['dataset_id', 'scale_id', 'territory_id', 'year']
 
-    dfs[dataset].set_index(pks[dataset], inplace=True)
+    df.set_index(pks, inplace=True)
 
-    # ## 6. mem-typical
+    return df
 
-    dataset = 'mem-typical'
 
+def migrate_mem_typical(df):
+    
     migration_rules = {
         'UF': 'territory_id',
         'População': 'population',
@@ -427,35 +404,36 @@ def migrate_from_csv_to_psql(dfs=None):
         'escala': 'scale_id'
     }
 
-    dfs[dataset].rename(
+    df.rename(
         columns=migration_rules, inplace=True
     )
     # apply categories
-    dfs[dataset].dataset_id = dfs[dataset].dataset_id.map(dataset_id)
-    dfs[dataset].scale_id = dfs[dataset].scale_id.map(scale_id)
-    regions_indeces = dfs[dataset].territory_id.isin([
+    df.dataset_id = df.dataset_id.map(dataset_id)
+    df.scale_id = df.scale_id.map(scale_id)
+    regions_indeces = df.territory_id.isin([
         'BR', 'RegN', 'RegL', 'RegC', 'RegS', 'RegNI',
         'N', 'NE', 'SE', 'S', 'CO', 'RNI'
     ])
-    dfs[dataset].loc[regions_indeces, 'territory_id'] = dfs[dataset].loc[
+    df.loc[regions_indeces, 'territory_id'] = df.loc[
         regions_indeces, 'territory_id'
     ].map(region_id)
-    dfs[dataset].territory_id = dfs[dataset].territory_id.astype(int)
+    df.territory_id = df.territory_id.astype(int)
 
     # remove unnecessary fields
-    dfs[dataset].drop([
+    df.drop([
         'state_country_name', 'territory_type'
     ], axis=1, inplace=True)
 
     # primary_keys
-    pks[dataset] = ['dataset_id', 'scale_id', 'territory_id', 'year',
+    pks = ['dataset_id', 'scale_id', 'territory_id', 'year',
                     'epiweek']
 
-    dfs[dataset].set_index(pks[dataset], inplace=True)
+    df.set_index(pks, inplace=True)
+    
+    return df
 
-    # ## 7. delay_table
 
-    dataset = 'delay_table'
+def migrate_delay_table(df):
 
     migration_rules = {
         'UF': 'territory_id',
@@ -472,16 +450,16 @@ def migrate_from_csv_to_psql(dfs=None):
         'dado': 'dataset_id'
     }
 
-    dfs[dataset].rename(columns=migration_rules, inplace=True)
+    df.rename(columns=migration_rules, inplace=True)
 
     # apply categories
-    dfs[dataset].dataset_id = dfs[dataset].dataset_id.map(dataset_id)
-    dfs[dataset].territory_id = dfs[dataset].territory_id.astype(int)
-    dfs[dataset].regional = dfs[dataset].regional.map(region_id).astype(int)
-    dfs[dataset].region = dfs[dataset].region.map(region_id).astype(int)
+    df.dataset_id = df.dataset_id.map(dataset_id)
+    df.territory_id = df.territory_id.astype(int)
+    df.regional = df.regional.map(region_id).astype(int)
+    df.region = df.region.map(region_id).astype(int)
 
     # remove unnecessary fields
-    dfs[dataset].drop([
+    df.drop([
         'Notific2Digita_DelayWeeks',
         'SinPri2Digita_DelayWeeks',
         'SinPri2Antivir_DelayWeeks',
@@ -493,29 +471,112 @@ def migrate_from_csv_to_psql(dfs=None):
     ], axis=1, inplace=True)
 
     # add index
-    dfs[dataset]['id'] = dfs[dataset].index
+    df['id'] = df.index
 
     # primary keys
-    pks[dataset] = ['id', 'territory_id', 'epiyear', 'epiweek']
-    dfs[dataset].set_index(pks[dataset], inplace=True)
+    pks = ['id', 'territory_id', 'epiyear', 'epiweek']
+    df.set_index(pks, inplace=True)
 
-    # ## 8. contingency_table
-    dataset = 'contingency_level'
+    return df
 
-    pks[dataset] = ['territory_id', 'epiyear']
-    dfs[dataset].set_index(pks[dataset], inplace=True)
 
-    # ## 9. weekly_alert
-    dataset = 'weekly_alert'
+def migrate_contingency_level(df):
 
-    pks[dataset] = ['dataset_id', 'territory_id', 'epiyear', 'epiweek']
-    dfs[dataset].set_index(pks[dataset], inplace=True)
+    pks = ['territory_id', 'epiyear']
+    df.set_index(pks, inplace=True)
 
-    # ## 10. season_level
-    dataset = 'season_level'
+    return df
 
-    pks[dataset] = ['dataset_id', 'territory_id', 'epiyear']
-    dfs[dataset].set_index(pks[dataset], inplace=True)
+
+def migrate_weekly_alert(df):
+
+    pks = ['dataset_id', 'territory_id', 'epiyear', 'epiweek']
+    df.set_index(pks, inplace=True)
+
+    return df
+
+
+def migrate_season_level(df):
+
+    pks = ['dataset_id', 'territory_id', 'epiyear']
+    df.set_index(pks, inplace=True)
+
+    return df
+
+
+def migrate_from_csv_to_psql(dfs=None, basic_tables=True):
+    """
+
+    :return:
+    """
+
+    if dfs is None:
+        print('Data files:')
+        dfs = {}
+        path_data_files = os.path.join(PATH, '/../data/data', '*.csv')
+        for file_path in glob.glob(path_data_files):
+            filename = get_filename_from_path(file_path)
+
+            print(filename)
+
+            dfs[filename] = pd.read_csv(file_path)
+
+    datasets_migration = {
+        'current_estimated_values': migrate_current_estimates,
+        'historical_estimated_values': migrate_historical_estimates,
+        'clean_data_epiweek-weekly-incidence_w_situation': migrate_clean_data_epiweek,
+        'mem-report': migrate_mem_report,
+        'mem-typical': migrate_mem_typical,
+        'delay_table': migrate_delay_table,
+        'contingency_level': migrate_contingency_level,
+        'weekly_alert': migrate_weekly_alert,
+        'season_level': migrate_season_level
+    }
+
+    for k, df in dfs.items():
+        print('Polishing table: %s' % k)
+        dfs[k] = datasets_migration[k](dfs[k])
+        print('Done!')
+
+    # ## 1. Setting IDs
+    # ### 1.1 Datasets
+
+    if basic_tables:
+        # creating dataset dataframe
+        df_dataset = pd.DataFrame({
+            'id': list(dataset_id.values()),
+            'name': list(dataset_id.keys())
+        }).set_index('id')
+
+        dfs['dataset'] = df_dataset
+
+        # creating situation dataframe
+        df_situation = pd.DataFrame({
+            'id': list(situation_id.values()),
+            'name': list(situation_id.keys())
+        }).set_index('id')
+
+        dfs['situation'] = df_situation
+
+        # creating scale dataframe
+        df_scale = pd.DataFrame({
+            'id': list(scale_id.values()),
+            'name': list(scale_id.keys())
+        }).set_index('id')
+
+        dfs['scale'] = df_scale
+
+        # creating territory_type dataframe
+        df_territory_type = pd.DataFrame({
+            'id': list(territory_type_id.values()),
+            'name': list(territory_type_id.keys())
+        }).set_index('id')
+
+        dfs['territory_type'] = df_territory_type
+
+        df_territory.set_index('id', inplace=True)
+        dfs['territory'] = df_territory
+
 
     # ## SQL Migration
 
@@ -523,39 +584,6 @@ def migrate_from_csv_to_psql(dfs=None):
         'run_date': 'DATE'
     }
 
-    # creating dataset dataframe
-    df_dataset = pd.DataFrame({
-        'id': list(dataset_id.values()),
-        'name': list(dataset_id.keys())
-    }).set_index('id')
-
-    dfs['dataset'] = df_dataset
-
-    # creating situation dataframe
-    df_situation = pd.DataFrame({
-        'id': list(situation_id.values()),
-        'name': list(situation_id.keys())
-    }).set_index('id')
-
-    dfs['situation'] = df_situation
-
-    # creating scale dataframe
-    df_scale = pd.DataFrame({
-        'id': list(scale_id.values()),
-        'name': list(scale_id.keys())
-    }).set_index('id')
-
-    dfs['scale'] = df_scale
-
-    # creating territory_type dataframe
-    df_territory_type = pd.DataFrame({
-        'id': list(territory_type_id.values()),
-        'name': list(territory_type_id.keys())
-    }).set_index('id')
-
-    dfs['territory_type'] = df_territory_type
-
-    dfs['territory'] = df_territory
 
     dsn = 'postgresql://%(USER)s:%(PASSWORD)s@%(HOST)s/%(NAME)s'
     engine = sqla.create_engine(dsn % DATABASE)

@@ -135,6 +135,8 @@ def main(update_db=False):
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
         dfdict[fname] = df_new
+        migrate_from_csv_to_psql(dfs=dfdict)
+        dfdict = {}
 
     fname = 'contingency_level'
     df = get_all_territories_and_years()
@@ -156,7 +158,7 @@ def main(update_db=False):
         dfdict[fname] = df_new
         fname = 'delay_table'
         dfdict[fname] = pd.read_csv(outdir + fname + '.csv')
-        migrate_from_csv_to_psql(dfs=dfdict)
+        migrate_from_csv_to_psql(dfs=dfdict, basic_tables=False)
 
     return
 
