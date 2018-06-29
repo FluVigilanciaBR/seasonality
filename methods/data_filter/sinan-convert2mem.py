@@ -58,7 +58,7 @@ def readtable(fname, sep=','):
     df = df[grp_cols].groupby(['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'], as_index=False).agg(sum)
     df['SRAG'] = df[age_cols].apply(sum, axis=1)
 
-    df = df.append(dftmp, ignore_index=True)
+    df = df.append(dftmp, ignore_index=True, sort=True)
 
     df.UF = df.UF.astype('int64')
 
@@ -96,10 +96,10 @@ def readtable(fname, sep=','):
     dffull_reg.rename(columns={'Região': 'UF'}, inplace=True)
     dfBR.rename(columns={'Região': 'UF'}, inplace=True)
     dffull_reg_ofi.rename(columns={'Região oficial': 'UF'}, inplace=True)
-    dffull_reg = dffull_reg.append(dffull_reg_ofi, ignore_index=True)
-    dffull_reg = dffull_reg.append(dfBR, ignore_index=True)
+    dffull_reg = dffull_reg.append(dffull_reg_ofi, ignore_index=True, sort=True)
+    dffull_reg = dffull_reg.append(dfBR, ignore_index=True, sort=True)
 
-    dffull = dffull.drop(['Região', 'Região oficial'], axis=1).append(dffull_reg, ignore_index=True)
+    dffull = dffull.drop(['Região', 'Região oficial'], axis=1).append(dffull_reg, ignore_index=True, sort=True)
     dffull = dffull[['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo', 'SRAG', '< 2 anos', '2-4 anos'] + age_cols +
                     tgt_cols['Agentes infecciosos detectados'] + tgt_cols['Exames laboratoriais']]
 

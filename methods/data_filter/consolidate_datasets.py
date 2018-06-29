@@ -18,7 +18,7 @@ def mergedata_scale(df, df_cases):
     df['escala'] = 'incidência'
     df_cases['escala'] = 'casos'
 
-    df = df.append(df_cases, ignore_index=True)
+    df = df.append(df_cases, ignore_index=True, sort=True)
 
     return df
 
@@ -103,7 +103,7 @@ def main(update_db=False):
                              low_memory=False)
             df['dado'] = pref
             df = convert_estimates(df, dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
-            df_new = df_new.append(df, ignore_index=True)
+            df_new = df_new.append(df, ignore_index=True, sort=True)
         fname = '%s_values' % estimate_file
         df_new.to_csv(outdir + fname + '.csv', index=False)
         if update_db:
@@ -112,7 +112,7 @@ def main(update_db=False):
     df_new = convert_report(preflist[0])
     for pref in preflist[1:]:
         df = convert_report(pref)
-        df_new = df_new.append(df, ignore_index=True)
+        df_new = df_new.append(df, ignore_index=True, sort=True)
     fname = 'mem-report'
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
@@ -121,7 +121,7 @@ def main(update_db=False):
     df_new = convert_typical(preflist[0])
     for pref in preflist[1:]:
         df = convert_typical(pref)
-        df_new = df_new.append(df, ignore_index=True)
+        df_new = df_new.append(df, ignore_index=True, sort=True)
     fname = 'mem-typical'
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
@@ -130,7 +130,7 @@ def main(update_db=False):
     df_new = clean_data_merge(preflist[0])
     for pref in preflist[1:]:
         df = clean_data_merge(pref)
-        df_new = df_new.append(df, ignore_index=True)
+        df_new = df_new.append(df, ignore_index=True, sort=True)
     fname = 'clean_data_epiweek-weekly-incidence_w_situation'
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
