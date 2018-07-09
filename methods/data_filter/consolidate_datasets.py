@@ -36,6 +36,16 @@ def convert_estimates(df, dfpop):
 
         df_cases[df_cases.UF == uf] = df_cases_slice
 
+    df_cases['cntry_percentage'] = df_cases[['epiyear', 'epiweek', 'mean']].merge(df_cases.loc[
+                                                                                      df_cases.UF == 'BR',
+                                                                                      ['epiyear', 'epiweek', 'mean']],
+                                                                                  on=['epiyear', 'epiweek'],
+                                                                                  how='left').mean_y
+    df_cases.cntry_percentage = 100 * df_cases['mean'] / df_cases.cntry_percentage
+    df['cntry_percentage'] = df[['UF', 'epiyear', 'epiweek']].merge(df_cases[['UF', 'epiyear', 'epiweek',
+                                                                              'cntry_percentage']],
+                                                                    on=['UF', 'epiyear', 'epiweek'],
+                                                                    how='left').cntry_percentage
     df = mergedata_scale(df, df_cases)
     return df
 
@@ -168,6 +178,6 @@ if __name__ == '__main__':
                                      "Exemple usage:\n" +
                                      "python3 consolidate_datasets.py",
                                      formatter_class=RawDescriptionHelpFormatter)
-    parser.add_argument('--db', help='Update database or not.', default=False)
+    parser.add_argument('--db', help='Update database', action='store_true')
     args = parser.parse_args()
     main(args.db)
