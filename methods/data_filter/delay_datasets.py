@@ -49,7 +49,7 @@ def main():
         print(dataset_name)
         dftmp = readtable('../clean_data/clean_data_%s_epiweek.csv' % dataset_name)
         dftmp['dado'] = dataset_name
-        df = df.append(dftmp)
+        df = df.append(dftmp, sort=True)
 
     df.loc[pd.isnull(df.UF), 'UF'] = 99
 

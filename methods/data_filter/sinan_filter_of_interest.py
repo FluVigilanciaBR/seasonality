@@ -195,7 +195,7 @@ def main(flist, sep=',', yearmax=None):
     for fname in flist:
         print(fname)
         dftmp = readtable(fname, sep)
-        df = df.append(applysinanfilter(dftmp), ignore_index=True)
+        df = df.append(applysinanfilter(dftmp), ignore_index=True, sort=True)
 
     if (yearmax):
         df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) <= yearmax)]

@@ -785,10 +785,10 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                 plt.clf()
                 plt.close()
 
-        dfreport = dfreport.append(dftmp[cols_report].head(1), ignore_index=True)
-        dfcorredor = dfcorredor.append(dftmp[cols_corredor], ignore_index=True)
-        dfreport_cases = dfreport_cases.append(dftmpinset[cols_report].head(1), ignore_index=True)
-        dfcorredor_cases = dfcorredor_cases.append(dftmpinset[cols_corredor], ignore_index=True)
+        dfreport = dfreport.append(dftmp[cols_report].head(1), ignore_index=True, sort=True)
+        dfcorredor = dfcorredor.append(dftmp[cols_corredor], ignore_index=True, sort=True)
+        dfreport_cases = dfreport_cases.append(dftmpinset[cols_report].head(1), ignore_index=True, sort=True)
+        dfcorredor_cases = dfcorredor_cases.append(dftmpinset[cols_corredor], ignore_index=True, sort=True)
 
     for dfloop in [dfreport, dfcorredor]:
         dfloop['Unidade da Federação'] = dfloop.UF.map(tabela_ufnome)

@@ -127,7 +127,7 @@ def apply_filter_alert_by_epiweek(year: int, territory_id: int):
         df = df.append(db.get_data(
             dataset_id=dataset_id, scale_id=1, year=year,
             territory_id=territory_id
-            ), ignore_index=True
+            ), ignore_index=True, sort=True
         )
 
     df['alert'] = df.apply(calc_weekly_alert_level, axis=1)
@@ -141,7 +141,7 @@ def weekly_alert_table_all(df):
     for territory_id in df.territory_id.unique():
         for epiyear in df.epiyear.unique():
             df_alert = df_alert.append(apply_filter_alert_by_epiweek(year=epiyear, territory_id=territory_id),
-                                       ignore_index=True)
+                                       ignore_index=True, sort=True)
 
     return df_alert
 
