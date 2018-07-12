@@ -36,12 +36,12 @@ def convert_estimates(df, dfpop):
 
         df_cases[df_cases.UF == uf] = df_cases_slice
 
-    df_cases['cntry_percentage'] = df_cases[['epiyear', 'epiweek', 'mean']].merge(df_cases.loc[
+    df_cases['cntry_percentage'] = df_cases[['epiyear', 'epiweek', '50%']].merge(df_cases.loc[
                                                                                       df_cases.UF == 'BR',
-                                                                                      ['epiyear', 'epiweek', 'mean']],
+                                                                                      ['epiyear', 'epiweek', '50%']],
                                                                                   on=['epiyear', 'epiweek'],
-                                                                                  how='left').mean_y
-    df_cases.cntry_percentage = 100 * df_cases['mean'] / df_cases.cntry_percentage
+                                                                                  how='left')['50%_y']
+    df_cases.cntry_percentage = 100 * df_cases['50%'] / df_cases.cntry_percentage
     df['cntry_percentage'] = df[['UF', 'epiyear', 'epiweek']].merge(df_cases[['UF', 'epiyear', 'epiweek',
                                                                               'cntry_percentage']],
                                                                     on=['UF', 'epiyear', 'epiweek'],
