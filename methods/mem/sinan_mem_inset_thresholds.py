@@ -1,9 +1,6 @@
 # coding:utf8
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
-# TODO: insert years discarded for control diagrams
-# TODO: insert percentage of national cases for each aggregation level
-
 import rpy2.robjects as ro
 from numpy import *
 from pandas import *

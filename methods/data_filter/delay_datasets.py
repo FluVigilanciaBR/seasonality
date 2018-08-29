@@ -2,7 +2,6 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 import pandas as pd
 import numpy as np
-import episem
 import sys
 import datetime
 import calendar
@@ -22,6 +21,10 @@ def readtable(fname):
                 'Notific2Encerra_DelayWeeks',
                 'Coleta2IFI_DelayWeeks',
                 'Coleta2PCR_DelayWeeks',
+                'Notific2Coleta_DelayWeeks',
+                'Notific2Antivir_DelayWeeks',
+                'Digita2Antivir_DelayWeeks',
+
                 'Notific2Digita_DelayDays',
                 'SinPri2Digita_DelayDays',
                 'SinPri2Antivir_DelayDays',
@@ -30,6 +33,9 @@ def readtable(fname):
                 'Notific2Encerra_DelayDays',
                 'Coleta2IFI_DelayDays',
                 'Coleta2PCR_DelayDays',
+                'Notific2Coleta_DelayDays',
+                'Notific2Antivir_DelayDays',
+                'Digita2Antivir_DelayDays',
                 ]
     df = pd.read_csv(fname, low_memory=False)[tgt_cols].rename(columns={'DT_NOTIFIC_epiyear': 'epiyear',
                                                                         'DT_NOTIFIC_epiweek': 'epiweek',

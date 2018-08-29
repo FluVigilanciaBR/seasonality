@@ -1,5 +1,5 @@
 import pandas as pd
-from episem import episem, lastepiweek
+from .episem import episem, lastepiweek
 import argparse
 # coding:utf8
 __author__ = 'Marcelo Ferreira da Costa Gomes'
@@ -50,6 +50,9 @@ def main(fname, sep=','):
     df = opportunity_calc_epiweeks(df, colA='DT_COLETA', colB='DT_IFI', colnew='Coleta2IFI_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_COLETA', colB='DT_PCR_1', colnew='Coleta2PCR_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_DIGITA', colnew='Notific2Digita_DelayWeeks')
+    df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_COLETA', colnew='Notific2Coleta_DelayWeeks')
+    df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_ANTIVIR', colnew='Notific2Antivir_DelayWeeks')
+    df = opportunity_calc_epiweeks(df, colA='DT_DIGITA', colB='DT_ANTIVIR', colnew='Digita2Antivir_DelayWeeks')
 
     df = opportunity_calc_days(df, colA='DT_SIN_PRI', colB='DT_DIGITA', colnew='SinPri2Digita_DelayDays')
     df = opportunity_calc_days(df, colA='DT_SIN_PRI', colB='DT_ANTIVIR', colnew='SinPri2Antivir_DelayDays')
@@ -59,6 +62,9 @@ def main(fname, sep=','):
     df = opportunity_calc_days(df, colA='DT_COLETA', colB='DT_IFI', colnew='Coleta2IFI_DelayDays')
     df = opportunity_calc_days(df, colA='DT_COLETA', colB='DT_PCR_1', colnew='Coleta2PCR_DelayDays')
     df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_DIGITA', colnew='Notific2Digita_DelayDays')
+    df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_COLETA', colnew='Notific2Coleta_DelayDays')
+    df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_ANTIVIR', colnew='Notific2Antivir_DelayDays')
+    df = opportunity_calc_days(df, colA='DT_DIGITA', colB='DT_ANTIVIR', colnew='Digita2Antivir_DelayDays')
 
     fout = '../clean_data/%s_epiweek.csv' % fname.split('/')[-1][:-4]
     df.to_csv(fout, index=False, encoding='utf-8')

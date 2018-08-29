@@ -5,7 +5,7 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 import pandas as pd
 import numpy as np
 import argparse
-import episem
+from .episem import lastepiweek
 import datetime
 from argparse import RawDescriptionHelpFormatter
 
@@ -69,7 +69,7 @@ def readtable(fname, sep=','):
     sexlist = ['M', 'F', 'I', 'Total']
     tmpdict = []
     for year in yearlist[:-1]:
-        for week in range(1, (int(episem.lastepiweek(year))+1)):
+        for week in range(1, (int(lastepiweek(year))+1)):
             for uf in uflist:
                 tmpdict.extend([{'UF': uf, 'epiyearweek': '%sW%02d' % (year, week), 'epiyear': year, 'epiweek': week,
                                  'sexo': sex} for sex in sexlist])
@@ -145,7 +145,7 @@ def uf4mem(dfin=pd.DataFrame()):
         for year in yearlist:
             for sex in ['M', 'F', 'Total']:
                 tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == sex)
-                dfpop_tgt_rows = (dfpop.UF==str(uf)) & (dfpop.Sexo == sex) & (dfpop.index == year)
+                dfpop_tgt_rows = (dfpop.UF == str(uf)) & (dfpop.Sexo == sex) & (dfpop.index == year)
                 # Cases by age:
                 dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
                     div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')

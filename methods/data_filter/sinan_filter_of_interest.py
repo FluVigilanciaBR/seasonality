@@ -5,7 +5,11 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 import pandas as pd
 import numpy as np
 import argparse
+import logging
 from argparse import RawDescriptionHelpFormatter
+
+
+module_logger = logging.getLogger('update_system.dbf2csv')
 
 
 def readtable(fname, sep):
@@ -24,8 +28,7 @@ def applysinanfilter(df):
                'PCR_ETIOL', 'PCR_TIPO_H', 'PCR_TIPO_N', 'DT_CULTURA', 'CULT_RES', 'DT_HEMAGLU', 'HEMA_RES',
                'HEMA_ETIOL', 'HEM_TIPO_H', 'HEM_TIPO_N', 'VACINA', 'DT_UT_DOSE', 'ANT_PNEUMO', 'DT_PNEUM',
                'CO_UF_INTE', 'CO_MU_INTE', 'CO_UN_INTE', 'DT_ENCERRA', 'NU_NOTIFIC', 'ID_AGRAVO', 'ID_MUNICIP',
-               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'CS_SEXO', 'CS_GESTANT', 'CS_RACA', 'SG_UF', 'ID_MN_RESI',
-               'ID_RG_RESI', 'DT_ANTIVIR']
+               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'CS_SEXO', 'CS_GESTANT', 'CS_RACA', 'DT_ANTIVIR']
 
     cols = df.columns
     if 'RES_VRS' in cols:
@@ -194,6 +197,7 @@ def main(flist, sep=',', yearmax=None):
     df = pd.DataFrame()
     for fname in flist:
         print(fname)
+        module_logger.info('Processing database file: %s', fname)
         dftmp = readtable(fname, sep)
         df = df.append(applysinanfilter(dftmp), ignore_index=True, sort=True)
 

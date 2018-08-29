@@ -1,4 +1,4 @@
-from settings import DATABASE, PATH
+from .settings import DATABASE, PATH
 
 import glob
 import os
@@ -475,6 +475,12 @@ def migrate_delay_table(df):
         'Notific2Encerra_DelayWeeks',
         'Coleta2IFI_DelayWeeks',
         'Coleta2PCR_DelayWeeks',
+        'Notific2Coleta_DelayWeeks',
+        'Notific2Antivir_DelayWeeks',
+        'Digita2Antivir_DelayWeeks',
+        'Notific2Coleta_DelayDays',
+        'Notific2Antivir_DelayDays',
+        'Digita2Antivir_DelayDays',
     ], axis=1, inplace=True)
 
     # add index

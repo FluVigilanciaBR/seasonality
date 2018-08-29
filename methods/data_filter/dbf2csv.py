@@ -6,9 +6,11 @@ Convert dfb file to csv format
 
 import csv
 import argparse
+import logging
 from argparse import RawDescriptionHelpFormatter
 from dbfread import DBF
 
+module_logger = logging.getLogger('update_system.dbf2csv')
 
 def dbf2csv(fin, fout):
     table = DBF(fin)
@@ -24,11 +26,11 @@ def dbf2csv(fin, fout):
 def main(flist):
 
     for fname in flist:
-        print(fname)
+        module_logger.info('DBF2CSV: PROCESSING %s' % fname)
         fout = '.'.join(fname.split('.')[:-1]) + '.csv'
         dbf2csv(fname, fout)
+        module_logger.info('DBF2CSV: CONVERTED TO %s' % fout)
 
-    exit()
 
 
 if __name__ == '__main__':

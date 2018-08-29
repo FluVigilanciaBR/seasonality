@@ -6,9 +6,9 @@ from argparse import RawDescriptionHelpFormatter
 
 import pandas as pd
 
-from contingency_level import weekly_alert_table_all, calc_season_alert, calc_season_contingency, \
+from .contingency_level import weekly_alert_table_all, calc_season_alert, calc_season_contingency, \
     get_all_territories_and_years
-from migration import migrate_from_csv_to_psql
+from .migration import migrate_from_csv_to_psql
 
 basedir = '../clean_data/'
 outdir = '../../data/data/'
