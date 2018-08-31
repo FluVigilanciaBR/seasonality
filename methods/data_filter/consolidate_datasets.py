@@ -1,3 +1,4 @@
+
 # coding:utf8
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
@@ -31,6 +32,7 @@ def convert_estimates(df, dfpop):
         df_cases_slice = df_cases[df_cases.UF == uf].copy()
         dfpop_slice = dfpop[(dfpop.UF == uf)]
         for year in df_cases_slice.epiyear.unique():
+            print(uf, year)
             df_cases_slice.loc[(df_cases_slice.epiyear == year), tgt_cols] *= dfpop_slice.loc[dfpop_slice.Ano == year,
                                                                                   'Total'].values[0]/100000
 
@@ -105,10 +107,12 @@ def main(update_db=False):
     for estimate_file in ['current_estimated', 'historical_estimated']:
         # Files current_estimated_values
         pref = preflist[0]
+        print(pref, estimate_file)
         df = pd.read_csv(basedir + '%s_%s_incidence.csv' % (pref, estimate_file), encoding='utf-8', low_memory=False)
         df['dado'] = pref
         df_new = convert_estimates(df, dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
         for pref in preflist[1:]:
+            print(pref, estimate_file)
             df = pd.read_csv(basedir + '%s_%s_incidence.csv' % (pref, estimate_file), encoding='utf-8',
                              low_memory=False)
             df['dado'] = pref
@@ -118,7 +122,6 @@ def main(update_db=False):
         df_new.to_csv(outdir + fname + '.csv', index=False)
         if update_db:
             dfdict[fname] = df_new
-
     df_new = convert_report(preflist[0])
     for pref in preflist[1:]:
         df = convert_report(pref)

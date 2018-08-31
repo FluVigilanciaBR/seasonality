@@ -10,7 +10,7 @@ import logging
 from argparse import RawDescriptionHelpFormatter
 from dbfread import DBF
 
-module_logger = logging.getLogger('update_system.dbf2csv')
+module_logger = logging.getLogger('update_system.data_filter.dbf2csv')
 
 def dbf2csv(fin, fout):
     table = DBF(fin)
