@@ -12,6 +12,7 @@ from .migration import migrate_from_csv_to_psql
 
 basedir = '../clean_data/'
 outdir = '../../data/data/'
+upper_bounds = [8, 10, 12, 14, 16, 18]
 
 
 def mergedata_scale(df, df_cases):
@@ -24,28 +25,43 @@ def mergedata_scale(df, df_cases):
 
 
 def convert_estimates(df, dfpop):
+
+    tgt_cols = ['SRAG', 'mean', '50%', '2.5%', '97.5%']
+    df[tgt_cols] = df[tgt_cols].transform({col: lambda x: min(x, 100000) for col in tgt_cols})
+    df = df.merge(dfpop, how='left', left_on=['UF', 'epiyear'], right_on=['UF', 'Ano']).rename(columns={
+        'Total': 'population'
+    }).drop(columns='Ano')
+
     df_cases = df.copy()
+    df_cases[tgt_cols] = df_cases[tgt_cols].multiply(df_cases.population / 100000, axis='index')
 
-    tgt_cols = ['SRAG', 'mean', '50%', '2.5%',  '97.5%']
-    for uf in df_cases.UF.unique():
-        df_cases_slice = df_cases[df_cases.UF == uf].copy()
-        dfpop_slice = dfpop[(dfpop.UF == uf)]
-        for year in df_cases_slice.epiyear.unique():
-            df_cases_slice.loc[(df_cases_slice.epiyear == year), tgt_cols] *= dfpop_slice.loc[dfpop_slice.Ano == year,
-                                                                                  'Total'].values[0]/100000
+    # Apply upper bound to CI:
+    df_cases['bounded_97.5%'] = df_cases[['50%', '97.5%']].apply(lambda x: min(x['97.5%'], 3 * x['50%']), axis=1)
+    tgt_rows = (df_cases['50%'] < 6.0)
+    df_cases.loc[tgt_rows, 'bounded_97.5%'] = df_cases.loc[tgt_rows, ['50%', '97.5%']].apply(lambda x:
+                                                                                             min(
+                                                                                                 x['97.5%'],
+                                                                                                 upper_bounds[
+                                                                                                     int(x['50%'])
+                                                                                                 ]
+                                                                                                 ), axis=1)
 
-        df_cases[df_cases.UF == uf] = df_cases_slice
+    col_match = ['epiyear', 'epiweek']
+    if 'base_epiweek' in df.columns:
+        col_match.extend(['base_epiyear', 'base_epiweek'])
 
-    df_cases['cntry_percentage'] = df_cases[['epiyear', 'epiweek', '50%']].merge(df_cases.loc[
-                                                                                      df_cases.UF == 'BR',
-                                                                                      ['epiyear', 'epiweek', '50%']],
-                                                                                  on=['epiyear', 'epiweek'],
-                                                                                  how='left')['50%_y']
+    df_cases['cntry_percentage'] = df_cases[col_match + ['50%']].merge(df_cases.loc[df_cases.UF == 'BR',
+                                                                                    col_match + ['50%']],
+                                                                       on=col_match,
+                                                                       how='left')['50%_y']
     df_cases.cntry_percentage = 100 * df_cases['50%'] / df_cases.cntry_percentage
-    df['cntry_percentage'] = df[['UF', 'epiyear', 'epiweek']].merge(df_cases[['UF', 'epiyear', 'epiweek',
-                                                                              'cntry_percentage']],
-                                                                    on=['UF', 'epiyear', 'epiweek'],
-                                                                    how='left').cntry_percentage
+    df[['bounded_97.5%', 'cntry_percentage']] = df[['UF'] + col_match].merge(df_cases[['UF'] + col_match +
+                                                                                      ['bounded_97.5%',
+                                                                                       'cntry_percentage']],
+                                                                             on=['UF'] + col_match,
+                                                                             how='left')[['bounded_97.5%',
+                                                                                          'cntry_percentage']]
+    df['bounded_97.5%'] *= 100000 / df.population
     df = mergedata_scale(df, df_cases)
     return df
 
@@ -60,7 +76,7 @@ def convert_report(pref):
                 'intensidade alta',
                 'intensidade muito alta']
     for col in tgt_cols:
-        df_cases[col] *= df_cases['População']/100000
+        df_cases[col] *= df_cases['População'] / 100000
 
     df = mergedata_scale(df, df_cases)
     return df
@@ -73,7 +89,7 @@ def convert_typical(pref):
     df_cases = df.copy()
     tgt_cols = ['corredor baixo', 'corredor mediano', 'corredor alto']
     for col in tgt_cols:
-        df_cases[col] *= df_cases['População']/100000
+        df_cases[col] *= df_cases['População'] / 100000
 
     df = mergedata_scale(df, df_cases)
     return df
@@ -96,6 +112,7 @@ def main(update_db=False):
                         low_memory=False)
     dfpop.rename(columns={'UF': 'Unidade da Federação'}, inplace=True)
     dfpop.rename(columns={'Código': 'UF'}, inplace=True)
+    dfpop_tot = dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']]
 
     if update_db:
         dfdict = {}
@@ -112,7 +129,7 @@ def main(update_db=False):
             df = pd.read_csv(basedir + '%s_%s_incidence.csv' % (pref, estimate_file), encoding='utf-8',
                              low_memory=False)
             df['dado'] = pref
-            df = convert_estimates(df, dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
+            df = convert_estimates(df, dfpop_tot)
             df_new = df_new.append(df, ignore_index=True, sort=True)
         fname = '%s_values' % estimate_file
         df_new.to_csv(outdir + fname + '.csv', index=False)
@@ -175,8 +192,8 @@ def main(update_db=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Convert results from incidence to cases and merge datasets.\n" +
-                                     "Exemple usage:\n" +
-                                     "python3 consolidate_datasets.py",
+                                                 "Exemple usage:\n" +
+                                                 "python3 consolidate_datasets.py",
                                      formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--db', help='Update database', action='store_true')
     args = parser.parse_args()

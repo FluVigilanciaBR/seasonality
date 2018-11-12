@@ -17,7 +17,7 @@ def readtable(fname, sep):
     return (df)
 
 
-def applysinanfilter(df):
+def applysinanfilter(df, tag=None):
     # Filter columns of interest
     # Na solicitação, além das variáveis abaixo, necessitamos também do ID do caso
     tgtcols = ['SEM_NOT', 'DT_NOTIFIC', 'SG_UF_NOT', 'DT_INTERNA', 'DT_SIN_PRI', 'DT_DIGITA', 'HOSPITAL',
@@ -28,7 +28,7 @@ def applysinanfilter(df):
                'PCR_ETIOL', 'PCR_TIPO_H', 'PCR_TIPO_N', 'DT_CULTURA', 'CULT_RES', 'DT_HEMAGLU', 'HEMA_RES',
                'HEMA_ETIOL', 'HEM_TIPO_H', 'HEM_TIPO_N', 'VACINA', 'DT_UT_DOSE', 'ANT_PNEUMO', 'DT_PNEUM',
                'CO_UF_INTE', 'CO_MU_INTE', 'CO_UN_INTE', 'DT_ENCERRA', 'NU_NOTIFIC', 'ID_AGRAVO', 'ID_MUNICIP',
-               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'CS_SEXO', 'CS_GESTANT', 'CS_RACA', 'DT_ANTIVIR']
+               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'CS_SEXO', 'CS_GESTANT', 'CS_RACA', 'DT_ANTIVIR', 'DT_OBITO']
 
     cols = df.columns
     if 'RES_VRS' in cols:
@@ -189,6 +189,8 @@ def applysinanfilter(df):
             return x - 4000
 
     df['idade_em_anos'] = df['NU_IDADE_N'].apply(f_idade)
+    if tag:
+        df['tag'] = tag
 
     return (df)
 
@@ -199,7 +201,7 @@ def main(flist, sep=',', yearmax=None):
         print(fname)
         module_logger.info('Processing database file: %s', fname)
         dftmp = readtable(fname, sep)
-        df = df.append(applysinanfilter(dftmp), ignore_index=True, sort=True)
+        df = df.append(applysinanfilter(dftmp, tag=fname), ignore_index=True, sort=True)
 
     if (yearmax):
         df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) <= yearmax)]
