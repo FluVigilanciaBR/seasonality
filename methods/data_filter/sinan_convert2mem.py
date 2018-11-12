@@ -5,10 +5,11 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 import pandas as pd
 import numpy as np
 import argparse
+import logging
 from .episem import lastepiweek
-import datetime
 from argparse import RawDescriptionHelpFormatter
 
+module_logger = logging.getLogger('update_system.sinan_convert2mem')
 age_cols = ['Idade desconhecida', '0-4 anos', '5-9 anos', '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos',
             '50-59 anos', '60+ anos']
 
@@ -63,7 +64,7 @@ def readtable(fname, sep=','):
     df.UF = df.UF.astype('int64')
 
     yearlist = sorted(list(df.epiyear.unique()))
-    print(yearlist)
+    module_logger.info('Year list: %s', yearlist)
     lastweek = df.epiweek[df.epiyear == max(yearlist)].max()
     uflist = list(df.UF.unique())
     sexlist = ['M', 'F', 'I', 'Total']
@@ -235,5 +236,4 @@ if __name__ == '__main__':
     parser.add_argument('--path', help='Path to data file')
     parser.add_argument('--sep', help='Column separator', default=',')
     args = parser.parse_args()
-    print(args)
     main(args.path, args.sep)

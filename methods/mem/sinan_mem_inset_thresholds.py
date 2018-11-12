@@ -13,11 +13,14 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
+import logging
 from argparse import RawDescriptionHelpFormatter
 import matplotlib.font_manager as fm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib.ticker as ticker
 from scipy.stats.mstats import gmean
+
+module_logger = logging.getLogger('update_system.sinan_mem_inset_thresholds')
 
 # Load R MEM package:
 mem = importr('mem')
@@ -521,10 +524,10 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
     # 2: second derivative fixed criterium
     wdw_method = 2
     wdw_method_lbl = {1: 'original', 2: 'criterium'}
+    mem_calc = {'SUCCESS': [], 'FAILED': []}
     for uf in uflist:
         if uf not in list(df.UF.unique()):
             continue
-        print(uf)
         dftmp = df[df.UF == uf].reset_index().drop('index', axis=1).copy()
         dftmpinset = dfinset[dfinset.UF == uf].reset_index().drop('index', axis=1).copy()
         seasons = sorted([x for x in dftmp.columns if 'SRAG' in x])
@@ -699,8 +702,9 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                 plt.clf()
                 plt.close()
 
+            mem_calc['SUCCESS'].extend([uf])
         except:
-            print('MEM Failed', uf)
+            mem_calc['FAILED'].extend([uf])
             dftmp['região de baixa atividade típica'] = 1
             dftmpinset['região de baixa atividade típica'] = 1
             thresholds = extract_typ_real_curve(dftmp[seasons], discarded_seasons, wdw_method,
@@ -807,6 +811,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
     dfcorredor_cases.to_csv('./mem-data/%s-mem-typical_cases-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]),
                           index=False)
     dfcorredor_cases.to_csv('../clean_data/mem-typical_cases.csv', index=False)
+    module_logger.info('MEM calculation outcome:\n - SUCCESS: %(SUCCESS)s\n - FAILED: %(FAILED)s' % mem_calc)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generate MEM analysis from cleaned SINAN-SRAG data,\n" +

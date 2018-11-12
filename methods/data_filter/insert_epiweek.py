@@ -7,10 +7,8 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 
 def opportunity_calc_epiweeks(df, colA, colB, colnew):
-    print(colA, colB)
     mask = (df.DT_NOTIFIC_epiyear != 2013)
     mask = (mask & pd.notnull(df[[colA, colB]]).all(axis=1))
-    print(sum(mask))
     df.loc[mask, colnew] = df.loc[mask, '%s_epiweek' % colB].astype(int) - df.loc[mask, '%s_epiweek' % colA].astype(
         int) + (df.loc[mask, '%s_epiyear' % colB].astype(int) - df.loc[mask, '%s_epiyear' % colA].astype(int)) * \
                                   (df.loc[mask, '%s_epiyear' % colA].apply(lastepiweek)).astype(int)
@@ -19,10 +17,8 @@ def opportunity_calc_epiweeks(df, colA, colB, colnew):
 
 
 def opportunity_calc_days(df, colA, colB, colnew):
-    print(colA, colB)
     mask = (df.DT_NOTIFIC_epiyear != 2013)
     mask = (mask & pd.notnull(df[[colA, colB]]).all(axis=1))
-    print(sum(mask))
     df.loc[mask, colnew] = (pd.to_datetime(df.loc[mask, colB]) - pd.to_datetime(df.loc[mask, colA])).dt.days
     df.loc[df[colnew] < 0, colnew] = None
 

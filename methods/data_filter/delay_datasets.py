@@ -1,12 +1,9 @@
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 import pandas as pd
-import numpy as np
-import sys
-import datetime
-import calendar
-import argparse
-from argparse import RawDescriptionHelpFormatter
+import logging
+
+module_logger = logging.getLogger('update_system.delay_datasets')
 
 
 def readtable(fname):
@@ -48,14 +45,16 @@ def main():
 
     dataset = ['srag', 'sragflu', 'obitoflu']
     dataset_name = dataset[0]
-    print(dataset_name)
+    module_logger.info('Processing dataset: %s', dataset_name)
     df = readtable('../clean_data/clean_data_%s_epiweek.csv' % dataset_name)
     df['dado'] = dataset_name
+    module_logger.info('... DONE')
     for dataset_name in dataset[1:]:
-        print(dataset_name)
+        module_logger.info('Processing dataset: %s', dataset_name)
         dftmp = readtable('../clean_data/clean_data_%s_epiweek.csv' % dataset_name)
         dftmp['dado'] = dataset_name
         df = df.append(dftmp, sort=True)
+        module_logger.info('... DONE')
 
     df.loc[pd.isnull(df.UF), 'UF'] = 99
 

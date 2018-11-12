@@ -9,7 +9,7 @@ import logging
 from argparse import RawDescriptionHelpFormatter
 
 
-module_logger = logging.getLogger('update_system.dbf2csv')
+module_logger = logging.getLogger('update_system.sinan_filter_of_interest')
 
 
 def readtable(fname, sep):
@@ -198,7 +198,6 @@ def applysinanfilter(df, tag=None):
 def main(flist, sep=',', yearmax=None):
     df = pd.DataFrame()
     for fname in flist:
-        print(fname)
         module_logger.info('Processing database file: %s', fname)
         dftmp = readtable(fname, sep)
         df = df.append(applysinanfilter(dftmp, tag=fname), ignore_index=True, sort=True)
