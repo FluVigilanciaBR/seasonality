@@ -16,6 +16,10 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 
+# TODO: insert module for delay_table.py script
+# TODO: update opportunity estimator module
+
+
 def convert_dbf(flist):
     from data_filter import dbf2csv
 

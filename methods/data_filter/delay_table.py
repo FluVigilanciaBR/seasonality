@@ -17,7 +17,9 @@ def extract_quantile(dforig=pd.DataFrame):
         else:
             weekmax = int(episem.lastepiweek(year)) + 1
         for week in range(1, weekmax):
-            dftmp = df.loc[(df.epiyear >= year-2) & (df.DT_DIGITA_epiyearweek <= '%sW%02d' % (year, week)),
+            f_epiweek = '%sW%02d' % (year-2, week)
+            l_epiweek = '%sW%02d' % (year, week)
+            dftmp = df.loc[(df.epiyearweek >= f_epiweek) & (df.DT_DIGITA_epiyearweek <= l_epiweek),
                            tgt_cols + ['dado', 'delayweeks']]
             for tgt_col in tgt_cols:
                 out_cols = [tgt_col, 'dado', 'delayweeks']
