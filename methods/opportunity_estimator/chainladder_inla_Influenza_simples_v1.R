@@ -162,7 +162,7 @@ for (uf in unique(d_weekly$UF)){
 names(d_weekly)[5] <- 'SRAG'
 d_weekly$Situation <- 'stable'
 d_weekly$SRAG[is.na(d_weekly$SRAG)] <- 0
-d_weekly[,c("mean","50%","2.5%","97.5%")] <- d_weekly$SRAG
+d_weekly[,c("mean","50%","2.5%","97.5%", "25%", "75%", "5%", "95%")] <- d_weekly$SRAG
 rm(dtmp)
 
 # Thresholds:

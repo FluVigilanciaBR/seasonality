@@ -2,14 +2,6 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 import os, logging, glob, argparse
 from argparse import RawDescriptionHelpFormatter
-from data_filter import dbf2csv,\
-    sinan_filter_of_interest,\
-    insert_epiweek,\
-    delay_datasets, \
-    sinan_convert2mem,\
-    consolidate_datasets
-from opportunity_estimator import add_situation2weekly_data
-from mem import sinan_mem_inset_thresholds
 from subprocess import run
 
 logger = logging.getLogger('update_system')
@@ -25,6 +17,8 @@ logger.addHandler(ch)
 
 
 def convert_dbf(flist):
+    from data_filter import dbf2csv
+
     module_name = dbf2csv.__name__
     try:
         dbf2csv.main(flist)
@@ -37,6 +31,8 @@ def convert_dbf(flist):
 
 
 def apply_filters(flist=None):
+    from data_filter import sinan_filter_of_interest
+
     module_name = sinan_filter_of_interest.__name__
 
     if not flist:
@@ -54,6 +50,8 @@ def apply_filters(flist=None):
 
 
 def add_epiweek():
+    from data_filter import insert_epiweek
+
     module_name = insert_epiweek.__name__
     flist = ['clean_data_srag.csv', 'clean_data_sragflu.csv', 'clean_data_obitoflu.csv']
     for fname in flist:
@@ -71,6 +69,8 @@ def add_epiweek():
 
 
 def convert2mem():
+    from data_filter import sinan_convert2mem
+
     module_name = sinan_convert2mem.__name__
     flist = ['../clean_data/clean_data_srag_epiweek.csv',
              '../clean_data/clean_data_sragflu_epiweek.csv',
@@ -90,6 +90,8 @@ def convert2mem():
 
 
 def apply_mem():
+    from mem import sinan_mem_inset_thresholds
+
     module_name = sinan_mem_inset_thresholds.__name__
     dataset = ['srag', 'sragflu', 'obitoflu']
     for data in dataset:
@@ -113,6 +115,8 @@ def apply_mem():
 
 
 def apply_estimator():
+    from opportunity_estimator import add_situation2weekly_data
+
     dataset = ['srag', 'sragflu', 'obitoflu']
     Rscript = 'chainladder_inla_Influenza_simples_v1.R'
 
@@ -138,6 +142,8 @@ def apply_estimator():
 
 
 def consolidate():
+    from data_filter import consolidate_datasets
+
     module_name = consolidate_datasets.__name__
     try:
         consolidate_datasets.main(True)
@@ -147,6 +153,7 @@ def consolidate():
 
     logger.info('%s : DONE', module_name)
     return
+
 
 def main(flist = None, update_mem = False, module_list = None, history_files=None):
     '''
@@ -186,6 +193,8 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
         add_epiweek()
 
     if 'opportunities' in module_list:
+        from data_filter import delay_datasets
+
         logger.info('Create table of opportunities')
         delay_datasets.main()
 

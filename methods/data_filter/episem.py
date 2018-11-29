@@ -50,6 +50,13 @@ def lastepiday(year=int):
     return day
 
 
+def epiweek2date(y, w):
+    day1 = firstepiday(y)
+    saturday = (day1 + datetime.timedelta(weeks=w-1)).strftime('%Y%m%d')
+
+    return saturday
+
+
 def episem(x, sep='W', out='YW'):
 
     """

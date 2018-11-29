@@ -38,8 +38,15 @@ def applysinanfilter(df, tag=None):
         df[col] = None
 
     df = df[tgtcols].copy()
+    dt_cols = ['DT_NOTIFIC', 'DT_INTERNA', 'DT_SIN_PRI', 'DT_DIGITA', 'DT_COLETA', 'DT_IFI', 'DT_PCR_1', 'DT_OUTMET',
+               'DT_PCR', 'DT_CULTURA', 'DT_HEMAGLU', 'DT_UT_DOSE', 'DT_PNEUM', 'DT_ENCERRA', 'DT_ANTIVIR', 'DT_OBITO']
+
 
     # Filter by notification date
+    df = df.where(df != -1, None)
+    df[dt_cols] = df[dt_cols].where(df[dt_cols] != 10101, None)
+    if df.CRITERIO.dtype == 'O':
+        df.CRITERIO = df.CRITERIO.where(df.CRITERIO != 'NÃ', None)
     df.dropna(subset=["DT_SIN_PRI", "DT_NOTIFIC"], inplace=True)
 
     # Filter by symptoms:
@@ -58,18 +65,20 @@ def applysinanfilter(df, tag=None):
     # Convert all date related columns to datetime format
     cols = df.columns
     # Check date input format
-    dtsep = '-'
     sample = df.DT_NOTIFIC.iloc[0]
-    if '/' in sample:
-        dtsep = '/'
-    dttest = pd.DataFrame(list(df.DT_NOTIFIC.str.split(dtsep)))
-    maxvals = [int(dttest[i].max()) for i in range(3)]
-    del dttest
-    yearpos = maxvals.index(max(maxvals))
-    if yearpos == 2:
-        dtformat = '%d' + dtsep + '%m' + dtsep + '%Y'
-    else:
-        dtformat = '%Y' + dtsep + '%m' + dtsep + '%d'
+    dtformat = '%Y%m%d'
+    if isinstance(sample, str):
+        dtsep = '-'
+        if '/' in sample:
+            dtsep = '/'
+        dttest = pd.DataFrame(list(df.DT_NOTIFIC.str.split(dtsep)))
+        maxvals = [int(dttest[i].max()) for i in range(3)]
+        del dttest
+        yearpos = maxvals.index(max(maxvals))
+        if yearpos == 2:
+            dtformat = '%d' + dtsep + '%m' + dtsep + '%Y'
+        else:
+            dtformat = '%Y' + dtsep + '%m' + dtsep + '%d'
 
     for col in cols:
         if 'DT' in col:
@@ -188,7 +197,10 @@ def applysinanfilter(df, tag=None):
         else:
             return x - 4000
 
-    df['idade_em_anos'] = df['NU_IDADE_N'].apply(f_idade)
+    if (df.NU_IDADE_N > 4000).any(axis = 0):
+        df['idade_em_anos'] = df['NU_IDADE_N'].apply(f_idade)
+    else:
+        df['idade_em_anos'] = df['NU_IDADE_N']
     if tag:
         df['tag'] = tag
 

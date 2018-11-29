@@ -1,6 +1,7 @@
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 import pandas as pd
+
 import logging
 
 module_logger = logging.getLogger('update_system.delay_datasets')
@@ -8,8 +9,15 @@ module_logger = logging.getLogger('update_system.delay_datasets')
 
 def readtable(fname):
     tgt_cols = ['SG_UF_NOT',
+                'DT_NOTIFIC_epiyearweek',
                 'DT_NOTIFIC_epiyear',
                 'DT_NOTIFIC_epiweek',
+                'DT_SIN_PRI_epiyearweek',
+                'DT_SIN_PRI_epiyear',
+                'DT_SIN_PRI_epiweek',
+                'DT_DIGITA_epiyearweek',
+                'DT_DIGITA_epiyear',
+                'DT_DIGITA_epiweek',
                 'Notific2Digita_DelayWeeks',
                 'SinPri2Digita_DelayWeeks',
                 'SinPri2Antivir_DelayWeeks',
@@ -62,6 +70,7 @@ def main():
     df_reg = pd.read_csv('../data/regioesclimaticas.csv', low_memory=False)[['Código', 'Região', 'Região oficial']]
     df_reg.rename(columns={'Código': 'UF', 'Região': 'Regional', 'Região oficial': 'Regiao'}, inplace=True)
     df = df.merge(df_reg, on='UF')
+    df['Pais'] = 'BR'
 
     df.to_csv('../../data/data/delay_table.csv', index=False)
 

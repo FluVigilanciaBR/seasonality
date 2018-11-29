@@ -469,6 +469,12 @@ def migrate_delay_table(df):
 
     # remove unnecessary fields
     df.drop([
+        'DT_SIN_PRI_epiyearweek',
+        'DT_SIN_PRI_epiweek',
+        'DT_SIN_PRI_epiyear',
+        'DT_DIGITA_epiyearweek',
+        'DT_DIGITA_epiyear',
+        'DT_DIGITA_epiweek',
         'Notific2Digita_DelayWeeks',
         'SinPri2Digita_DelayWeeks',
         'SinPri2Antivir_DelayWeeks',
