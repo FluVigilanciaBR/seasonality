@@ -21,7 +21,8 @@ source('./lastepiweek.R')
 source('./generate.estimates.R')
 source('./post.thresholds.R')
 source('./post.sum.R')
-require(tidyverse)
+source('./insert.na.triangle.R')
+suppressPackageStartupMessages(library("tidyverse"))
 
 # TODO: update to new data structure
 
@@ -71,11 +72,24 @@ lyear <- as.integer(strsplit(today, 'W')[[1]][1])
 today.week <- as.integer(strsplit(today, 'W')[[1]][2])
 print(paste0('Database reference epiweek: ', today))
 
-
-# Discar incomplete data from the current week
+# Discard incomplete data from the current week and older than 2 years
 d.orig <- d
-d <- d[d$epiyearweek <= today & d$epiyearweek >= paste0(lyear-2,'W', today.week),]
+d <- d[d$epiyearweek <= today,]
 
+#### Discard runoff triangle (important for retroactive calculations):
+uf_list <- unique(d$UF)
+uf_list <- uf_list[!(uf_list %in% c('99','RegNI', 'RNI'))]
+delay.week <- paste("d",0:26, sep="")
+for (uf in uf_list){
+  d[d$UF == uf, delay.week] <- d %>%
+    filter(UF == uf) %>%
+    dplyr::select(delay.week) %>%
+    insert.na.triangle()
+}
+d[is.na(d)] <- 0
+d$Notifications_within_26w <- d[,delay.week] %>%
+  rowSums()
+  
 # Read population profile:
 d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', check.names = F, encoding='utf-8',
                   stringsAsFactors = FALSE)
@@ -111,8 +125,6 @@ aux2 <- t(mapply(FUN=function(uf, inc)
 thres.prob.cols <- colnames(aux2)
 d_weekly[,thres.prob.cols] <- aux2
 
-# List of locations:
-uf_list <- unique(d$UF)
 
 if (args$graphs){
   # Check if plot folder exists
@@ -129,11 +141,13 @@ if (args$graphs){
   }
 }
 
+start.epiweek <- paste0(lyear-2,'W', min(lastepiweek(lyear-2), sprintf('%02d',today.week)))
 for (uf in uf_list){
   qthreshold <- dquantile$delayweeks[dquantile$UF == as.character(uf)]
   delay.tbl.tmp <- droplevels(d[d$UF==uf,]) %>%
     dplyr::select(-dado, -Notifications) %>%
-    rename(Notifications=Notifications_within_26w)
+    rename(Notifications=Notifications_within_26w) %>%
+    filter(epiyearweek >= start.epiweek)
   
   rownames(delay.tbl.tmp) <- delay.tbl.tmp$epiyearweek
   
@@ -146,14 +160,15 @@ for (uf in uf_list){
     }
     # Plot UF's delay distribution
     svg(paste0('./plots/',args$type, '/',uf,'/delay_pattern.svg'))
-    delay.tbl.tmp %>%
+    histo <- delay.tbl.tmp %>%
       dplyr::select(-UF, -starts_with("epi"), -Notifications, -date) %>%
       colSums() %>%
       data.frame() %>%
       rownames_to_column() %>%
       rename(Delay = "rowname", Frequency = ".") %>%
-      mutate(Delay=gsub("d", "", Delay), Frequency=Frequency/sum(Frequency)) %>%
-      ggplot(aes(x=as.integer(Delay), y=Frequency)) +
+      mutate(Delay=as.integer(gsub("d", "", Delay)), Frequency=Frequency/sum(Frequency))
+    histo %>%
+      ggplot(aes(x=Delay, y=Frequency)) +
       geom_col() +
       geom_vline(xintercept = qthreshold, linetype=2) +
       annotate("text", label="Dmax", x=qthreshold, y=.55*max(histo$Frequency), vjust=-0.5, angle=90) +
@@ -182,8 +197,40 @@ for (uf in uf_list){
     barplot.fig <- barplot(t(as.matrix(delay.tbl.tmp[,delay.week])), beside = F, col=cores, axisnames = F,
     xlab  =  "Time", ylab = "Notifications", border = NA)
     lines(x=barplot.fig,y=delay.tbl.tmp$d0, type = "l")
-    axis(1, at = barplot.fig[seq(1,53*(lyear-fyear+1),52)] , labels = c(fyear:(lyear+1)) )
-    #legend(x='topright', legend = c(seq(0,25,5)), fill=cores[seq(1,26,5)], pch = '.')
+    m1 <- as.integer(lastepiweek(lyear-2))-today.week
+    m2 <- m1 + as.integer(lastepiweek(lyear-1))
+    if (today.week > 26){
+      x.breaks <- c(1,
+                    m1+1,
+                    m1+26,
+                    m2+1,
+                    m2+26,
+                    m2+today.week+1
+      )
+      x.labels <- c(start.epiweek,
+                    paste0(lyear-1,'W01'),
+                    paste0(lyear-1,'W26'),
+                    paste0(lyear,'W01'),
+                    paste0(lyear,'W26'),
+                    today)
+    } else {
+      x.breaks <- c(1,
+                    26-today.week+1,
+                    m1+1,
+                    m1+26,
+                    m2+1,
+                    m2+today.week+1
+      )
+      x.labels <- c(start.epiweek,
+                    paste0(lyear-2,'W26'),
+                    paste0(lyear-1,'W01'),
+                    paste0(lyear-1,'W26'),
+                    paste0(lyear,'W01'),
+                    today)
+    }
+    axis(1, at = barplot.fig[x.breaks] ,
+         labels = x.labels, las=2 )
+    legend(x='topright', legend = c(seq(0,25,5)), fill=cores[seq(1,26,5)], pch = '.')
     dev.off()
   }
 
@@ -193,16 +240,19 @@ for (uf in uf_list){
   
   # Time index of the unknown counts (Dmax+1,...,Tactual)
 
-  qthreshold <- min(8, max(4, qthreshold))
+  qthreshold <- max(4, qthreshold)
   uf.indexes <- rownames(d_weekly[d_weekly$UF==as.character(uf),])
   Tactual <- length(uf.indexes)
-  index.time <- uf.indexes[(Tactual-qthreshold+1):Tactual]
+  index.time <- uf.indexes[(Tactual-min(8,qthreshold)+1):Tactual]
   
   if (!(uf %in% low.activity)) {
     print(uf)
     # Calculate estimates
     df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold, do.plots=args$graphs, uf=paste0(args$type,'/', uf))
     
+    # Keep only up to 8 weeks:
+    i.start <- max(0, qthreshold-8) + 1
+    df.tbl.tmp.estimates$samples <- df.tbl.tmp.estimates$samples[i.start:qthreshold,]
     # Generate quantiles estimates
     aux2 <- round(t(apply(df.tbl.tmp.estimates$samples,1,FUN = post.sum)))
 
@@ -233,7 +283,10 @@ if (!dir.exists(file.path('../clean_data'))) {
   dir.create(file.path('../clean_data'), showWarnings = FALSE)
 }
 
-
+d_weekly$Tipo <- NA
+# Consolidate column order:
+d_weekly <- d_weekly[,c('UF', 'epiyear', 'epiweek', 'Tipo', 'SRAG', 'Situation',
+                        new.vars, 'L0', 'L1', 'L2', 'L3')]
 d_weekly[,'Run date'] <- Sys.Date()
 con<-file(file.path('../clean_data/',paste0(args$type,'_', today, 'estimated_incidence.csv')), encoding="UTF-8")
 write.csv(d_weekly, file=con, na='', row.names = F)
@@ -241,7 +294,8 @@ write.csv(d_weekly, file=con, na='', row.names = F)
 con<-file(file.path(paste0('../clean_data/', args$type, '_current_estimated_incidence.csv')), encoding="UTF-8")
 write.csv(d_weekly, file=con, na='', row.names = F)
 
-df.Dmax <- dquantile
+df.Dmax <- dquantile %>%
+  rename(Dmax = delayweeks)
 df.Dmax$Execution <- Sys.Date()
 fname <- file.path('../clean_data/', paste0(args$type, '_Dmax.csv'))
 ifelse(file.exists(fname), print.col.names <- FALSE, print.col.names <- TRUE)

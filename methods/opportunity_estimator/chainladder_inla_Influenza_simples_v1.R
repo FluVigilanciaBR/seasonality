@@ -89,6 +89,9 @@ d.orig <- d
 # Discard years before 2013:
 d <- droplevels(subset(d, DT_SIN_PRI_epiyear >= 2013))
 
+start.epiweek <- paste0(lyear-2,'W', min(lastepiweek(lyear-2), sprintf('%02d',today.week)))
+d <- d[d$DT_DIGITA_epiyearweek <= today & d$DT_SIN_PRI_epiyearweek >= start.epiweek,]
+
 # Opportunity between first symptoms and upload:
 colnames(d)[colnames(d)=='SinPri2Digita_DelayWeeks'] <- 'DelayWeeks'
 

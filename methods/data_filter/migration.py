@@ -212,7 +212,7 @@ def migrate_current_estimates(df):
     df.territory_id = df.territory_id.astype(int)
 
     # remove unnecessary fields
-    df.drop(['territory_type'], axis=1, inplace=True)
+    df.drop(['territory_type', '25%', '75%', '5%', '95%'], axis=1, inplace=True)
 
     # primary_keys
     pks = ['dataset_id', 'scale_id', 'territory_id', 'epiyear',
@@ -261,7 +261,7 @@ def migrate_historical_estimates(df):
     df.territory_id = df.territory_id.astype(int)
 
     # remove unnecessary fields
-    df.drop(['territory_type'], axis=1, inplace=True)
+    df.drop(['territory_type', '25%', '75%', '5%', '95%'], axis=1, inplace=True)
 
     # primary_keys
     pks = [
