@@ -7,25 +7,33 @@ import logging
 import pandas as pd
 from argparse import RawDescriptionHelpFormatter
 from subprocess import call
+from datetime import date
 
 module_logger = logging.getLogger('update_system.email_extract')
 
-
 def extract_csv(dir):
-    cwdir = os.getcwd()
+    cwd = os.getcwd()
     os.chdir(dir)
 
     for f in glob.glob('*.zip'):
         call(["rename", 's/ //', f])
 
-    file = sorted(glob.glob('*.zip'), reverse=True)[-1]
-    os.chdir(cwdir)
-    return pd.read_csv('%s/%s' %(dir, file), header=1, encoding='utf-16')
+    try:
+        file = sorted(glob.glob('*.zip'), reverse=True)[-1]
+    except ValueError as error:
+        module_logger.error(error)
+        raise ValueError('No zip file on %s' % dir)
+    df = pd.read_csv(file, header=1, encoding='utf-16')
+    today = date.today().strftime('%Y-%m-%d')
+    call(['mv', file, './processed/%s_%s' %(today, file)])
+    os.chdir(cwd)
+    return df
 
 
 def write_to_folder(df, year):
 
-    df.to_csv('../data/INFLUD%s.csv' % year, index=False, encoding='utf-8')
+    output = os.path.join(os.getcwd(), '..', 'data', 'INFLUD%s.csv' % year)
+    df.to_csv(output, index=False, encoding='utf-8')
     return
 
 

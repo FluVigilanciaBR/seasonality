@@ -16,16 +16,29 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 
-# TODO: insert module for delay_table.py script
-# TODO: update opportunity estimator module
-
-
 def convert_dbf(flist):
     from data_filter import dbf2csv
 
     module_name = dbf2csv.__name__
     try:
         dbf2csv.main(flist)
+    except:
+        logger.exception(module_name)
+        raise
+
+    logger.info('%s : DONE', module_name)
+    return
+
+
+def email_update(dir, years):
+    from data_filter import email_extract
+
+    module_name = email_extract.__name__
+
+    try:
+        for year in years:
+            logger.info('Updating over e-mail. Base year: %s' % year)
+            email_extract.main(dir, year)
     except:
         logger.exception(module_name)
         raise
@@ -42,6 +55,7 @@ def apply_filters(flist=None):
     if not flist:
         flist = sorted(glob.glob('../data/INFLUD*.csv'))
 
+    logger.info('Historical files: %s', flist)
     try:
         sinan_filter_of_interest.main(flist)
     except:
@@ -122,14 +136,14 @@ def apply_estimator():
     from opportunity_estimator import add_situation2weekly_data
 
     dataset = ['srag', 'sragflu', 'obitoflu']
-    Rscript = 'chainladder_inla_Influenza_simples_v1.R'
+    Rscript = 'opportunity.estimator.R'
 
     for data in dataset:
         logger.info('Calculating estimates for dataset: %s' % data)
         try:
             run(['Rscript', '--vanilla', Rscript, '-d', 'max', '-t', data])
         except:
-            logger.exception('opportunity_estimator.chainladder_inla_Influenza_simples_v1.R')
+            logger.exception('opportunity_estimator.opportunity.estimator.R')
             raise
 
         logger.info('Adding situation info for dataset: %s' % data)
@@ -141,7 +155,7 @@ def apply_estimator():
 
         logger.info('... DONE')
 
-    logger.info('opportunity_estimator.chainladder_inla_Influenza_simples_v1 : DONE')
+    logger.info('opportunity_estimator : DONE')
     return
 
 
@@ -159,7 +173,7 @@ def consolidate():
     return
 
 
-def main(flist = None, update_mem = False, module_list = None, history_files=None):
+def main(flist = None, update_mem = False, module_list = None, history_files=None, dir=None, years=None):
     '''
     Run all scripts to update the system with new database.
     Optional: update MEM thresholds
@@ -178,15 +192,18 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
 
     logger.info('System update: START')
     logger.info('Update MEM: %s', update_mem)
-    logger.info('File list: %s', flist)
     logger.info('Update modules: %s', module_list)
-    logger.info('Historical files: %s', history_files)
 
     if 'dbf2csv' in module_list:
+        logger.info('Module dbf2csv file list: %s', flist)
         logger.info('Convert DBF to CSV')
         convert_dbf(flist)
 
     os.chdir('./data_filter')
+
+    if 'email' in module_list:
+        logger.info('Emails update years: %s', years)
+        email_update(dir, years)
 
     if 'filter' in module_list:
         logger.info('Aggregate and filter data')
@@ -197,10 +214,12 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
         add_epiweek()
 
     if 'opportunities' in module_list:
-        from data_filter import delay_datasets
+        from data_filter import delay_datasets, delay_table
 
         logger.info('Create table of opportunities')
         delay_datasets.main()
+        fname = os.path.join(os.getcwd(),'..', '..', 'data', 'data', 'delay_table.csv')
+        delay_table.main(fname)
 
     if 'convert2mem' in module_list:
         logger.info('Convert to MEM structure and aggregate by epiweek')
@@ -235,6 +254,10 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--history', nargs='*', action='append', help='Path to historical notifications csv files',
                         default=None)
+    parser.add_argument('--dir', help='Base folder for e-mail update module',
+                        default=None)
+    parser.add_argument('--years', nargs='*', action='append', help='Base years for e-mail update module',
+                        default=None)
     args = parser.parse_args()
     if args.path:
         args.path = args.path[0]
@@ -242,5 +265,7 @@ if __name__ == '__main__':
         args.modules = [x.lower() for x in args.modules[0]]
     if args.history:
         args.history = args.history[0]
+    if args.years:
+        args.years = args.years[0]
 
-    main(args.path, args.mem, args.modules, args.history)
+    main(args.path, args.mem, args.modules, args.history, args.dir, args.years)
