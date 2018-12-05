@@ -2,7 +2,7 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 import os, logging, glob, argparse
 from argparse import RawDescriptionHelpFormatter
-from subprocess import run
+from subprocess import run, PIPE
 
 logger = logging.getLogger('update_system')
 logger.setLevel(logging.DEBUG)
@@ -132,7 +132,7 @@ def apply_mem():
     return
 
 
-def apply_estimator():
+def apply_estimator(date='max'):
     from opportunity_estimator import add_situation2weekly_data
 
     dataset = ['srag', 'sragflu', 'obitoflu']
@@ -141,7 +141,7 @@ def apply_estimator():
     for data in dataset:
         logger.info('Calculating estimates for dataset: %s' % data)
         try:
-            run(['Rscript', '--vanilla', Rscript, '-d', 'max', '-t', data])
+            run(['Rscript', '--vanilla', Rscript, '-d', date, '-t', data], check=True)
         except:
             logger.exception('opportunity_estimator.opportunity.estimator.R')
             raise
@@ -173,7 +173,7 @@ def consolidate():
     return
 
 
-def main(flist = None, update_mem = False, module_list = None, history_files=None, dir=None, years=None):
+def main(flist = None, update_mem = False, module_list = None, history_files=None, dir=None, years=None, date='max'):
     '''
     Run all scripts to update the system with new database.
     Optional: update MEM thresholds
@@ -214,12 +214,29 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
         add_epiweek()
 
     if 'opportunities' in module_list:
-        from data_filter import delay_datasets, delay_table
-
         logger.info('Create table of opportunities')
-        delay_datasets.main()
-        fname = os.path.join(os.getcwd(),'..', '..', 'data', 'data', 'delay_table.csv')
-        delay_table.main(fname)
+        module_name = 'update_system.opportunities'
+        try:
+            from data_filter import delay_datasets, delay_table
+        except:
+            logger.exception(module_name)
+
+        submodule_name = 'delay_datasets'
+        try:
+            delay_datasets.main()
+            fname = os.path.join(os.getcwd(), '..', '..', 'data', 'data', 'delay_table.csv')
+        except:
+            logger.exception('%s.%s' % (module_name, submodule_name))
+            raise
+
+        submodule_name = 'delay_table'
+        try:
+            delay_table.main(fname)
+        except:
+            logger.exception('%s.%s' % (module_name, submodule_name))
+            raise
+
+        logger.info('%s : DONE', module_name)
 
     if 'convert2mem' in module_list:
         logger.info('Convert to MEM structure and aggregate by epiweek')
@@ -233,7 +250,7 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
     os.chdir('../opportunity_estimator')
     if 'estimator' in module_list:
         logger.info('Apply opportunity estimator')
-        apply_estimator()
+        apply_estimator(date)
 
     os.chdir('../data_filter')
     if 'consolidate' in module_list:
@@ -258,6 +275,8 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--years', nargs='*', action='append', help='Base years for e-mail update module',
                         default=None)
+    parser.add_argument('--date', help='Base date for estimator in the format YYYY-MM-DD or max. Default=max',
+                        default='max')
     args = parser.parse_args()
     if args.path:
         args.path = args.path[0]
@@ -268,4 +287,5 @@ if __name__ == '__main__':
     if args.years:
         args.years = args.years[0]
 
-    main(args.path, args.mem, args.modules, args.history, args.dir, args.years)
+    main(flist=args.path, update_mem=args.mem, module_list=args.modules, history_files=args.history, dir=args.dir,
+         years=args.years, date=args.date)

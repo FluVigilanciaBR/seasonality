@@ -6,7 +6,7 @@ import argparse
 import logging
 import pandas as pd
 from argparse import RawDescriptionHelpFormatter
-from subprocess import call
+from subprocess import run
 from datetime import date
 
 module_logger = logging.getLogger('update_system.email_extract')
@@ -16,7 +16,7 @@ def extract_csv(dir):
     os.chdir(dir)
 
     for f in glob.glob('*.zip'):
-        call(["rename", 's/ //', f])
+        run(["rename", 's/ //', f], check=True)
 
     try:
         file = sorted(glob.glob('*.zip'), reverse=True)[-1]
@@ -25,7 +25,7 @@ def extract_csv(dir):
         raise ValueError('No zip file on %s' % dir)
     df = pd.read_csv(file, header=1, encoding='utf-16')
     today = date.today().strftime('%Y-%m-%d')
-    call(['mv', file, './processed/%s_%s' %(today, file)])
+    run(['mv', '-f', file, './processed/%s_%s' % (today, file)], check=True)
     os.chdir(cwd)
     return df
 

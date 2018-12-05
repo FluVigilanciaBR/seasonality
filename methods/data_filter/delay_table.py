@@ -1,9 +1,12 @@
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
+import sys
+import logging
 import pandas as pd
 import numpy as np
-import episem
-import sys
+from .episem import lastepiweek, epiweek2date
+
+module_logger = logging.getLogger('update_system.delay_table')
 
 
 def extract_quantile(dforig=pd.DataFrame):
@@ -15,7 +18,7 @@ def extract_quantile(dforig=pd.DataFrame):
         if year == df.epiyear.max():
             weekmax = max(df.DT_DIGITA_epiweek[df.DT_DIGITA_epiyear == year]) + 1
         else:
-            weekmax = int(episem.lastepiweek(year)) + 1
+            weekmax = int(lastepiweek(year)) + 1
         for week in range(1, weekmax):
             f_epiweek = '%sW%02d' % (year-2, week)
             l_epiweek = '%sW%02d' % (year, week)
@@ -90,7 +93,7 @@ def createtable(df=pd.DataFrame()):
     tmpdict = []
     for dataset in df.dado.unique():
         for year in yearlist[:-1]:
-            for week in range(1, (int(episem.lastepiweek(year)) + 1)):
+            for week in range(1, (int(lastepiweek(year)) + 1)):
                 tmpdict.extend([{'dado': dataset, 'epiyearweek': '%04dW%02d' % (year, week), 'epiyear': year,
                                  'epiweek': week}])
         year = yearlist[-1]
@@ -121,7 +124,7 @@ def createtable(df=pd.DataFrame()):
         delay_table['Notifications_within_26w'] = delay_table[dcols].sum(axis=1)
         tbl = tbl.append(delay_table.rename(columns={locality: 'UF'}), ignore_index=True, sort=False)
 
-    tbl['date'] = tbl[['epiyear', 'epiweek']].apply(lambda x: episem.epiweek2date(x[0], x[1]), axis=1)
+    tbl['date'] = tbl[['epiyear', 'epiweek']].apply(lambda x: epiweek2date(x[0], x[1]), axis=1)
 
     return(tbl)
 
