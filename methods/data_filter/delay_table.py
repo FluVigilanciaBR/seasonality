@@ -4,6 +4,9 @@ import pandas as pd
 import numpy as np
 import episem
 import sys
+import logging
+
+module_logger = logging.getLogger('update_system.delay_datasets')
 
 
 def extract_quantile(dforig=pd.DataFrame):
@@ -128,11 +131,14 @@ def createtable(df=pd.DataFrame()):
 
 def main(fname, locality='UF'):
 
+    module_logger.info('Read table from %s' % fname)
     df = readtable(fname)
     extract_quantile(df)
     df = createtable(df)
     for dataset in df.dado.unique():
-        df[df.dado == dataset].to_csv('../clean_data/%s_sinpri2digita_table_weekly.csv' % dataset, index=False)
+        fout = '../clean_data/%s_sinpri2digita_table_weekly.csv' % dataset
+        module_logger.info('Write table %s' % fout)
+        df[df.dado == dataset].to_csv(fout, index=False)
 
 
 if __name__ == '__main__':

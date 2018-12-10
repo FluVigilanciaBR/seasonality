@@ -1,8 +1,13 @@
+from typing import Dict
+
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 import os, logging, glob, argparse
 from argparse import RawDescriptionHelpFormatter
 from subprocess import run
+import smtplib
+import yaml
+import datetime
 
 logger = logging.getLogger('update_system')
 logger.setLevel(logging.DEBUG)
@@ -15,6 +20,61 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+home_path = os.path.expanduser("~")
+settings_path = os.path.join(home_path, '.seasonality.yaml')
+
+if os.path.exists(settings_path):
+    EMAIL = {
+        'NAME': None,
+        'USER': None,
+        'PASSWORD': None,
+        'TO': None,
+    }
+    with open(os.path.join(settings_path), 'r') as f:
+        globals().update(yaml.load(f))
+
+    mail_error = {
+        'subject': "InfoGripe Updater: error log",
+        'email_body': """
+        This is an automated message from InfoGripe Updater.
+        During system's database update at %(time)s, there was an error at module %(mdl_name)s.
+        Please check the log for details.
+
+        All the best,
+        InfoGripe Updater Monitor. 
+        """
+    }
+    mail_success = {
+        'subject': "InfoGripe Updater: success",
+        'email_body': """
+        This is an automated message from InfoGripe Updater.
+        System's database update ran without raising any errors at %(time)s.
+
+        All the best,
+        InfoGripe Updater Monitor. 
+        """
+    }
+    send_email = """
+    From: %(USER)s
+    To: %(TO)s
+    Subject: %(subject)s
+               
+    %(email_body)s
+    """
+else:
+    logger.exception('Please configure email settings for system updater at (%s)' % settings_path)
+    raise Exception
+
+try:
+    server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+    server.ehlo()
+    server.login(EMAIL['USER'], EMAIL['PASSWORD'])
+except Exception as exception:
+    logger.exception(exception)
+    raise
+
+time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
 
 def convert_dbf(flist):
     from data_filter import dbf2csv
@@ -24,6 +84,8 @@ def convert_dbf(flist):
         dbf2csv.main(flist)
     except:
         logger.exception(module_name)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
         raise
 
     logger.info('%s : DONE', module_name)
@@ -41,6 +103,8 @@ def email_update(dir, years):
             email_extract.main(dir, year)
     except:
         logger.exception(module_name)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
         raise
 
     logger.info('%s : DONE', module_name)
@@ -60,6 +124,8 @@ def apply_filters(flist=None):
         sinan_filter_of_interest.main(flist)
     except:
         logger.exception(module_name)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
         raise
 
     logger.info('%s : DONE', module_name)
@@ -78,6 +144,8 @@ def add_epiweek():
             insert_epiweek.main(fname)
         except:
             logger.exception(module_name)
+            mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
             raise
 
         logger.info('... DONE')
@@ -99,6 +167,8 @@ def convert2mem():
             sinan_convert2mem.main(fname)
         except:
             logger.exception(module_name)
+            mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
             raise
 
         logger.info('... DONE')
@@ -119,6 +189,8 @@ def apply_mem():
             sinan_mem_inset_thresholds.main(fname)
         except:
             logger.exception(module_name)
+            mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
             raise
 
         os.rename('../clean_data/mem-report.csv',
@@ -132,6 +204,29 @@ def apply_mem():
     return
 
 
+def apply_opportunities():
+    from data_filter import delay_datasets, delay_table
+
+    module_name = delay_datasets.__name__
+    try:
+        delay_datasets.main()
+    except:
+        logger.exception(module_name)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+        raise
+
+    module_name = delay_table.__name__
+    try:
+        fname = os.path.join(os.getcwd(), '..', '..', 'data', 'data', 'delay_table.csv')
+        delay_table.main(fname)
+    except:
+        logger.exception(module_name)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+        raise
+
+
 def apply_estimator():
     from opportunity_estimator import add_situation2weekly_data
 
@@ -140,17 +235,23 @@ def apply_estimator():
 
     for data in dataset:
         logger.info('Calculating estimates for dataset: %s' % data)
+        module_name = 'opportunity_estimator.opportunity.estimator.R'
         try:
             run(['Rscript', '--vanilla', Rscript, '-d', 'max', '-t', data])
         except:
-            logger.exception('opportunity_estimator.opportunity.estimator.R')
+            logger.exception(module_name)
+            mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
             raise
 
         logger.info('Adding situation info for dataset: %s' % data)
+        module_name = add_situation2weekly_data.__name__
         try:
             add_situation2weekly_data.main([data])
         except:
-            logger.exception(add_situation2weekly_data.__name__)
+            logger.exception(module_name)
+            mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
             raise
 
         logger.info('... DONE')
@@ -167,6 +268,8 @@ def consolidate():
         consolidate_datasets.main(True)
     except:
         logger.exception(module_name)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
         raise
 
     logger.info('%s : DONE', module_name)
@@ -214,12 +317,8 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
         add_epiweek()
 
     if 'opportunities' in module_list:
-        from data_filter import delay_datasets, delay_table
-
         logger.info('Create table of opportunities')
-        delay_datasets.main()
-        fname = os.path.join(os.getcwd(),'..', '..', 'data', 'data', 'delay_table.csv')
-        delay_table.main(fname)
+        apply_opportunities()
 
     if 'convert2mem' in module_list:
         logger.info('Convert to MEM structure and aggregate by epiweek')
@@ -241,7 +340,8 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
         consolidate()
 
     logger.info('System update: DONE')
-
+    mail_success['email_body'] = mail_error['email_body'] % {'time': time}
+    server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_success})
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Update InfoGripe database.\n" +
