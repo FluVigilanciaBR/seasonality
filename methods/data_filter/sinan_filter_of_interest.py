@@ -13,7 +13,11 @@ module_logger = logging.getLogger('update_system.sinan_filter_of_interest')
 
 
 def readtable(fname, sep):
-    df = pd.read_csv(fname, sep=sep, low_memory=False, encoding='utf-8')
+    try:
+        df = pd.read_csv(fname, sep=sep, low_memory=False, encoding='utf-8')
+    except:
+        df = pd.read_csv(fname, sep=sep, low_memory=False, encoding='utf-16')
+
     return (df)
 
 

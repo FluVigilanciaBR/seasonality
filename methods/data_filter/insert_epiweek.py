@@ -1,9 +1,12 @@
-import pandas as pd
-from .episem import episem, lastepiweek
-import argparse
 # coding:utf8
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
+import pandas as pd
+from .episem import episem, lastepiweek
+import argparse
+import logging
+
+module_logger = logging.getLogger('update_system.insert_epiweek')
 
 
 def opportunity_calc_epiweeks(df, colA, colB, colnew):
