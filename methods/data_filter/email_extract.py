@@ -11,6 +11,7 @@ from datetime import date
 
 module_logger = logging.getLogger('update_system.email_extract')
 
+
 def extract_csv(dir):
     cwd = os.getcwd()
     os.chdir(dir)

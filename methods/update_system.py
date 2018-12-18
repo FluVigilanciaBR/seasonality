@@ -1,15 +1,22 @@
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
-import os, logging, glob, argparse
-from argparse import RawDescriptionHelpFormatter
-from subprocess import run, PIPE
-import smtplib
-import yaml
+import argparse
 import datetime
+import glob
+import logging
+import os
+import smtplib
+from argparse import RawDescriptionHelpFormatter
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from subprocess import run, PIPE, Popen
+
+import yaml
 
 logger = logging.getLogger('update_system')
 logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler('InfoGripe_system_update.log')
+logger_fname = 'InfoGripe_system_update.log'
+fh = logging.FileHandler(logger_fname)
 ch = logging.StreamHandler('InfoGripe_system_update.error.log')
 ch.setLevel(logging.ERROR)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -20,6 +27,7 @@ logger.addHandler(ch)
 
 home_path = os.path.expanduser("~")
 settings_path = os.path.join(home_path, '.seasonality.yaml')
+logfile_path = os.path.join(os.getcwd(), logger_fname)
 
 if os.path.exists(settings_path):
     EMAIL = {
@@ -32,46 +40,59 @@ if os.path.exists(settings_path):
         globals().update(yaml.load(f))
 
     mail_error = {
-        'subject': "InfoGripe Updater: error log",
+        'subject': "InfoGripe Updater -- error log",
         'email_body': """
         This is an automated message from InfoGripe Updater.
-        During system's database update at %(time)s, there was an error at module %(mdl_name)s.
-        Please check the log for details.
+        System's database update started at %(time)s raised an error at module %(mdl_name)s.
+        Please check the attached log for details.
 
         All the best,
         InfoGripe Updater Monitor. 
-        """
+        """,
+        **EMAIL
     }
     mail_success = {
-        'subject': "InfoGripe Updater: success",
+        'subject': "InfoGripe Updater -- success",
         'email_body': """
         This is an automated message from InfoGripe Updater.
-        System's database update ran without raising any errors at %(time)s.
+        System's database update started at %(time)s ran without raising any errors.
 
         All the best,
         InfoGripe Updater Monitor. 
-        """
+        """,
+        **EMAIL
     }
-    send_email = """
-    From: %(USER)s
-    To: %(TO)s
-    Subject: %(subject)s
-               
-    %(email_body)s
-    """
+
 else:
     logger.exception('Please configure email settings for system updater at (%s)' % settings_path)
     raise Exception
 
-try:
-    server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-    server.ehlo()
-    server.login(EMAIL['USER'], EMAIL['PASSWORD'])
-except Exception as exception:
-    logger.exception(exception)
-    raise
-
 time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+
+def send_email(mail_dict):
+
+    email_msg = MIMEMultipart()
+    email_msg['From'] = '%(NAME)s <%(USER)s>' % mail_dict
+    email_msg['To'] = mail_dict['TO']
+    email_msg['Subject'] = mail_dict['subject']
+    body = MIMEText(mail_dict['email_body'], 'plain')
+    email_msg.attach(body)
+    fp = open(logger_fname, encoding='utf-8')
+    attachment = MIMEText(fp.read(), 'text/plain')
+    attachment.add_header("Content-Disposition", "attachment", filename=logger_fname)
+    email_msg.attach(attachment)
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.ehlo()
+        server.login(EMAIL['USER'], EMAIL['PASSWORD'])
+        server.send_message(email_msg)
+        server.close()
+    except Exception as exception:
+        logger.exception(exception)
+        raise
+
+    return
 
 
 def convert_dbf(flist):
@@ -83,7 +104,7 @@ def convert_dbf(flist):
     except:
         logger.exception(module_name)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+        send_email(mail_error)
         raise
 
     logger.info('%s : DONE', module_name)
@@ -102,7 +123,7 @@ def email_update(dir, years):
     except:
         logger.exception(module_name)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+        send_email(mail_error)
         raise
 
     logger.info('%s : DONE', module_name)
@@ -123,7 +144,7 @@ def apply_filters(flist=None):
     except:
         logger.exception(module_name)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+        send_email(mail_error)
         raise
 
     logger.info('%s : DONE', module_name)
@@ -143,7 +164,7 @@ def add_epiweek():
         except:
             logger.exception(module_name)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+            send_email(mail_error)
             raise
 
         logger.info('... DONE')
@@ -166,7 +187,7 @@ def convert2mem():
         except:
             logger.exception(module_name)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+            send_email(mail_error)
             raise
 
         logger.info('... DONE')
@@ -188,7 +209,7 @@ def apply_mem():
         except:
             logger.exception(module_name)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+            send_email(mail_error)
             raise
 
         os.rename('../clean_data/mem-report.csv',
@@ -211,7 +232,7 @@ def apply_opportunities():
     except:
         logger.exception(module_name)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+        send_email(mail_error)
         raise
 
     module_name = delay_table.__name__
@@ -221,7 +242,7 @@ def apply_opportunities():
     except:
         logger.exception(module_name)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+        send_email(mail_error)
         raise
 
 
@@ -239,7 +260,7 @@ def apply_estimator(date='max'):
         except:
             logger.exception(module_name)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+            send_email(mail_error)
             raise
 
         logger.info('Adding situation info for dataset: %s' % data)
@@ -248,7 +269,7 @@ def apply_estimator(date='max'):
         except:
             logger.exception(module_name)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-            server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+            send_email(mail_error)
             raise
 
         logger.info('... DONE')
@@ -266,7 +287,15 @@ def consolidate():
     except:
         logger.exception(module_name)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-        server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_error})
+        send_email(mail_error)
+        raise
+
+    try:
+        run(['pg_dump', '-Fc', '--host=], check=True)
+    except:
+        logger.exception(module_name)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        send_email(mail_error)
         raise
 
     logger.info('%s : DONE', module_name)
@@ -337,8 +366,9 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
         consolidate()
 
     logger.info('System update: DONE')
-    mail_success['email_body'] = mail_error['email_body'] % {'time': time}
-    server.sendmail(EMAIL['USER'], EMAIL['TO'], send_email % {**EMAIL, **mail_success})
+    mail_success['email_body'] = mail_success['email_body'] % {'time': time}
+    send_email(mail_success)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Update InfoGripe database.\n" +

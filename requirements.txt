@@ -1,3 +1,4 @@
+PyYAML
 sqlalchemy
 dbfread
 pandas>=0.23
