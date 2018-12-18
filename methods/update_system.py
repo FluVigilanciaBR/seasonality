@@ -68,7 +68,7 @@ else:
     raise Exception
 
 time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
+timesmpl = datetime.datetime.now().strftime('%Y%m%d')
 
 def send_email(mail_dict):
 
@@ -280,6 +280,7 @@ def apply_estimator(date='max'):
 
 def consolidate():
     from data_filter import consolidate_datasets
+    from data_filter.settings import DATABASE
 
     module_name = consolidate_datasets.__name__
     try:
@@ -291,7 +292,8 @@ def consolidate():
         raise
 
     try:
-        run(['pg_dump', '-Fc', '--host=], check=True)
+        run(['pg_dump', '-Fc', '--host=%(HOST)s' % DATABASE, '--username=%(USER)s' % DATABASE,
+             '--dbname=%(NAME)s' % DATABASE, '>', 'infogripe_%s' % timesmpl], check=True)
     except:
         logger.exception(module_name)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
@@ -312,6 +314,14 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
     '''
     if module_list and 'all' in module_list:
         module_list = ['dbf2csv',
+                       'filter',
+                       'epiweek',
+                       'opportunities',
+                       'convert2mem',
+                       'estimator',
+                       'consolidate']
+    if module_list and 'full_email_update' in module_list:
+        module_list = ['email',
                        'filter',
                        'epiweek',
                        'opportunities',
