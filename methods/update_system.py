@@ -6,12 +6,11 @@ import glob
 import logging
 import os
 import smtplib
+import yaml
 from argparse import RawDescriptionHelpFormatter
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from subprocess import run, PIPE, Popen
-
-import yaml
+from subprocess import run, Popen, PIPE
 
 logger = logging.getLogger('update_system')
 logger.setLevel(logging.DEBUG)
@@ -28,6 +27,7 @@ logger.addHandler(ch)
 home_path = os.path.expanduser("~")
 settings_path = os.path.join(home_path, '.seasonality.yaml')
 logfile_path = os.path.join(os.getcwd(), logger_fname)
+data_folder = os.path.join(os.getcwd(), '..', 'data', 'data')
 
 if os.path.exists(settings_path):
     EMAIL = {
@@ -35,6 +35,10 @@ if os.path.exists(settings_path):
         'USER': None,
         'PASSWORD': None,
         'TO': None,
+    }
+    SERVER = {
+        'USER': None,
+        'HOST': None
     }
     with open(os.path.join(settings_path), 'r') as f:
         globals().update(yaml.load(f))
@@ -70,6 +74,7 @@ else:
 time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 timesmpl = datetime.datetime.now().strftime('%Y%m%d')
 
+
 def send_email(mail_dict):
 
     email_msg = MIMEMultipart()
@@ -78,7 +83,7 @@ def send_email(mail_dict):
     email_msg['Subject'] = mail_dict['subject']
     body = MIMEText(mail_dict['email_body'], 'plain')
     email_msg.attach(body)
-    fp = open(logger_fname, encoding='utf-8')
+    fp = open(logfile_path, encoding='utf-8')
     attachment = MIMEText(fp.read(), 'text/plain')
     attachment.add_header("Content-Disposition", "attachment", filename=logger_fname)
     email_msg.attach(attachment)
@@ -237,7 +242,7 @@ def apply_opportunities():
 
     module_name = delay_table.__name__
     try:
-        fname = os.path.join(os.getcwd(), '..', '..', 'data', 'data', 'delay_table.csv')
+        fname = os.path.join(data_folder, 'delay_table.csv')
         delay_table.main(fname)
     except:
         logger.exception(module_name)
@@ -290,10 +295,23 @@ def consolidate():
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
         send_email(mail_error)
         raise
+    logger.info('%s : DONE', module_name)
 
+    module_name = 'consolidate.pg_dump'
     try:
+        fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
         run(['pg_dump', '-Fc', '--host=%(HOST)s' % DATABASE, '--username=%(USER)s' % DATABASE,
-             '--dbname=%(NAME)s' % DATABASE, '>', 'infogripe_%s' % timesmpl], check=True)
+             '--dbname=%(NAME)s' % DATABASE, '-w', '--file', fname], check=True)
+    except:
+        logger.exception(module_name)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        send_email(mail_error)
+        raise
+
+    module_name = 'consolidate.export'
+    try:
+        fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
+        run(['scp', '-C', fname, '%(USER)s@%(HOST)s:~/infogripe.dump' % SERVER], check=True)
     except:
         logger.exception(module_name)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
