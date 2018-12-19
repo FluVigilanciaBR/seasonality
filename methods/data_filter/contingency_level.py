@@ -83,7 +83,7 @@ def check_contingency_decrease(year: int, territory_id: int, cont_level: int, we
 
     weeks = df.shape[0]
     for i in range(week, weeks):
-        if all(df.estimated_cases[i:(i+2)] < df.typical_median[i:(i+2)]):
+        if all(df.estimated_cases[i:(i+2)] <= df.typical_median[i:(i+2)]):
             cont_level -= 1
             week = i+1
             if cont_level > 1:

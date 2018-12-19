@@ -10,6 +10,7 @@ from argparse import RawDescriptionHelpFormatter
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from subprocess import run
+from settings import EMAIL, SERVER
 
 
 logger = logging.getLogger('update_system')
@@ -24,10 +25,6 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
-try:
-    from .settings import EMAIL
-except Exception as err:
-    logger.exception(err)
 
 mail_error = {
     'subject': "InfoGripe Updater -- error log",
