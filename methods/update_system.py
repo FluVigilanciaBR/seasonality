@@ -6,11 +6,11 @@ import glob
 import logging
 import os
 import smtplib
-import yaml
 from argparse import RawDescriptionHelpFormatter
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from subprocess import run, Popen, PIPE
+from subprocess import run
+
 
 logger = logging.getLogger('update_system')
 logger.setLevel(logging.DEBUG)
@@ -24,58 +24,45 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+try:
+    from .settings import EMAIL
+except Exception as err:
+    logger.exception(err)
+
+mail_error = {
+    'subject': "InfoGripe Updater -- error log",
+    'email_body': """
+    This is an automated message from InfoGripe Updater.
+    System's database update started at %(time)s raised an error at module %(mdl_name)s.
+    Please check the attached log for details.
+
+    All the best,
+    InfoGripe Updater Monitor. 
+    """,
+    **EMAIL
+}
+mail_success = {
+    'subject': "InfoGripe Updater -- success",
+    'email_body': """
+    This is an automated message from InfoGripe Updater.
+    System's database update started at %(time)s ran without raising any errors.
+
+    All the best,
+    InfoGripe Updater Monitor. 
+    """,
+    **EMAIL
+}
+
 home_path = os.path.expanduser("~")
-settings_path = os.path.join(home_path, '.seasonality.yaml')
 logfile_path = os.path.join(os.getcwd(), logger_fname)
 data_folder = os.path.join(os.getcwd(), '..', 'data', 'data')
-
-if os.path.exists(settings_path):
-    EMAIL = {
-        'NAME': None,
-        'USER': None,
-        'PASSWORD': None,
-        'TO': None,
-    }
-    SERVER = {
-        'USER': None,
-        'HOST': None
-    }
-    with open(os.path.join(settings_path), 'r') as f:
-        globals().update(yaml.load(f))
-
-    mail_error = {
-        'subject': "InfoGripe Updater -- error log",
-        'email_body': """
-        This is an automated message from InfoGripe Updater.
-        System's database update started at %(time)s raised an error at module %(mdl_name)s.
-        Please check the attached log for details.
-
-        All the best,
-        InfoGripe Updater Monitor. 
-        """,
-        **EMAIL
-    }
-    mail_success = {
-        'subject': "InfoGripe Updater -- success",
-        'email_body': """
-        This is an automated message from InfoGripe Updater.
-        System's database update started at %(time)s ran without raising any errors.
-
-        All the best,
-        InfoGripe Updater Monitor. 
-        """,
-        **EMAIL
-    }
-
-else:
-    logger.exception('Please configure email settings for system updater at (%s)' % settings_path)
-    raise Exception
-
 time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 timesmpl = datetime.datetime.now().strftime('%Y%m%d')
 
 
 def send_email(mail_dict):
+    module_name = 'send_email.settings'
+    logger.info(module_name)
 
     email_msg = MIMEMultipart()
     email_msg['From'] = '%(NAME)s <%(USER)s>' % mail_dict
@@ -106,8 +93,9 @@ def convert_dbf(flist):
     module_name = dbf2csv.__name__
     try:
         dbf2csv.main(flist)
-    except:
+    except Exception as err:
         logger.exception(module_name)
+        logger.exception(err)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
         send_email(mail_error)
         raise
