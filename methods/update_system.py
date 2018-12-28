@@ -110,8 +110,9 @@ def email_update(dir, years):
         for year in years:
             logger.info('Updating over e-mail. Base year: %s' % year)
             email_extract.main(dir, year)
-    except:
+    except Exception as err:
         logger.exception(module_name)
+        logger.exception(err)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
         send_email(mail_error)
         raise
@@ -131,8 +132,9 @@ def apply_filters(flist=None):
     logger.info('Historical files: %s', flist)
     try:
         sinan_filter_of_interest.main(flist)
-    except:
+    except Exception as err:
         logger.exception(module_name)
+        logger.exception(err)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
         send_email(mail_error)
         raise
@@ -151,8 +153,9 @@ def add_epiweek():
         logger.info('Inserting epiweek on file %s' % fname)
         try:
             insert_epiweek.main(fname)
-        except:
+        except Exception as err:
             logger.exception(module_name)
+            logger.exception(err)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
             send_email(mail_error)
             raise
@@ -174,8 +177,9 @@ def convert2mem():
         logger.info('Converting to MEM structure: %s' % fname)
         try:
             sinan_convert2mem.main(fname)
-        except:
+        except Exception as err:
             logger.exception(module_name)
+            logger.exception(err)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
             send_email(mail_error)
             raise
@@ -196,8 +200,9 @@ def apply_mem():
         logger.info('Calculating MEM thresholds for dataset: %s' % data)
         try:
             sinan_mem_inset_thresholds.main(fname)
-        except:
+        except Exception as err:
             logger.exception(module_name)
+            logger.exception(err)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
             send_email(mail_error)
             raise
@@ -219,8 +224,9 @@ def apply_opportunities():
     module_name = delay_datasets.__name__
     try:
         delay_datasets.main()
-    except:
+    except Exception as err:
         logger.exception(module_name)
+        logger.exception(err)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
         send_email(mail_error)
         raise
@@ -229,8 +235,9 @@ def apply_opportunities():
     try:
         fname = os.path.join(data_folder, 'delay_table.csv')
         delay_table.main(fname)
-    except:
+    except Exception as err:
         logger.exception(module_name)
+        logger.exception(err)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
         send_email(mail_error)
         raise
@@ -247,8 +254,9 @@ def apply_estimator(date='max'):
         module_name = 'opportunity_estimator.opportunity.estimator.R'
         try:
             run(['Rscript', '--vanilla', Rscript, '-d', date, '-t', data], check=True)
-        except:
+        except Exception as err:
             logger.exception(module_name)
+            logger.exception(err)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
             send_email(mail_error)
             raise
@@ -256,8 +264,9 @@ def apply_estimator(date='max'):
         logger.info('Adding situation info for dataset: %s' % data)
         try:
             add_situation2weekly_data.main([data])
-        except:
+        except Exception as err:
             logger.exception(module_name)
+            logger.exception(err)
             mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
             send_email(mail_error)
             raise
@@ -275,8 +284,9 @@ def consolidate():
     module_name = consolidate_datasets.__name__
     try:
         consolidate_datasets.main(True)
-    except:
+    except Exception as err:
         logger.exception(module_name)
+        logger.exception(err)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
         send_email(mail_error)
         raise
@@ -287,18 +297,9 @@ def consolidate():
         fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
         run(['pg_dump', '-Fc', '--host=%(HOST)s' % DATABASE, '--username=%(USER)s' % DATABASE,
              '--dbname=%(NAME)s' % DATABASE, '-w', '--file', fname], check=True)
-    except:
+    except Exception as err:
         logger.exception(module_name)
-        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-        send_email(mail_error)
-        raise
-
-    module_name = 'consolidate.export'
-    try:
-        fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
-        run(['scp', '-C', fname, '%(USER)s@%(HOST)s:~/infogripe.dump' % SERVER], check=True)
-    except:
-        logger.exception(module_name)
+        logger.exception(err)
         mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
         send_email(mail_error)
         raise
@@ -307,7 +308,31 @@ def consolidate():
     return
 
 
-def main(flist = None, update_mem = False, module_list = None, history_files=None, dir=None, years=None, date='max'):
+def exportdb():
+    from time import sleep
+    module_name = 'consolidate.export'
+    tries = 10
+    for i in range(tries):
+        try:
+            fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
+            run(['scp', '-C', fname, '%(USER)s@%(HOST)s:~/update/infogripe.dump' % SERVER], check=True)
+        except Exception as err:
+            if i < tries - 1:  # i is zero indexed
+                sleep(2)
+                continue
+            else:
+                logger.exception(module_name)
+                logger.exception(err)
+                mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+                send_email(mail_error)
+                raise
+        break
+
+    logger.info('%s : DONE', module_name)
+    return
+
+
+def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, years=None, date='max'):
     '''
     Run all scripts to update the system with new database.
     Optional: update MEM thresholds
@@ -322,7 +347,8 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
                        'opportunities',
                        'convert2mem',
                        'estimator',
-                       'consolidate']
+                       'consolidate',
+                       'export']
     if module_list and 'full_email_update' in module_list:
         module_list = ['email',
                        'filter',
@@ -330,7 +356,8 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
                        'opportunities',
                        'convert2mem',
                        'estimator',
-                       'consolidate']
+                       'consolidate',
+                       'export']
 
     logger.info('System update: START')
     logger.info('Update MEM: %s', update_mem)
@@ -377,6 +404,10 @@ def main(flist = None, update_mem = False, module_list = None, history_files=Non
     if 'consolidate' in module_list:
         logger.info('Consolidate dataset and update DB')
         consolidate()
+
+    if 'export' in module_list:
+        logger.info('Export DB')
+        exportdb()
 
     logger.info('System update: DONE')
     mail_success['email_body'] = mail_success['email_body'] % {'time': time}
