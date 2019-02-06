@@ -130,14 +130,25 @@ def apply_filter_alert_by_epiweek(year: int, territory_id: int):
                 dataset_id=dataset_id, scale_id=1, year=year, territory_id=territory_id
             )[['dataset_id', 'territory_id', 'epiyear', 'epiweek', 'low_level', 'epidemic_level', 'high_level',
                'very_high_level', 'situation_id']],
-            ignore_index=True,
-            sort=True
+            ignore_index=True
         )
+        if year > 2009:
+            df = df.append(
+                db.get_data(
+                    dataset_id=dataset_id, scale_id=1, year=year-1, territory_id=territory_id
+                ).loc[lambda df: df.epiweek == max(df.epiweek[~df.situation_id.isin([1, 4])]),
+                      ['dataset_id', 'territory_id', 'epiyear', 'epiweek',
+                       'low_level', 'epidemic_level', 'high_level',
+                       'very_high_level', 'situation_id']],
+                ignore_index=True
+            )
+
     df.loc[df.situation_id.isin([1, 4]), ['low_level', 'epidemic_level', 'high_level', 'very_high_level']] = None
     df['alert'] = df.apply(calc_weekly_alert_level, axis=1)
     df.sort_values(by=['territory_id', 'dataset_id', 'epiyear', 'epiweek'], inplace=True)
     df.loc[df.alert == 0, 'alert'] = None
     df.alert = df.alert.fillna(method='ffill').astype(int)
+    df = df[df.epiyear == year]
 
     return df[['dataset_id', 'territory_id', 'epiyear', 'epiweek', 'alert', 'low_level', 'epidemic_level',
                'high_level', 'very_high_level']]
@@ -146,8 +157,8 @@ def apply_filter_alert_by_epiweek(year: int, territory_id: int):
 def weekly_alert_table_all(df):
     df_alert = pd.DataFrame()
 
-    for territory_id in df.territory_id.unique():
-        for epiyear in df.epiyear.unique():
+    for territory_id in sorted(df.territory_id.unique()):
+        for epiyear in sorted(df.epiyear.unique()):
             df_alert = df_alert.append(apply_filter_alert_by_epiweek(year=epiyear, territory_id=territory_id),
                                        ignore_index=True)
 
@@ -157,7 +168,7 @@ def weekly_alert_table_all(df):
 def season_alert_level(se):
 
     alert_counts = se.value_counts()
-    if max(alert_counts.index) in [3,4]:
+    if max(alert_counts.index) in [3, 4]:
         try:
             high_threshold = alert_counts[3] + alert_counts[4]
         except:

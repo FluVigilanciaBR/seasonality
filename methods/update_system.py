@@ -277,7 +277,7 @@ def apply_estimator(date='max'):
     return
 
 
-def consolidate():
+def consolidate(fname=None):
     from data_filter import consolidate_datasets
     from data_filter.settings import DATABASE
 
@@ -294,7 +294,8 @@ def consolidate():
 
     module_name = 'consolidate.pg_dump'
     try:
-        fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
+        if not fname:
+            fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
         run(['pg_dump', '-Fc', '--host=%(HOST)s' % DATABASE, '--username=%(USER)s' % DATABASE,
              '--dbname=%(NAME)s' % DATABASE, '-w', '--file', fname], check=True)
     except Exception as err:
@@ -308,13 +309,15 @@ def consolidate():
     return
 
 
-def exportdb():
+def exportdb(fname=None):
     from time import sleep
     module_name = 'consolidate.export'
     tries = 10
     for i in range(tries):
         try:
-            fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
+            if not fname:
+                fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
+
             run(['scp', '-C', fname, '%(USER)s@%(HOST)s:~/update/infogripe.dump' % SERVER], check=True)
         except Exception as err:
             if i < tries - 1:  # i is zero indexed
@@ -332,7 +335,8 @@ def exportdb():
     return
 
 
-def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, years=None, date='max'):
+def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, years=None, date='max',
+         dbdump=None):
     '''
     Run all scripts to update the system with new database.
     Optional: update MEM thresholds
@@ -403,11 +407,12 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     os.chdir('../data_filter')
     if 'consolidate' in module_list:
         logger.info('Consolidate dataset and update DB')
-        consolidate()
+        consolidate(dbdump)
 
+    os.chdir('../')
     if 'export' in module_list:
         logger.info('Export DB')
-        exportdb()
+        exportdb(dbdump)
 
     logger.info('System update: DONE')
     mail_success['email_body'] = mail_success['email_body'] % {'time': time}
@@ -421,16 +426,18 @@ if __name__ == '__main__':
     parser.add_argument('--mem', action='store_true', help='Update MEM thresholds.')
     parser.add_argument('--modules', nargs='*', action='append', help='Which modules should be ran.',
                         default=[])
-    parser.add_argument('--path', nargs='*', action='append', help='Path to data file',
+    parser.add_argument('--path', nargs='*', action='append', help='Path to data file. Optional',
                         default=None)
-    parser.add_argument('--history', nargs='*', action='append', help='Path to historical notifications csv files',
+    parser.add_argument('--history', nargs='*', action='append', help='Path to historical notifications csv files. '
+                                                                      'Optional',
                         default=None)
-    parser.add_argument('--dir', help='Base folder for e-mail update module',
+    parser.add_argument('--dir', help='Base folder for e-mail update module. Optional',
                         default=None)
-    parser.add_argument('--years', nargs='*', action='append', help='Base years for e-mail update module',
+    parser.add_argument('--years', nargs='*', action='append', help='Base years for e-mail update module. Optional',
                         default=None)
-    parser.add_argument('--date', help='Base date for estimator in the format YYYY-MM-DD or max. Default=max',
+    parser.add_argument('--date', help='Base date for estimator in the format YYYY-MM-DD or max. Optional. Default=max',
                         default='max')
+    parser.add_argument('--dbdump', help='Path do database dump for export. Optional', default=None)
     args = parser.parse_args()
     if args.path:
         args.path = args.path[0]
@@ -442,4 +449,4 @@ if __name__ == '__main__':
         args.years = args.years[0]
 
     main(flist=args.path, update_mem=args.mem, module_list=args.modules, history_files=args.history, dir=args.dir,
-         years=args.years, date=args.date)
+         years=args.years, date=args.date, dbdump=args.dbdump)

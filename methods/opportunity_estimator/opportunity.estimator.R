@@ -143,7 +143,7 @@ for (today in epiweek.list){
     rowSums()
   
   ### Grab target quantile from delay distribution for each UF
-  dquantile <- dquantile.tbl[dquantile.tbl$dado == args$type & dquantile.tbl$epiyearweek == max(d$epiyearweek), c('UF', 'epiyearweek', 'delayweeks')]
+  dquantile <- dquantile.tbl[dquantile.tbl$dado == args$type & dquantile.tbl$epiyearweek == min(today,max(dquantile.tbl$epiyearweek)), c('UF', 'epiyearweek', 'delayweeks')]
   
   # Read weekly data:
   d_weekly <- d %>%
@@ -344,7 +344,12 @@ for (today in epiweek.list){
               append=T, fileEncoding='UTF-8')
   
   fname <- file.path('../clean_data/', paste0(args$type, '_historical_estimated_incidence.csv'))
-  ifelse(file.exists(fname), print.col.names <- FALSE, print.col.names <- TRUE)
+  if (file.exists(fname)){
+    print.col.names <- FALSE
+    file.copy(from=fname, to=paste0(fname, '.', today, '.bkp'))
+  } else {
+    print.col.names <- TRUE
+  }
   d_weekly['base_epiyearweek'] <- today
   d_weekly['base_epiyear'] <- strsplit(today, 'W')[[1]][1]
   d_weekly['base_epiweek'] <- strsplit(today, 'W')[[1]][2]
