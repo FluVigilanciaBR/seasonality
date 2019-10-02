@@ -65,7 +65,7 @@ def main():
         module_logger.info('... DONE')
 
     df.loc[pd.isnull(df.UF), 'UF'] = 99
-
+    df.UF = df.UF.astype(int)
     # Insert region info:
     df_reg = pd.read_csv('../data/regioesclimaticas.csv', low_memory=False)[['Código', 'Região', 'Região oficial']]
     df_reg.rename(columns={'Código': 'UF', 'Região': 'Regional', 'Região oficial': 'Regiao'}, inplace=True)
