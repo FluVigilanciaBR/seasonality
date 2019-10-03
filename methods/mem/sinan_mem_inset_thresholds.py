@@ -10,8 +10,8 @@ from rpy2.robjects.packages import importr
 pandas2ri.activate()
 import pandas as pd
 import numpy as np
-import seaborn as sns
 import matplotlib.pyplot as plt
+import seaborn as sns
 import argparse
 import logging
 from argparse import RawDescriptionHelpFormatter
@@ -163,7 +163,7 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     ro.globalenv['df'] = rdf
     ro.globalenv['seasons'] = rseasons
     ro.globalenv['par.method'] = wdw_method
-    ro.globalenv['par.type.curve'] = 2
+    ro.globalenv['par.type.curve'] = 1
     ro.globalenv['par.n.max'] = 20
     ro.globalenv['par.level.curve'] = 0.95
     ro.globalenv['par.level.threshold'] = 0.95
@@ -264,7 +264,7 @@ def extract_typ_real_curve(df, discarded_seasons=None, wdw_method=2, lower_bound
     ro.globalenv['df'] = rdf
     ro.globalenv['seasons'] = rseasons
     ro.globalenv['par.method'] = wdw_method
-    ro.globalenv['par.type.curve'] = 2
+    ro.globalenv['par.type.curve'] = 1
     ro.globalenv['par.level.curve'] = 0.95
     epimemrslt = ro.r('t(apply(subset(df, select=seasons), 1, memci, i.type.curve=par.type.curve, ' +
                       'i.level.curve=par.level.curve))')
@@ -565,7 +565,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                                                                                                          incidence_norm)
 
             if thresholds['pre.post.intervals'].loc['pre', 2] >= 1*incidence_norm:
-                dftmp['mediana pré-epidêmica'] = recalc_incidence(['pre.post.intervals'].loc['pre', 1], incidence_norm)
+                dftmp['mediana pré-epidêmica'] = recalc_incidence(thresholds['pre.post.intervals'].loc['pre', 1], incidence_norm)
                 dftmp['limiar pré-epidêmico'] = recalc_incidence(thresholds['pre.post.intervals'].loc['pre', 2],
                                                                  incidence_norm)
                 dftmp['SE relativa ao início do surto'] = dftmp['epiweek'] - thresholds['mean.start'][0]
@@ -614,7 +614,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
 
             dftmp['curva epi. baixa'] = recalc_incidence(thresholds['typ.curve']['baixo'], incidence_norm)
-            dftmp['curva epi. mediana'] = recalc_incidence(['typ.curve']['mediano'], incidence_norm)
+            dftmp['curva epi. mediana'] = recalc_incidence(thresholds['typ.curve']['mediano'], incidence_norm)
             dftmp['curva epi. alta'] = recalc_incidence(thresholds['typ.curve']['alto'], incidence_norm)
             epicols = list(thresholds['moving.epidemics'].columns)
             dftmp[epicols] = thresholds['moving.epidemics']
