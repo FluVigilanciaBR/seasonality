@@ -24,7 +24,7 @@ def extract_csv(dir):
     except ValueError as error:
         module_logger.error(error)
         raise ValueError('No zip file on %s' % dir)
-    df = pd.read_csv(file, header=1, encoding='utf-16')
+    df = pd.read_csv(file, header=2, encoding='utf-16')
     today = date.today().strftime('%Y-%m-%d')
     run(['mv', '-f', file, './processed/%s_%s' % (today, file)], check=True)
     os.chdir(cwd)

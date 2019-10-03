@@ -485,6 +485,12 @@ def plotmemfailedcurve(uf, dftmp, dftmpinset, seasons, lastseason):
     return fig
 
 
+def recalc_incidence(x, popnorm):
+    # Recalculate incidence based on integer values.
+    # Useful for values calculated assuming continuous functions.
+    return round(x/popnorm)*popnorm
+
+
 def main(fname, plot_curves=False, sep=',', uflist='all'):
     pref = ('.'.join(fname.replace('-incidence', '').split('.')[:-1])).split('/')[-1]
     df = pd.read_csv(fname, sep=sep, encoding='utf-8')
@@ -559,8 +565,9 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                                                                                                          incidence_norm)
 
             if thresholds['pre.post.intervals'].loc['pre', 2] >= 1*incidence_norm:
-                dftmp['mediana pré-epidêmica'] = thresholds['pre.post.intervals'].loc['pre', 1]
-                dftmp['limiar pré-epidêmico'] = thresholds['pre.post.intervals'].loc['pre', 2]
+                dftmp['mediana pré-epidêmica'] = recalc_incidence(['pre.post.intervals'].loc['pre', 1], incidence_norm)
+                dftmp['limiar pré-epidêmico'] = recalc_incidence(thresholds['pre.post.intervals'].loc['pre', 2],
+                                                                 incidence_norm)
                 dftmp['SE relativa ao início do surto'] = dftmp['epiweek'] - thresholds['mean.start'][0]
                 dftmp['SE típica do início do surto'] = thresholds['mean.start'][0]
                 # Confidence interval for epi.start
@@ -577,7 +584,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
             else:
                 dftmp['região de baixa atividade típica'] = 1
                 dftmp['mediana pré-epidêmica'] = np.nan
-                dftmp['limiar pré-epidêmico'] = 0.5 * incidence_norm
+                dftmp['limiar pré-epidêmico'] = 1 * incidence_norm
                 dftmp['SE relativa ao início do surto'] = np.nan
                 dftmp['SE típica do início do surto'] = np.nan
                 # Confidence interval for epi.start
@@ -592,19 +599,23 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                 dftmp['duração típica do surto - IC inferior (2,5%)'] = cimin
                 dftmp['duração típica do surto - IC superior (97,5%)'] = cimax
 
-            dftmp['limiar pós-epidêmico'] = thresholds['pre.post.intervals'].loc['post', 2]
-            dftmp['intensidade baixa'] = thresholds['epi.intervals'].loc[0, 3]
-            dftmp['intensidade alta'] = max([2*incidence_norm, thresholds['epi.intervals'].loc[1, 3]])
-            dftmp['intensidade muito alta'] = max([3*incidence_norm, thresholds['epi.intervals'].loc[2, 3]])
+            dftmp['limiar pós-epidêmico'] = recalc_incidence(thresholds['pre.post.intervals'].loc['post', 2],
+                                                             incidence_norm)
+            dftmp['intensidade baixa'] = recalc_incidence(thresholds['epi.intervals'].loc[0, 3], incidence_norm)
+            dftmp['intensidade alta'] = recalc_incidence(max([2*incidence_norm, thresholds['epi.intervals'].loc[1,
+                                                                                                                3]]),
+                                                         incidence_norm)
+            dftmp['intensidade muito alta'] = recalc_incidence(max([3*incidence_norm, thresholds[
+                'epi.intervals'].loc[2, 3]]), incidence_norm)
 
-            dftmp['corredor baixo'] = thresholds['typ.real.curve']['baixo']
-            dftmp['corredor mediano'] = thresholds['typ.real.curve']['mediano']
-            dftmp['corredor alto'] = thresholds['typ.real.curve']['alto']
+            dftmp['corredor baixo'] = recalc_incidence(thresholds['typ.real.curve']['baixo'], incidence_norm)
+            dftmp['corredor mediano'] = recalc_incidence(thresholds['typ.real.curve']['mediano'], incidence_norm)
+            dftmp['corredor alto'] = recalc_incidence(thresholds['typ.real.curve']['alto'], incidence_norm)
             dftmp['População'] = int(dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
 
-            dftmp['curva epi. baixa'] = thresholds['typ.curve']['baixo']
-            dftmp['curva epi. mediana'] = thresholds['typ.curve']['mediano']
-            dftmp['curva epi. alta'] = thresholds['typ.curve']['alto']
+            dftmp['curva epi. baixa'] = recalc_incidence(thresholds['typ.curve']['baixo'], incidence_norm)
+            dftmp['curva epi. mediana'] = recalc_incidence(['typ.curve']['mediano'], incidence_norm)
+            dftmp['curva epi. alta'] = recalc_incidence(thresholds['typ.curve']['alto'], incidence_norm)
             epicols = list(thresholds['moving.epidemics'].columns)
             dftmp[epicols] = thresholds['moving.epidemics']
             dftmp['n.seasons'] = thresholds['n.seasons'][0]
@@ -642,18 +653,18 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                          index=False, encoding='utf-8')
 
             dftmpinset['região de baixa atividade típica'] = dftmp['região de baixa atividade típica']
-            dftmpinset['limiar pré-epidêmico'] = max([.5, floor(
+            dftmpinset['limiar pré-epidêmico'] = max([1, round(
                 thresholds['pre.post.intervals'].loc['pre', 2]/incidence_norm)])
-            dftmpinset['limiar pós-epidêmico'] = max([0.5, floor(
+            dftmpinset['limiar pós-epidêmico'] = max([1, round(
                 thresholds['pre.post.intervals'].loc['post', 2]/incidence_norm)])
-            dftmpinset['intensidade baixa'] = floor(thresholds['epi.intervals'].loc[0, 3]/incidence_norm)
-            dftmpinset['intensidade alta'] = max([2, floor(
+            dftmpinset['intensidade baixa'] = round(thresholds['epi.intervals'].loc[0, 3]/incidence_norm)
+            dftmpinset['intensidade alta'] = max([2, round(
                 thresholds['epi.intervals'].loc[1, 3]/incidence_norm)])
-            dftmpinset['intensidade muito alta'] = max([3, floor(
+            dftmpinset['intensidade muito alta'] = max([3, round(
                 thresholds['epi.intervals'].loc[2, 3]/incidence_norm)])
-            dftmpinset['corredor baixo'] = floor(dftmp['corredor baixo']/incidence_norm)
-            dftmpinset['corredor mediano'] = floor(dftmp['corredor mediano']/incidence_norm)
-            dftmpinset['corredor alto'] = floor(dftmp['corredor alto']/incidence_norm)
+            dftmpinset['corredor baixo'] = round(dftmp['corredor baixo']/incidence_norm)
+            dftmpinset['corredor mediano'] = round(dftmp['corredor mediano']/incidence_norm)
+            dftmpinset['corredor alto'] = round(dftmp['corredor alto']/incidence_norm)
             dftmpinset['SE relativa ao início do surto'] = dftmp['SE relativa ao início do surto']
             dftmpinset['SE típica do início do surto'] = dftmp['SE típica do início do surto']
             dftmpinset['SE típica do início do surto - IC inferior (2,5%)'] = \
@@ -665,9 +676,9 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                 dftmp['duração típica do surto - IC inferior (2,5%)']
             dftmpinset['duração típica do surto - IC superior (97,5%)'] = \
                 dftmp['duração típica do surto - IC superior (97,5%)']
-            dftmpinset['curva epi. baixa'] = floor(dftmp['curva epi. baixa']/incidence_norm)
-            dftmpinset['curva epi. mediana'] = floor(dftmp['curva epi. mediana']/incidence_norm)
-            dftmpinset['curva epi. alta'] = floor(dftmp['curva epi. alta']/incidence_norm)
+            dftmpinset['curva epi. baixa'] = round(dftmp['curva epi. baixa']/incidence_norm)
+            dftmpinset['curva epi. mediana'] = round(dftmp['curva epi. mediana']/incidence_norm)
+            dftmpinset['curva epi. alta'] = round(dftmp['curva epi. alta']/incidence_norm)
             epicols = list(thresholds['moving.epidemics'].columns)
             dftmpinset[epicols] = thresholds['moving.epidemics']
             dftmpinset['n.seasons'] = thresholds['n.seasons'][0]
@@ -712,14 +723,14 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
 
             dftmp['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
             dftmp['mediana pré-epidêmica'] = np.nan
-            dftmp['limiar pré-epidêmico'] = 0.5 * incidence_norm
-            dftmp['limiar pós-epidêmico'] = 0.5 * incidence_norm
+            dftmp['limiar pré-epidêmico'] = 1 * incidence_norm
+            dftmp['limiar pós-epidêmico'] = 1 * incidence_norm
             dftmp['intensidade baixa'] = 0
             dftmp['intensidade alta'] = 2 * incidence_norm
             dftmp['intensidade muito alta'] = 3 * incidence_norm
-            dftmp['corredor baixo'] = thresholds['typ.real.curve']['baixo']
-            dftmp['corredor mediano'] = thresholds['typ.real.curve']['mediano']
-            dftmp['corredor alto'] = thresholds['typ.real.curve']['alto']
+            dftmp['corredor baixo'] = recalc_incidence(thresholds['typ.real.curve']['baixo'], incidence_norm)
+            dftmp['corredor mediano'] = recalc_incidence(thresholds['typ.real.curve']['mediano'], incidence_norm)
+            dftmp['corredor alto'] = recalc_incidence(thresholds['typ.real.curve']['alto'], incidence_norm)
             dftmp['SE típica do início do surto'] = np.nan
             dftmp['duração típica do surto'] = np.nan
             dftmp['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
@@ -736,14 +747,14 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
                          encoding='utf-8')
 
             dftmpinset['Média geométrica do pico de infecção das temporadas regulares'] = np.nan
-            dftmpinset['limiar pré-epidêmico'] = 0.5
-            dftmpinset['limiar pós-epidêmico'] = 0.5
+            dftmpinset['limiar pré-epidêmico'] = 1
+            dftmpinset['limiar pós-epidêmico'] = 1
             dftmpinset['intensidade baixa'] = 0
             dftmpinset['intensidade alta'] = 2
             dftmpinset['intensidade muito alta'] = 3
-            dftmpinset['corredor baixo'] = floor(dftmp['corredor baixo']/incidence_norm)
-            dftmpinset['corredor mediano'] = floor(dftmp['corredor mediano']/incidence_norm)
-            dftmpinset['corredor alto'] = floor(dftmp['corredor alto']/incidence_norm)
+            dftmpinset['corredor baixo'] = round(dftmp['corredor baixo']/incidence_norm)
+            dftmpinset['corredor mediano'] = round(dftmp['corredor mediano']/incidence_norm)
+            dftmpinset['corredor alto'] = round(dftmp['corredor alto']/incidence_norm)
             dftmpinset['SE relativa ao início do surto'] = np.nan
             dftmpinset['SE típica do início do surto'] = np.nan
             dftmpinset['SE típica do início do surto - IC inferior (2,5%)'] = np.nan

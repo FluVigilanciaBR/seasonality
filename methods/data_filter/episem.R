@@ -38,7 +38,7 @@ data2SE <- function(days, format = "%d/%m/%Y"){
 #' episem(x= as.Date("2015-01-01", format="%Y-%m-%d"), separa='-')
 #' episem(x= as.Date("2015-01-01", format="%Y-%m-%d"), retorna='Y')
 
-episem <- function(x, format="%Y-%m-%d", separa='', retorna='YW') {
+episem <- function(x, format="%Y-%m-%d", separa='W', retorna='YW') {
   if (is.na(x) == T) {
     message("episem: Date not valid, returning NA")
     return(NA) 
