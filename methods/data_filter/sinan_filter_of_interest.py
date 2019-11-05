@@ -84,8 +84,8 @@ def symptoms_filter(df):
     return df
 
 
-def filter_db2019(df):
-    tgtcols = ['ANTIVIRAL', 'AVE_SUINO', 'CLASSI_FIN', 'CLASSI_OUT', 'CO_LAB_IF', 'CO_LAB_PCR', 'CO_MU_INTE',
+def filter_db2019(df, tag=None):
+    tgtcols = ['AMOSTRA', 'ANTIVIRAL', 'AVE_SUINO', 'CLASSI_FIN', 'CLASSI_OUT', 'CO_LAB_IF', 'CO_LAB_PCR', 'CO_MU_INTE',
                'CO_MUN_NOT', 'CO_MUN_RES', 'CO_PAIS', 'CO_REGIONA', 'CO_RG_RESI', 'CO_UNI_NOT', 'CRITERIO',
                'CS_GESTANT', 'CS_RACA', 'CS_SEXO', 'DESC_RESP', 'DISPNEIA', 'DS_IF_OUT', 'DS_PCR_OUT', 'DT_ANTIVIR',
                'DT_COLETA', 'DT_DIGITA', 'DT_ENCERRA', 'DT_EVOLUCA', 'DT_IF', 'DT_INTERNA', 'DT_NOTIFIC', 'DT_PCR',
@@ -108,6 +108,9 @@ def filter_db2019(df):
     dt_cols = list(filter(regexp.match, tgtcols))
     df = date_cleanup(df, dt_cols)
 
+    # Registro da idade, em anos.
+    # Campo TP_IDADE indica a escala da variável NU_IDADE_N, sendo:
+    # 1-Dias, 2-Meses, 3-Anos
     df['idade_em_anos'] = df.NU_IDADE_N.where(df.TP_IDADE == 3, 0)
 
     # Create columns related to lab result
@@ -123,71 +126,84 @@ def filter_db2019(df):
             (df.IF_RESUL.isin([1, 2, 3, 5]))
     )
 
-    df.PCR_RESUL = df.PCR_RESUL.where(pd.notnull(df.PCR_RESUL), 9)
-    df.IF_RESUL = df.PCR_RESUL.where(pd.notnull(df.IF_RESUL), 9)
+    # If sample collection field is empty, convert to unknown:
+    df.AMOSTRA = df.AMOSTRA.where(pd.notnull(df.AMOSTRA), 9).astype(int)
+
+    # Clean up PCR_RESUL and IF_RESUL fields:
+    def labresultcleanup(dfin, x):
+        # If sample was collected, IF/PCR result cannot be unknown or empty:
+        dfin.loc[(dfin.AMOSTRA == 1) & (~dfin[x].isin([1, 2, 3, 4])), x] = 5
+        # IF PCR/IF result field is marked unknown but sample was not collected, convert to not tested:
+        dfin.loc[(dfin[x] == 9) & (dfin.AMOSTRA == 2), x] = 4
+        # If PCR/IF result field is empty and sample was NOT collected, convert to not tested
+        dfin[x] = dfin[x].where(pd.notnull(dfin[x]) | (dfin.AMOSTRA != 2), 4)
+        # If PCR/IF result field is empty and sample filed is empty or unknown, convert to not unknown
+        dfin[x] = dfin[x].where(pd.notnull(dfin[x]) | (dfin.AMOSTRA.isin([1, 2])), 9)
+
+        return
+
+    labresultcleanup(df, 'PCR_RESUL')
+    labresultcleanup(df, 'IF_RESUL')
+    
     notknownrows = (df.PCR_RESUL == 9) & (df.IF_RESUL == 9)
 
     nottestedrows = (
-        ~(notknownrows) &
-        (df.PCR_RESUL.isin([4, 9])) &
-        (df.IF_RESUL.isin([4, 9]))
+            ~(notknownrows) &
+            (df.PCR_RESUL.isin([4, 9])) &
+            (df.IF_RESUL.isin([4, 9]))
     )
 
-    df['FLU_A'] = None
-    df['FLU_B'] = None
-    df['VSR'] = None
-    df['PARA1'] = None
-    df['PARA2'] = None
-    df['PARA3'] = None
-    df['PARA4'] = None
-    df['ADNO'] = None
-    df['METAP'] = None
-    df['BOCA'] = None
-    df['RINO'] = None
+    df['FLU_A'] = 0
+    df['FLU_B'] = 0
+    df['VSR'] = 0
+    df['PARA1'] = 0
+    df['PARA2'] = 0
+    df['PARA3'] = 0
+    df['PARA4'] = 0
+    df['ADNO'] = 0
+    df['METAP'] = 0
+    df['BOCA'] = 0
+    df['RINO'] = 0
 
-    df['OTHERS'] = None
-    df['NEGATIVE'] = None
-    df['INCONCLUSIVE'] = None
-    df['DELAYED'] = None
+    df['OTHERS'] = 0
+    df['NEGATIVE'] = 0
+    df['INCONCLUSIVE'] = 0
+    df['DELAYED'] = 0
 
     df['NOTTESTED'] = nottestedrows.astype(int)
     df['TESTING_IGNORED'] = notknownrows.astype(int)
 
-    df.loc[labrows, 'FLU_A'] = ((df.TP_FLU_PCR[labrows] == 1) | (df.TP_FLU_IF[labrows] == 1)).astype(int)
-    df.loc[labrows, 'FLU_B'] = ((df.TP_FLU_PCR[labrows] == 2) | (df.TP_FLU_IF[labrows] == 2)).astype(int)
-    df.loc[labrows, 'VSR'] = ((df.IF_VSR[labrows] == 1) | (df.PCR_VSR[labrows] == 1)).astype(int)
-    df.loc[labrows, 'PARA1'] = ((df.IF_PARA1[labrows] == 1) | (df.PCR_PARA1[labrows] == 1)).astype(int)
-    df.loc[labrows, 'PARA2'] = ((df.IF_PARA2[labrows] == 1) | (df.PCR_PARA2[labrows] == 1)).astype(int)
-    df.loc[labrows, 'PARA3'] = ((df.IF_PARA3[labrows] == 1) | (df.PCR_PARA3[labrows] == 1)).astype(int)
-    df.loc[labrows, 'PARA4'] = (df.PCR_PARA4[labrows] == 1).astype(int)
-    df.loc[labrows, 'ADNO'] = ((df.IF_ADENO[labrows] == 1) | (df.PCR_ADENO[labrows] == 1)).astype(int)
-    df.loc[labrows, 'BOCA'] = (df.PCR_BOCA[labrows] == 1).astype(int)
-    df.loc[labrows, 'RINO'] = (df.PCR_RINO[labrows] == 1).astype(int)
-    df.loc[labrows, 'METAP'] = (df.PCR_METAP[labrows] == 1).astype(int)
+    df.loc[((df.TP_FLU_PCR[labrows] == 1) | (df.TP_FLU_IF[labrows] == 1)), 'FLU_A'] = 1
+    df.loc[((df.TP_FLU_PCR[labrows] == 2) | (df.TP_FLU_IF[labrows] == 2)), 'FLU_B'] = 1
+    df.loc[((df.IF_VSR[labrows] == 1) | (df.PCR_VSR[labrows] == 1)), 'VSR'] = 1
+    df.loc[((df.IF_PARA1[labrows] == 1) | (df.PCR_PARA1[labrows] == 1)), 'PARA1'] = 1
+    df.loc[((df.IF_PARA2[labrows] == 1) | (df.PCR_PARA2[labrows] == 1)), 'PARA2'] = 1
+    df.loc[((df.IF_PARA3[labrows] == 1) | (df.PCR_PARA3[labrows] == 1)), 'PARA3'] = 1
+    df.loc[(df.PCR_PARA4[labrows] == 1), 'PARA4'] = 1
+    df.loc[((df.IF_ADENO[labrows] == 1) | (df.PCR_ADENO[labrows] == 1)), 'ADNO'] = 1
+    df.loc[(df.PCR_BOCA[labrows] == 1), 'BOCA'] = 1
+    df.loc[(df.PCR_RINO[labrows] == 1), 'RINO'] = 1
+    df.loc[(df.PCR_METAP[labrows] == 1), 'METAP'] = 1
 
     # TODO: adequate remaining filters according to 2019 database structure:
     df.loc[labrows, 'OTHERS'] = ((df.IF_OUTRO[labrows] == 1) | (df.PCR_OUTRO[labrows] == 1)).astype(int)
-    df.loc[labrows, 'DELAYED'] = ((df.IF_RESUL[labrows] == 5) | (df.PCR_RESUL[labrows] == 5)).astype(int)
-    df.loc[labrows, 'INCONCLUSIVE'] = ((df.DELAYED[labrows] == 0) &
-                                       (pd.isnull(df.PCR_RES[labrows]) | df.PCR_RES[labrows].isin([3, 4])) &
-                                       (pd.isnull(df.HEMA_RES[labrows]) | df.HEMA_RES[labrows].isin([3, 4])) &
-                                       (pd.isnull(df.RES_FLUA[labrows]) | df.RES_FLUA[labrows].isin([3, 4])) &
-                                       (pd.isnull(df.RES_FLUB[labrows]) | df.RES_FLUB[labrows].isin([3, 4])) &
-                                       (pd.isnull(df.RES_VSR[labrows]) | df.RES_VSR[labrows].isin([3, 4])) &
-                                       (pd.isnull(df.RES_PARA1[labrows]) | df.RES_PARA1[labrows].isin([3, 4])) &
-                                       (pd.isnull(df.RES_PARA2[labrows]) | df.RES_PARA2[labrows].isin([3, 4])) &
-                                       (pd.isnull(df.RES_PARA3[labrows]) | df.RES_PARA3[labrows].isin([3, 4])) &
-                                       (pd.isnull(df.RES_ADNO[labrows]) | df.RES_ADNO[labrows].isin([3, 4])) &
-                                       (pd.isnull(df.RES_OUTRO[labrows]) | df.RES_OUTRO[labrows].isin([3, 4]))).astype(
-        int)
-    df.loc[labrows, 'NEGATIVE'] = ((df.FLU_A[labrows] == 0) & (df.FLU_B[labrows] == 0) & (df.VSR[labrows] == 0) &
-                                   (df.PARA1[labrows] == 0) & (df.PARA2[labrows] == 0) & (df.PARA3[labrows] == 0) &
-                                   (df.ADNO[labrows] == 0) & (df.OTHERS[labrows] == 0) & (df.DELAYED[labrows] == 0) &
-                                   (df.INCONCLUSIVE[labrows] == 0)).astype(int)
+    df.loc[labrows, 'DELAYED'] = (
+            ((df.IF_RESUL[labrows] == 5) & (df.PCR_RESUL.isin([4, 5]))) |
+            ((df.PCR_RESUL[labrows] == 5) & (df.IF_RESUL.isin([4, 5])))
+    ).astype(int)
+    df.loc[labrows, 'INCONCLUSIVE'] = (
+        ((df.IF_RESUL[labrows] == 3) & (df.PCR_RESUL.isin([4, 3]))) |
+        ((df.PCR_RESUL[labrows] == 3) & (df.IF_RESUL.isin([4, 3])))
+    ).astype(int)
+    df.loc[labrows, 'NEGATIVE'] = ((df.IF_RESUL[labrows] == 2) & (df.PCR_RESUL[labrows] == 2)).astype(int)
 
     # Clinical and clinical-epidemiological diagnose:
-    df['FLU_CLINIC'] = ((df.FLU_A != 1) & (df.FLU_B != 1) & (df.CLASSI_FIN == 1) & (df.CRITERIO.isin([2, 3]))).astype(
-        int)
+    df['FLU_CLINIC'] = ((df.POS_IF_FLU != 1) & (df.POS_PCR_FLU != 1) & (df.CLASSI_FIN == 1) &
+                        (df.CRITERIO.isin([2, 3]))).astype(int)
+    df['FLU_LAB'] = ((df.POS_IF_FLU == 1) | (df.POS_PCR_FLU == 1)).astype(int)
+
+    if tag:
+        df['tag'] = tag
 
     return df
 

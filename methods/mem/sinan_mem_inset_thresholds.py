@@ -163,7 +163,7 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     ro.globalenv['df'] = rdf
     ro.globalenv['seasons'] = rseasons
     ro.globalenv['par.method'] = wdw_method
-    ro.globalenv['par.type.curve'] = 1
+    ro.globalenv['par.type.curve'] = 2
     ro.globalenv['par.n.max'] = 20
     ro.globalenv['par.level.curve'] = 0.95
     ro.globalenv['par.level.threshold'] = 0.95
@@ -264,7 +264,7 @@ def extract_typ_real_curve(df, discarded_seasons=None, wdw_method=2, lower_bound
     ro.globalenv['df'] = rdf
     ro.globalenv['seasons'] = rseasons
     ro.globalenv['par.method'] = wdw_method
-    ro.globalenv['par.type.curve'] = 1
+    ro.globalenv['par.type.curve'] = 2
     ro.globalenv['par.level.curve'] = 0.95
     epimemrslt = ro.r('t(apply(subset(df, select=seasons), 1, memci, i.type.curve=par.type.curve, ' +
                       'i.level.curve=par.level.curve))')
