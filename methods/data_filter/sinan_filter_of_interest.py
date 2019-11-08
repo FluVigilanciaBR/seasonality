@@ -121,10 +121,6 @@ def filter_db2019(df, tag=None):
     #            (df.IFI == 1) |
     #            (df.PCR == 1) |
     #            (df.OUT_METODO == 1))
-    labrows = (
-            (df.PCR_RESUL.isin([1, 2, 3, 5])) |
-            (df.IF_RESUL.isin([1, 2, 3, 5]))
-    )
 
     # If sample collection field is empty, convert to unknown:
     df.AMOSTRA = df.AMOSTRA.where(pd.notnull(df.AMOSTRA), 9).astype(int)
@@ -137,7 +133,7 @@ def filter_db2019(df, tag=None):
         dfin.loc[(dfin[x] == 9) & (dfin.AMOSTRA == 2), x] = 4
         # If PCR/IF result field is empty and sample was NOT collected, convert to not tested
         dfin[x] = dfin[x].where(pd.notnull(dfin[x]) | (dfin.AMOSTRA != 2), 4)
-        # If PCR/IF result field is empty and sample filed is empty or unknown, convert to not unknown
+        # If PCR/IF result field is empty and sample field is empty or unknown, convert to unknown
         dfin[x] = dfin[x].where(pd.notnull(dfin[x]) | (dfin.AMOSTRA.isin([1, 2])), 9)
 
         return
@@ -145,6 +141,86 @@ def filter_db2019(df, tag=None):
     labresultcleanup(df, 'PCR_RESUL')
     labresultcleanup(df, 'IF_RESUL')
     
+    df['FLU_A'] = None
+    df['FLU_B'] = None
+    df['FLU_LAB'] = None
+    df['VSR'] = None
+    df['PARA1'] = None
+    df['PARA2'] = None
+    df['PARA3'] = None
+    df['PARA4'] = None
+    df['ADNO'] = None
+    df['METAP'] = None
+    df['BOCA'] = None
+    df['RINO'] = None
+    df['OTHERS'] = None
+
+    df['NEGATIVE'] = None
+    df['POSITIVE'] = None
+    df['INCONCLUSIVE'] = None
+    df['DELAYED'] = None
+    df['TESTED'] = None
+    df['NOTTESTED'] = None
+    df['TESTING_IGNORED'] = None
+
+    def labresult(x, y=None, pos=1):
+        if all(pd.isnull([x, y])):
+            return None
+        elif pos in [x, y]:
+            return 1
+        else:
+            return 0
+
+    df.FLU_A = df[['TP_FLU_PCR', 'TP_FLU_IF']].apply(lambda s: labresult(s[0], s[1]), axis=1)
+    df.FLU_B = df[['TP_FLU_PCR', 'TP_FLU_IF']].apply(lambda s: labresult(s[0], s[1], pos=2), axis=1)
+    df.loc[(df.POS_IF_FLU == 1) | (df.POS_PCRFLU == 1) | (df.FLU_A == 1) | (df.FLU_B == 1), 'FLU_LAB'] = 1
+    df.loc[(df.FLU_LAB != 1) & ((df.POS_IF_FLU == 2) | (df.POS_PCRFLU == 2)), 'FLU_LAB'] = 0
+    df.loc[(df.IF_VSR == 1) | (df.PCR_VSR == 1), 'VSR'] = 1
+    df.loc[(df.IF_PARA1 == 1) | (df.PCR_PARA1 == 1), 'PARA1'] = 1
+    df.loc[(df.IF_PARA2 == 1) | (df.PCR_PARA2 == 1), 'PARA2'] = 1
+    df.loc[(df.IF_PARA3 == 1) | (df.PCR_PARA3 == 1), 'PARA3'] = 1
+    df.loc[(df.PCR_PARA4 == 1), 'PARA4'] = 1
+    df.loc[(df.IF_ADENO == 1) | (df.PCR_ADENO == 1), 'ADNO'] = 1
+    df.loc[(df.PCR_BOCA == 1), 'BOCA'] = 1
+    df.loc[(df.PCR_RINO == 1), 'RINO'] = 1
+    df.loc[(df.PCR_METAP == 1), 'METAP'] = 1
+    df.loc[(df.IF_OUTRO == 1) | (df.PCR_OUTRO == 1), 'OTHERS'] = 1
+
+    # Positive cases:
+    df.loc[(df.POS_PCRFLU == 1) | (df.POS_PCROUT == 1), 'PCR_RESUL'] = 1
+    df.loc[(df.POS_IF_FLU == 1) | (df.POS_IF_OUT == 1), 'IF_RESUL'] = 1
+    df.loc[(df.PCR_RESUL == 1) | (df.IF_RESUL == 1), 'POSITIVE'] = 1
+    # Negative cases:
+    df.loc[(df.POS_PCRFLU == 2) & (df.POS_PCROUT == 2), 'PCR_RESUL'] = 2
+    df.loc[(df.POS_IF_FLU == 2) & (df.POS_IF_OUT == 2), 'IF_RESUL'] = 2
+    mask = (
+            df.POSITIVE != 1 & 
+            ((df.FLU_LAB == 0) | (df.POS_PCROUT == 2) | (df.POS_IF_OUT == 2))
+    )
+    df.loc[mask, 'NEGATIVE'] = 1
+
+    df.loc[(df.POSITIVE == 1) | (df.NEGATIVE == 1), 'TESTED'] = 1
+
+    # TODO: adequate remaining filters according to 2019 database structure:
+    df.loc[:, 'DELAYED'] = (
+            ((df.IF_RESUL == 5) & (df.TESTED != 1)) |
+            ((df.PCR_RESUL == 5) & (df.TESTED != 1))
+    ).astype(int)
+    df.loc[:, 'INCONCLUSIVE'] = (
+        ((df.IF_RESUL == 3) & (~df.PCR_RESUL.isin([1, 2, 5]))) |
+        ((df.PCR_RESUL == 3) & (~df.IF_RESUL.isin([1, 2, 5])))
+    ).astype(int)
+    df.loc[((df.IF_RESUL == 2) & (df.PCR_RESUL.isin([2, 4, 9]))) |
+           ((df.PCR_RESUL == 2) & (df.IF_RESUL.isin([2, 4, 9]))), 'NEGATIVE'] = 1
+
+    # Clinical and clinical-epidemiological diagnose:
+    df['FLU_CLINIC'] = ((df.POS_IF_FLU != 1) & (df.POS_PCRFLU != 1) & (df.CLASSI_FIN == 1) &
+                        (df.CRITERIO.isin([2, 3]))).astype(int)
+
+    labrows = (
+            (df.PCR_RESUL.isin([1, 2, 3, 5])) |
+            (df.IF_RESUL.isin([1, 2, 3, 5]))
+    )
     notknownrows = (df.PCR_RESUL == 9) & (df.IF_RESUL == 9)
 
     nottestedrows = (
@@ -152,55 +228,11 @@ def filter_db2019(df, tag=None):
             (df.PCR_RESUL.isin([4, 9])) &
             (df.IF_RESUL.isin([4, 9]))
     )
-
-    df['FLU_A'] = 0
-    df['FLU_B'] = 0
-    df['VSR'] = 0
-    df['PARA1'] = 0
-    df['PARA2'] = 0
-    df['PARA3'] = 0
-    df['PARA4'] = 0
-    df['ADNO'] = 0
-    df['METAP'] = 0
-    df['BOCA'] = 0
-    df['RINO'] = 0
-
-    df['OTHERS'] = 0
-    df['NEGATIVE'] = 0
-    df['INCONCLUSIVE'] = 0
-    df['DELAYED'] = 0
-
     df['NOTTESTED'] = nottestedrows.astype(int)
     df['TESTING_IGNORED'] = notknownrows.astype(int)
 
-    df.loc[((df.TP_FLU_PCR[labrows] == 1) | (df.TP_FLU_IF[labrows] == 1)), 'FLU_A'] = 1
-    df.loc[((df.TP_FLU_PCR[labrows] == 2) | (df.TP_FLU_IF[labrows] == 2)), 'FLU_B'] = 1
-    df.loc[((df.IF_VSR[labrows] == 1) | (df.PCR_VSR[labrows] == 1)), 'VSR'] = 1
-    df.loc[((df.IF_PARA1[labrows] == 1) | (df.PCR_PARA1[labrows] == 1)), 'PARA1'] = 1
-    df.loc[((df.IF_PARA2[labrows] == 1) | (df.PCR_PARA2[labrows] == 1)), 'PARA2'] = 1
-    df.loc[((df.IF_PARA3[labrows] == 1) | (df.PCR_PARA3[labrows] == 1)), 'PARA3'] = 1
-    df.loc[(df.PCR_PARA4[labrows] == 1), 'PARA4'] = 1
-    df.loc[((df.IF_ADENO[labrows] == 1) | (df.PCR_ADENO[labrows] == 1)), 'ADNO'] = 1
-    df.loc[(df.PCR_BOCA[labrows] == 1), 'BOCA'] = 1
-    df.loc[(df.PCR_RINO[labrows] == 1), 'RINO'] = 1
-    df.loc[(df.PCR_METAP[labrows] == 1), 'METAP'] = 1
 
-    # TODO: adequate remaining filters according to 2019 database structure:
-    df.loc[labrows, 'OTHERS'] = ((df.IF_OUTRO[labrows] == 1) | (df.PCR_OUTRO[labrows] == 1)).astype(int)
-    df.loc[labrows, 'DELAYED'] = (
-            ((df.IF_RESUL[labrows] == 5) & (df.PCR_RESUL.isin([4, 5]))) |
-            ((df.PCR_RESUL[labrows] == 5) & (df.IF_RESUL.isin([4, 5])))
-    ).astype(int)
-    df.loc[labrows, 'INCONCLUSIVE'] = (
-        ((df.IF_RESUL[labrows] == 3) & (df.PCR_RESUL.isin([4, 3]))) |
-        ((df.PCR_RESUL[labrows] == 3) & (df.IF_RESUL.isin([4, 3])))
-    ).astype(int)
-    df.loc[labrows, 'NEGATIVE'] = ((df.IF_RESUL[labrows] == 2) & (df.PCR_RESUL[labrows] == 2)).astype(int)
 
-    # Clinical and clinical-epidemiological diagnose:
-    df['FLU_CLINIC'] = ((df.POS_IF_FLU != 1) & (df.POS_PCR_FLU != 1) & (df.CLASSI_FIN == 1) &
-                        (df.CRITERIO.isin([2, 3]))).astype(int)
-    df['FLU_LAB'] = ((df.POS_IF_FLU == 1) | (df.POS_PCR_FLU == 1)).astype(int)
 
     if tag:
         df['tag'] = tag
@@ -214,7 +246,7 @@ def applysinanfilter(df, tag=None):
     tgtcols = ['SEM_NOT', 'DT_NOTIFIC', 'SG_UF_NOT', 'DT_INTERNA', 'DT_SIN_PRI', 'DT_DIGITA', 'HOSPITAL',
                'FEBRE', 'CLASSI_FIN', 'CRITERIO', 'SG_UF', 'ID_MN_RESI', 'ID_RG_RESI', 'SEM_PRI',
                'TOSSE', 'GARGANTA', 'DISPNEIA', 'SATURACAO', 'DESC_RESP', 'EVOLUCAO', 'DT_COLETA', 'IFI', 'DT_IFI',
-               'PCR', 'DT_PCR_1', 'OUT_METODO', 'DS_OUTMET', 'DT_OUTMET', 'RES_FLUA', 'RES_FLUASU', 'RES_FLUB',
+               'PCR', 'OUT_METODO', 'DS_OUTMET', 'DT_OUTMET', 'RES_FLUA', 'RES_FLUASU', 'RES_FLUB',
                'RES_VSR', 'RES_PARA1', 'RES_PARA2', 'RES_PARA3', 'RES_ADNO', 'RES_OUTRO', 'DT_PCR', 'PCR_RES',
                'PCR_ETIOL', 'PCR_TIPO_H', 'PCR_TIPO_N', 'DT_CULTURA', 'CULT_RES', 'DT_HEMAGLU', 'HEMA_RES',
                'HEMA_ETIOL', 'HEM_TIPO_H', 'HEM_TIPO_N', 'VACINA', 'DT_UT_DOSE', 'ANT_PNEUMO', 'DT_PNEUM',
@@ -224,6 +256,8 @@ def applysinanfilter(df, tag=None):
     cols = df.columns
     if 'RES_VRS' in cols:
         df.rename(columns={'RES_VRS': 'RES_VSR'}, inplace=True)
+    if 'DT_PCR_1' in cols:
+        df.DT_PCR.update(df.DT_PCR_1)
 
     for col in set(tgtcols).difference(cols):
         df[col] = None
@@ -364,7 +398,13 @@ def main(flist, sep=',', yearmax=None):
     for fname in flist:
         module_logger.info('Processing database file: %s', fname)
         dftmp = readtable(fname, sep)
-        df = df.append(applysinanfilter(dftmp, tag=fname), ignore_index=True, sort=True)
+        # Check if data file has 2019's database or not:
+        if int(re.findall(r'\d+', fname)[0]) < 2019:
+            print('pre 2019')
+            df = df.append(applysinanfilter(dftmp, tag=fname), ignore_index=True, sort=True)
+        else:
+            print('post 2019')
+            df = df.append(filter_db2019(dftmp, tag=fname), ignore_index=True, sort=True)
 
     if (yearmax):
         df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) <= yearmax)]

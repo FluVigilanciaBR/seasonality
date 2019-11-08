@@ -31,7 +31,7 @@ def opportunity_calc_days(df, colA, colB, colnew):
 def main(fname, sep=','):
 
     df = pd.read_csv(fname, low_memory=False, encoding='utf-8')
-    target_cols = ['DT_NOTIFIC', 'DT_DIGITA', 'DT_SIN_PRI', 'DT_ANTIVIR', 'DT_COLETA', 'DT_IFI', 'DT_PCR_1',
+    target_cols = ['DT_NOTIFIC', 'DT_DIGITA', 'DT_SIN_PRI', 'DT_ANTIVIR', 'DT_COLETA', 'DT_IFI', 'DT_PCR',
                    'DT_ENCERRA']
     yearweek_cols = ['%s_epiyearweek' % k for k in target_cols]
     year_cols = ['%s_epiyear' % k for k in target_cols]
@@ -47,7 +47,7 @@ def main(fname, sep=','):
     df = opportunity_calc_epiweeks(df, colA='DT_SIN_PRI', colB='DT_COLETA', colnew='SinPri2Coleta_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_ENCERRA', colnew='Notific2Encerra_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_COLETA', colB='DT_IFI', colnew='Coleta2IFI_DelayWeeks')
-    df = opportunity_calc_epiweeks(df, colA='DT_COLETA', colB='DT_PCR_1', colnew='Coleta2PCR_DelayWeeks')
+    df = opportunity_calc_epiweeks(df, colA='DT_COLETA', colB='DT_PCR', colnew='Coleta2PCR_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_DIGITA', colnew='Notific2Digita_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_COLETA', colnew='Notific2Coleta_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_ANTIVIR', colnew='Notific2Antivir_DelayWeeks')
@@ -59,7 +59,7 @@ def main(fname, sep=','):
     df = opportunity_calc_days(df, colA='DT_SIN_PRI', colB='DT_COLETA', colnew='SinPri2Coleta_DelayDays')
     df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_ENCERRA', colnew='Notific2Encerra_DelayDays')
     df = opportunity_calc_days(df, colA='DT_COLETA', colB='DT_IFI', colnew='Coleta2IFI_DelayDays')
-    df = opportunity_calc_days(df, colA='DT_COLETA', colB='DT_PCR_1', colnew='Coleta2PCR_DelayDays')
+    df = opportunity_calc_days(df, colA='DT_COLETA', colB='DT_PCR', colnew='Coleta2PCR_DelayDays')
     df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_DIGITA', colnew='Notific2Digita_DelayDays')
     df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_COLETA', colnew='Notific2Coleta_DelayDays')
     df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_ANTIVIR', colnew='Notific2Antivir_DelayDays')
