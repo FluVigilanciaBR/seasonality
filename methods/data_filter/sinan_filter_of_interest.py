@@ -9,8 +9,35 @@ import logging
 import re
 from argparse import RawDescriptionHelpFormatter
 
-
 module_logger = logging.getLogger('update_system.sinan_filter_of_interest')
+tabela_siglauf = {'RO': 11,
+                 'AC': 12,
+                 'AM': 13,
+                 'RR': 14,
+                 'PA': 15,
+                 'AP': 16,
+                 'TO': 17,
+                 'MA': 21,
+                 'PI': 22,
+                 'CE': 23,
+                 'RN': 24,
+                 'PB': 25,
+                 'PE': 26,
+                 'AL': 27,
+                 'SE': 28,
+                 'BA': 29,
+                 'MG': 31,
+                 'ES': 32,
+                 'RJ': 33,
+                 'SP': 35,
+                 'PR': 41,
+                 'SC': 42,
+                 'RS': 43,
+                 'MS': 50,
+                 'MT': 51,
+                 'GO': 52,
+                 'DF': 53,
+                 'NI': 99}
 
 
 def readtable(fname, sep):
@@ -113,17 +140,12 @@ def filter_db2019(df, tag=None):
     # 1-Dias, 2-Meses, 3-Anos
     df['idade_em_anos'] = df.NU_IDADE_N.where(df.TP_IDADE == 3, 0)
 
-    # Create columns related to lab result
-    # Rows with lab test:
-    # labrows = ((df.PCR_RES.isin([1, 2, 3])) |
-    #            (df.CULT_RES.isin([1, 2])) |
-    #            (df.HEMA_RES.isin([1, 2, 3])) |
-    #            (df.IFI == 1) |
-    #            (df.PCR == 1) |
-    #            (df.OUT_METODO == 1))
-
     # If sample collection field is empty, convert to unknown:
     df.AMOSTRA = df.AMOSTRA.where(pd.notnull(df.AMOSTRA), 9).astype(int)
+
+    # Convert UF abbreviation to numeric code:
+    df.loc[pd.notnull(df.SG_UF_NOT), 'SG_UF_NOT'] = df.loc[pd.notnull(df.SG_UF_NOT), 'SG_UF_NOT'].map(tabela_siglauf)
+    df.loc[pd.notnull(df.SG_UF), 'SG_UF'] = df.loc[pd.notnull(df.SG_UF), 'SG_UF'].map(tabela_siglauf)
 
     # Clean up PCR_RESUL and IF_RESUL fields:
     def labresultcleanup(dfin, x):
@@ -217,11 +239,8 @@ def filter_db2019(df, tag=None):
     df['FLU_CLINIC'] = ((df.POS_IF_FLU != 1) & (df.POS_PCRFLU != 1) & (df.CLASSI_FIN == 1) &
                         (df.CRITERIO.isin([2, 3]))).astype(int)
 
-    labrows = (
-            (df.PCR_RESUL.isin([1, 2, 3, 5])) |
-            (df.IF_RESUL.isin([1, 2, 3, 5]))
-    )
-    notknownrows = (df.PCR_RESUL == 9) & (df.IF_RESUL == 9)
+    notknownrows = ((df.PCR_RESUL == 9) | pd.isnull(df.PCR_RESUL)) & \
+                   ((df.IF_RESUL == 9) | pd.isnull(df.IF_RESUL))
 
     nottestedrows = (
             ~(notknownrows) &
@@ -230,9 +249,6 @@ def filter_db2019(df, tag=None):
     )
     df['NOTTESTED'] = nottestedrows.astype(int)
     df['TESTING_IGNORED'] = notknownrows.astype(int)
-
-
-
 
     if tag:
         df['tag'] = tag
@@ -315,6 +331,7 @@ def applysinanfilter(df, tag=None):
     df['INCONCLUSIVE'] = None
     df['DELAYED'] = None
 
+    df['TESTED'] = labrows.astype(int)
     df['NOTTESTED'] = nottestedrows.astype(int)
     df['TESTING_IGNORED'] = notknownrows.astype(int)
 

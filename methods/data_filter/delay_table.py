@@ -16,7 +16,7 @@ def extract_quantile(dforig=pd.DataFrame):
     uflist={col: dforig[col].unique().tolist() for col in tgt_cols}
     for year in range(2014, df.epiyear.max()+1):
         if year == df.epiyear.max():
-            weekmax = max(df.DT_DIGITA_epiweek[df.DT_DIGITA_epiyear == year]) + 1
+            weekmax = int(max(df.DT_DIGITA_epiweek[df.DT_DIGITA_epiyear == year]) + 1)
         else:
             weekmax = int(lastepiweek(year)) + 1
         for week in range(1, weekmax):
