@@ -147,8 +147,8 @@ for (today in epiweek.list){
   
   # Read weekly data:
   d_weekly <- d %>%
-    select(UF, epiyear, epiweek, Notifications_within_26w) %>%
-    rename(SRAG=Notifications_within_26w) %>%
+    select(UF, epiyear, epiweek, Notifications) %>%
+    rename(SRAG=Notifications) %>%
     dplyr::filter(!(UF %in% c('99','RegNI', 'RNI')))
   
   # convert to incidence:

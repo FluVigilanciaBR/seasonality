@@ -82,8 +82,10 @@ def createtable(df=pd.DataFrame()):
     """
 
     # Fill with all epiweeks:
-    yearlist = sorted(set(df.epiyear.unique()).union((df.DT_DIGITA_epiyear.unique())))
-    lastweek = df.DT_DIGITA_epiweek[df.DT_DIGITA_epiyear == max(yearlist)].max()
+    yearlist = set(df.epiyear.unique()).union((df.DT_DIGITA_epiyear.unique()))
+    # Remove NaN:
+    yearlist = sorted([y for y in yearlist if y == y])
+    lastweek = int(df.DT_DIGITA_epiweek[df.DT_DIGITA_epiyear == max(yearlist)].max())
     df.drop(columns=['DT_DIGITA_epiyear', 'DT_DIGITA_epiweek'], inplace=True)
     cols = ['UF', 'dado', 'epiyearweek', 'epiyear', 'epiweek', 'Notifications']
     dcols = ['d%s' % d for d in range(0, 27)]

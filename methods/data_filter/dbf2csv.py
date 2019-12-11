@@ -39,7 +39,6 @@ def main(flist):
         module_logger.info('DBF2CSV: CONVERTED TO %s' % fout)
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Convert DBF file to CSV.\n" +
                                                  "python3 dbf2csv.py --path ../data/influ*.DBF\n",
