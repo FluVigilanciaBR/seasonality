@@ -347,8 +347,6 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     if module_list and 'all' in module_list:
         module_list = ['dbf2csv',
                        'filter',
-                       'epiweek',
-                       'opportunities',
                        'convert2mem',
                        'estimator',
                        'consolidate',
@@ -356,8 +354,6 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     if module_list and 'full_email_update' in module_list:
         module_list = ['email',
                        'filter',
-                       'epiweek',
-                       'opportunities',
                        'convert2mem',
                        'estimator',
                        'consolidate',

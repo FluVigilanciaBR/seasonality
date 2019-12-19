@@ -28,9 +28,7 @@ def opportunity_calc_days(df, colA, colB, colnew):
     return(df)
 
 
-def main(fname, sep=','):
-
-    df = pd.read_csv(fname, low_memory=False, encoding='utf-8')
+def insert_epiweek(df):
     target_cols = ['DT_NOTIFIC', 'DT_DIGITA', 'DT_SIN_PRI', 'DT_ANTIVIR', 'DT_COLETA', 'DT_IFI', 'DT_PCR',
                    'DT_ENCERRA']
     yearweek_cols = ['%s_epiyearweek' % k for k in target_cols]
@@ -65,6 +63,13 @@ def main(fname, sep=','):
     df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_ANTIVIR', colnew='Notific2Antivir_DelayDays')
     df = opportunity_calc_days(df, colA='DT_DIGITA', colB='DT_ANTIVIR', colnew='Digita2Antivir_DelayDays')
 
+    return df
+
+
+def main(fname, sep=','):
+
+    df = pd.read_csv(fname, low_memory=False, encoding='utf-8')
+    df = insert_epiweek(df)
     fout = '../clean_data/%s_epiweek.csv' % fname.split('/')[-1][:-4]
     df.to_csv(fout, index=False, encoding='utf-8')
 

@@ -154,7 +154,6 @@ def uf4mem(dfin=pd.DataFrame()):
                 dfinc.loc[tgt_rows, lab_cols] = (100000*dfinc.loc[tgt_rows, lab_cols] /
                     dfpop.loc[dfpop_tgt_rows, 'Total'].ix[year])
 
-
     dfinc.rename(columns={'Total': 'SRAG'}, inplace=True)
 
     # Structure data in the format accepted by MEM algorithm:

@@ -8,6 +8,8 @@ import argparse
 import logging
 import re
 from argparse import RawDescriptionHelpFormatter
+from .insert_epiweek import insert_epiweek
+from .delay_table import extract_quantile, delayimputation, createtable
 
 module_logger = logging.getLogger('update_system.sinan_filter_of_interest')
 tabela_siglauf = {'RO': 11,
@@ -162,7 +164,7 @@ def filter_db2019(df, tag=None):
 
     labresultcleanup(df, 'PCR_RESUL')
     labresultcleanup(df, 'IF_RESUL')
-    
+
     df['FLU_A'] = None
     df['FLU_B'] = None
     df['FLU_LAB'] = None
@@ -216,7 +218,7 @@ def filter_db2019(df, tag=None):
     df.loc[(df.POS_PCRFLU == 2) & (df.POS_PCROUT == 2), 'PCR_RESUL'] = 2
     df.loc[(df.POS_IF_FLU == 2) & (df.POS_IF_OUT == 2), 'IF_RESUL'] = 2
     mask = (
-            df.POSITIVE != 1 & 
+            df.POSITIVE != 1 &
             ((df.FLU_LAB == 0) | (df.POS_PCROUT == 2) | (df.POS_IF_OUT == 2))
     )
     df.loc[mask, 'NEGATIVE'] = 1
@@ -410,6 +412,141 @@ def applysinanfilter(df, tag=None):
     return (df)
 
 
+def delays_dist(df_in=pd.DataFrame()):
+    tgt_cols = ['SG_UF_NOT',
+                'DT_NOTIFIC_epiyearweek',
+                'DT_NOTIFIC_epiyear',
+                'DT_NOTIFIC_epiweek',
+                'DT_SIN_PRI_epiyearweek',
+                'DT_SIN_PRI_epiyear',
+                'DT_SIN_PRI_epiweek',
+                'DT_DIGITA_epiyearweek',
+                'DT_DIGITA_epiyear',
+                'DT_DIGITA_epiweek',
+                'Notific2Digita_DelayWeeks',
+                'SinPri2Digita_DelayWeeks',
+                'SinPri2Antivir_DelayWeeks',
+                'SinPri2Notific_DelayWeeks',
+                'SinPri2Coleta_DelayWeeks',
+                'Notific2Encerra_DelayWeeks',
+                'Coleta2IFI_DelayWeeks',
+                'Coleta2PCR_DelayWeeks',
+                'Notific2Coleta_DelayWeeks',
+                'Notific2Antivir_DelayWeeks',
+                'Digita2Antivir_DelayWeeks',
+
+                'Notific2Digita_DelayDays',
+                'SinPri2Digita_DelayDays',
+                'SinPri2Antivir_DelayDays',
+                'SinPri2Notific_DelayDays',
+                'SinPri2Coleta_DelayDays',
+                'Notific2Encerra_DelayDays',
+                'Coleta2IFI_DelayDays',
+                'Coleta2PCR_DelayDays',
+                'Notific2Coleta_DelayDays',
+                'Notific2Antivir_DelayDays',
+                'Digita2Antivir_DelayDays',
+
+                'sragflu',
+                'obitoflu']
+    df = df_in[tgt_cols].rename(columns={'DT_NOTIFIC_epiyear': 'epiyear', 'DT_NOTIFIC_epiweek': 'epiweek',
+                                                                        'SG_UF_NOT': 'UF'})
+    df.loc[pd.isnull(df.UF), 'UF'] = 99
+    df.UF = df.UF.astype(int)
+    # Insert region info:
+    df_reg = pd.read_csv('../data/regioesclimaticas.csv', low_memory=False)[['Código', 'Região', 'Região oficial']]
+    df_reg.rename(columns={'Código': 'UF', 'Região': 'Regional', 'Região oficial': 'Regiao'}, inplace=True)
+    df = df.merge(df_reg, on='UF')
+    df['Pais'] = 'BR'
+
+    cols = ['DT_DIGITA_epiyear', 'DT_DIGITA_epiweek', 'SinPri2Digita_DelayWeeks']
+    try:
+        df[cols] = df[cols].astype(int)
+    except:
+        df[cols] = df[cols].astype(float)
+    cols = ['epiyear', 'epiweek']
+    try:
+        df[cols] = df[cols].astype(int)
+    except:
+        df[cols] = df[cols].astype(float)
+    cols = ['DT_SIN_PRI_epiyear', 'DT_SIN_PRI_epiweek']
+    try:
+        df[cols] = df[cols].astype(int)
+    except:
+        df[cols] = df[cols].astype(float)
+
+    dftmp = df.copy()
+    dftmp['dado'] = 'srag'
+    df_out = dftmp.drop(columns=['sragflu', 'obitoflu'])
+
+    # sragflu:
+    dftmp = dftmp[dftmp.sragflu == 1]
+    dftmp['dado'] = 'sragflu'
+    df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu']), ignore_index=True, sort=True)
+
+    # obitoflu:
+    dftmp = dftmp[dftmp.obitoflu == 1]
+    dftmp['dado'] = 'obitoflu'
+    df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu']), ignore_index=True, sort=True)
+    out_cols = ['Coleta2IFI_DelayDays', 'Coleta2IFI_DelayWeeks', 'Coleta2PCR_DelayDays',
+                'Coleta2PCR_DelayWeeks', 'DT_DIGITA_epiweek', 'DT_DIGITA_epiyear',
+                'DT_DIGITA_epiyearweek', 'DT_NOTIFIC_epiyearweek', 'DT_SIN_PRI_epiweek',
+                'DT_SIN_PRI_epiyear', 'DT_SIN_PRI_epiyearweek',
+                'Digita2Antivir_DelayDays', 'Digita2Antivir_DelayWeeks',
+                'Notific2Antivir_DelayDays', 'Notific2Antivir_DelayWeeks',
+                'Notific2Coleta_DelayDays', 'Notific2Coleta_DelayWeeks',
+                'Notific2Digita_DelayDays', 'Notific2Digita_DelayWeeks',
+                'Notific2Encerra_DelayDays', 'Notific2Encerra_DelayWeeks',
+                'SinPri2Antivir_DelayDays', 'SinPri2Antivir_DelayWeeks',
+                'SinPri2Coleta_DelayDays', 'SinPri2Coleta_DelayWeeks',
+                'SinPri2Digita_DelayDays', 'SinPri2Digita_DelayWeeks',
+                'SinPri2Notific_DelayDays', 'SinPri2Notific_DelayWeeks', 'UF', 'dado',
+                'epiweek', 'epiyear', 'Regional', 'Regiao', 'Pais']
+
+    df_out = df_out.sort_values(by=['dado', 'UF', 'DT_SIN_PRI_epiyearweek', 'DT_NOTIFIC_epiyearweek',
+                                    'DT_DIGITA_epiyearweek'])
+    df_out = df_out.reset_index()[out_cols]
+    df_out[out_cols].to_csv('../../data/data/delay_table.csv', index=False)
+
+    #### Opportunities estimation
+    tgt_cols = ['UF', 'Regional', 'Regiao', 'Pais', 'dado', 'DT_SIN_PRI_epiyearweek', 'DT_SIN_PRI_epiyear',
+                'DT_SIN_PRI_epiweek', 'SinPri2Digita_DelayWeeks', 'DT_DIGITA_epiyearweek', 'DT_DIGITA_epiyear',
+                'DT_DIGITA_epiweek']
+    # Generate quantiles' file:
+    df_out = df_out[tgt_cols].rename(columns={'DT_SIN_PRI_epiyearweek': 'epiyearweek', 'DT_SIN_PRI_epiyear': 'epiyear',
+                                     'DT_SIN_PRI_epiweek': 'epiweek', 'SinPri2Digita_DelayWeeks': 'delayweeks'})
+    df_out.UF = df_out.UF.astype(int).astype(str)
+    extract_quantile(df_out)
+    # Impute digitalization date if needed:
+    opp_cols = list(set(tgt_cols).difference(['dado']).union(['sragflu', 'obitoflu']))
+    df = df[opp_cols].rename(columns={'DT_SIN_PRI_epiyearweek': 'epiyearweek', 'DT_SIN_PRI_epiyear': 'epiyear',
+                                      'DT_SIN_PRI_epiweek': 'epiweek', 'SinPri2Digita_DelayWeeks': 'delayweeks'})
+    df.UF = df.UF.astype(int).astype(str)
+    df = delayimputation(df)
+    dftmp = df.copy()
+    dftmp['dado'] = 'srag'
+    df_out = dftmp.drop(columns=['sragflu', 'obitoflu'])
+
+    # sragflu:
+    dftmp = dftmp[dftmp.sragflu == 1]
+    dftmp['dado'] = 'sragflu'
+    df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu']), ignore_index=True, sort=True)
+
+    # obitoflu:
+    dftmp = dftmp[dftmp.obitoflu == 1]
+    dftmp['dado'] = 'obitoflu'
+    df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu']), ignore_index=True, sort=True)
+
+    # Create tables and save to file:
+    df_out = createtable(df_out)
+    for dataset in df_out.dado.unique():
+        fout = '../clean_data/%s_sinpri2digita_table_weekly.csv' % dataset
+        module_logger.info('Write table %s' % fout)
+        df_out[df_out.dado == dataset].to_csv(fout, index=False)
+
+    return
+
+
 def main(flist, sep=',', yearmax=None):
     df = pd.DataFrame()
     for fname in flist:
@@ -417,21 +554,32 @@ def main(flist, sep=',', yearmax=None):
         dftmp = readtable(fname, sep)
         # Check if data file has 2019's database or not:
         if int(re.findall(r'\d+', fname)[0]) < 2019:
-            print('pre 2019')
             df = df.append(applysinanfilter(dftmp, tag=fname), ignore_index=True, sort=True)
         else:
-            print('post 2019')
             df = df.append(filter_db2019(dftmp, tag=fname), ignore_index=True, sort=True)
 
     if (yearmax):
         df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) <= yearmax)]
 
-    df.to_csv('clean_data_srag.csv', index=False)
-    dfflu = df[(pd.notnull(df.FLU_A) & (df.FLU_A == 1)) | (pd.notnull(df.FLU_B) & (df.FLU_B == 1)) | (df.FLU_CLINIC
-                                                                                                      == 1)]
-    dfflu.to_csv('clean_data_sragflu.csv', index=False)
-    dffluobito = dfflu[dfflu.EVOLUCAO == 2]
-    dffluobito.to_csv('clean_data_obitoflu.csv', index=False)
+    # Convert date fields to text and leave NaT as empty cell
+    target_cols = ['DT_NOTIFIC', 'DT_DIGITA', 'DT_SIN_PRI', 'DT_ANTIVIR', 'DT_COLETA', 'DT_IFI', 'DT_PCR',
+                   'DT_ENCERRA']
+    df[target_cols] = df[target_cols].applymap(lambda x: str(x.date())).where(lambda x: x != 'NaT', np.nan)
+    df = insert_epiweek(df)
+
+    mask_flu = ((pd.notnull(df.FLU_A) & (df.FLU_A == 1)) |
+               (pd.notnull(df.FLU_B) & (df.FLU_B == 1)) |
+               (df.FLU_CLINIC == 1))
+    mask_obitoflu = mask_flu & (df.EVOLUCAO == 2)
+
+    df.to_csv('../clean_data/clean_data_srag_epiweek.csv', index=False)
+    df[mask_flu].to_csv('../clean_data/clean_data_sragflu_epiweek.csv', index=False)
+    df[mask_obitoflu].to_csv('../clean_data/clean_data_obitoflu_epiweek.csv', index=False)
+
+    df['sragflu'] = mask_flu.astype(int)
+    df['obitoflu'] = mask_obitoflu.astype(int)
+
+    delays_dist(df)
 
 
 if __name__ == '__main__':
