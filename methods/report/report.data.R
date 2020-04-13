@@ -1,0 +1,488 @@
+library(tidyverse)
+library(ggplot2)
+library(lemon)
+library(gridExtra)
+library(tools)
+library(reticulate)
+library(stringi)
+library(sf)
+source('theme.publication.R')
+use_python('~/miniconda/env/fludashboard-development/bin/python')
+source_python('../data_filter/episem.py')
+suppressPackageStartupMessages(library("argparse"))
+# create parser object
+parser <- ArgumentParser()
+# specify our desired options
+# by default ArgumentParser will add an help option
+parser$add_argument("-y", "--epiyear", type="integer",
+                    help="Epidemiological year")
+parser$add_argument("-w", "--epiweek", type="integer",
+                    help="Epidemiological week")
+parser$add_argument("-p", "--plot", action='store_true',
+                    help="Update plots?")
+# get command line options, if help option encountered print help and exit,
+# otherwise if options not found on command line then set defaults,
+args <- parser$parse_args()
+epiweek.sunday <- epiweek2date(as.integer(args$epiyear), as.integer(args$epiweek)) %>%
+  as.Date(format='%Y%m%d') + 6
+
+# Base folders
+data.folder <- '../../data/data/'
+plots.folder <- './Figs'
+
+# ID conversions:
+region.indeces <- c('NI', 'BR', 'RegN', 'RegL', 'RegC', 'RegS', 'RegNI',
+                    'N', 'NE', 'SE', 'S', 'CO', 'RNI')
+region.id <- list('NI'=99,
+                  'BR'= 0,
+                  'RegN'= 1001,
+                  'RegL'= 1002,
+                  'RegC'= 1003,
+                  'RegS'= 1004,
+                  'RegNI'= 9999,
+                  'N'= 1,
+                  'NE'= 2,
+                  'SE'= 3,
+                  'S'= 4,
+                  'CO'= 5,
+                  'RNI'= 9)
+
+if (args$plot){
+  # Load shapefiles
+  brazil.shp <- sf::st_read(dsn=plots.folder, layer='Brasil', stringsAsFactors = F)
+  brazil.shp$CD_GEOCODU <- as.integer(brazil.shp$CD_GEOCODU)
+  brazil.reggeo.shp <- st_read(dsn=plots.folder, layer='Brasil-regiao', stringsAsFactors = F)
+  brazil.regperf.shp <- st_read(dsn=plots.folder, layer='Brasil-regionais', stringsAsFactors = F)
+  
+  plot.map <- function(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, plot.title, file.name){
+    # Plot maps with different territorial aggregations
+    p1 <- ggplot(brazil.reggeo.shp) +
+      geom_sf(aes(fill = alert.level), show.legend=F) +
+      scale_fill_manual(values = plot.colors, breaks = plot.breaks, label = plot.labels, drop=F) +
+      theme_void() +
+      labs(title='Regiões geopolíticas') +
+      theme(plot.margin = unit(c(0,0,0,0), 'pt'))
+    p2 <- ggplot(brazil.regperf.shp) +
+      geom_sf(aes(fill = alert.level), show.legend=T) +
+      scale_fill_manual(values = plot.colors, breaks = plot.breaks, label = plot.labels, drop=F) +
+      theme_void() +
+      labs(title='Regionais por perfil de atividade') +
+      theme(legend.direction = 'horizontal',
+            legend.position ='bottom',
+            legend.title=element_blank(),
+            plot.margin = unit(c(0,0,0,0), 'pt'))
+    p3 <- ggplot(brazil.shp) +
+      geom_sf(aes(fill = alert.level), show.legend=F) +
+      scale_fill_manual(values = plot.colors, breaks = plot.breaks, label = plot.labels, drop=F) +
+      theme_void() +
+      labs(title='Unidades Federativas') +
+      theme(plot.margin = unit(c(0,0,0,0), 'pt'))
+    
+    # pdf(paste0('Figs/', file.name), width = 12, height = 4)
+    # grid.arrange(p1, p2, p3, nrow=1, top=plot.title)
+    # dev.off()
+    # 
+    # pdf(paste0('Figs/', file.name), width = 12, height = 4)
+    # grid.arrange(p1, p2, p3, nrow=1, top=plot.title)
+    # dev.off()
+    # 
+    # pdf(paste0('Figs/', file.name), width = 12, height = 4)
+    # grid.arrange(p1, p2, p3, nrow=1, top=plot.title)
+    # dev.off()
+    
+    pdf(paste0('Figs/', file.name), width = 12, height = 4)
+    grid.arrange(p1, p2, p3, nrow=1, top=plot.title)
+    dev.off()
+    
+    
+    return()
+  }
+  
+  contingency.maps <- function(df.contingency){
+    # Prepare data and generate maps with contingency level
+    brazil.shp <- brazil.shp %>%
+      left_join(df.contingency %>%
+                  select(territory_id, contingency), by=c('CD_GEOCODU' = 'territory_id')) %>%
+      mutate(alert.level = factor(contingency, levels=c(1, 2, 3, 4)))
+    
+    brazil.reggeo.shp <- brazil.reggeo.shp %>%
+      left_join(df.contingency %>%
+                  select(territory_id, contingency), by=c('regiao' = 'territory_id')) %>%
+      mutate(alert.level = factor(contingency, levels=c(1, 2, 3, 4)))
+    
+    brazil.regperf.shp <- brazil.regperf.shp %>%
+      left_join(df.contingency %>%
+                  select(territory_id, contingency), by=c('regionais' = 'territory_id'))  %>%
+      mutate(alert.level = factor(contingency, levels=c(1, 2, 3, 4)))
+    
+    plot.colors <- c('#ffffcc', '#a1dab4', '#41b6c4', '#225ea8')
+    plot.breaks <- c(1, 2, 3, 4)
+    plot.labels <- c('Nível Basal', 'Nível 0', 'Nível 1', 'Nível 2')
+    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, plot.title = 'Níveis do plano de contingência', 'contingency.pdf')
+    return()
+  }
+  
+  activity.maps <- function(df.weekly.alert, dataset){
+    # Prepare data and generate maps with weekly activity level
+    brazil.shp <- brazil.shp %>%
+      left_join(df.weekly.alert %>%
+                  select(territory_id, alert), by=c('CD_GEOCODU' = 'territory_id')) %>%
+      mutate(alert.level = factor(alert, levels=c(1, 2, 3, 4)))
+    
+    brazil.reggeo.shp <- brazil.reggeo.shp %>%
+      left_join(df.weekly.alert %>%
+                  select(territory_id, alert), by=c('regiao' = 'territory_id')) %>%
+      mutate(alert.level = factor(alert, levels=c(1, 2, 3, 4)))
+    
+    brazil.regperf.shp <- brazil.regperf.shp %>%
+      left_join(df.weekly.alert %>%
+                  select(territory_id, alert), by=c('regionais' = 'territory_id'))  %>%
+      mutate(alert.level = factor(alert, levels=c(1, 2, 3, 4)))
+    
+    plot.colors <- c('#edf8fb', '#b3cde3', '#9f8cc6', '#88419d')
+    plot.breaks <- c(1, 2, 3, 4)
+    plot.labels <- c('Baixa', 'Epidêmica', 'Alta', 'Muito alta')
+    plot.title <- list(
+      'srag' = 'Nível de atividade de SRAG',
+      'sragflu' = 'Nível de atividade de SRAG por influenza',
+      'obitoflu' = 'Nível de atividade de óbitos de SRAG por influenza'
+    )
+    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, as.character(plot.title[dataset]), paste0(dataset, '-activity.pdf'))
+    return()
+  }
+  
+  plot.timeseries <- function(df){
+    # Function for timeseries plot with endemic channels, activity thresholds and estimates
+    # Generate plot with 3 datasets if Brazil (territory_id == 0) or else plot only SRAG data (dataset_id == 1)
+    territory_id <- unique(df$territory_id)
+    print(territory_id)
+    df.ts <- df %>%
+      select(dataset_id, epiweek, X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta) %>%
+      mutate(SRAG = case_when(
+        epiweek >= args$epiweek[1] - 4 ~ NA_real_,
+        TRUE ~ SRAG
+      )) %>%
+      gather(ts.name, measure, c(X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta))
+    
+    plot.dataset <- function(d){
+      # Internal function plot based on dataset_id
+      y.upper <- df %>%
+        filter(dataset_id == d) %>%
+        select(intensidade.muito.alta) %>%
+        unique()*1.1
+      y.upper.ic <- df %>%
+        filter(dataset_id == d) %>%
+        select(X97.5.) %>%
+        max(na.rm=T)*1.1
+      y.upper <- max(y.upper, y.upper.ic)
+      leg.pt <- ifelse(territory_id == 0, .8, .7)
+      leg.nrow <- ifelse(territory_id == 0, 2, 3)
+      leg.pos <- ifelse(territory_id == 0, 'bottom', 'right')
+      p <- df %>%
+          filter(dataset_id == d) %>%
+          ggplot(aes(x = epiweek)) +
+          geom_ribbon(aes(ymin = 0, ymax = corredor.baixo, fill = 'Zona de êxito'), alpha=.5) +
+          geom_ribbon(aes(ymin = corredor.baixo, ymax = corredor.mediano, fill = 'Zona de segurança'), alpha=.5) +
+          geom_ribbon(aes(ymin = corredor.mediano, ymax = corredor.alto, fill = 'Zona de alerta'), alpha=.5) +
+          geom_ribbon(aes(ymin = corredor.alto, ymax = Inf, fill = 'Zona de risco'), alpha=.5) +
+          geom_line(data = df.ts %>% filter(dataset_id == d), aes(y = measure, color = ts.name, linetype = ts.name)) +
+          scale_fill_manual(name = NULL, values = c('Zona de êxito' = 'green', 'Zona de segurança' = 'yellow', 'Zona de alerta' = 'orange', 'Zona de risco' = 'red'),
+                            breaks = c('Zona de êxito', 'Zona de segurança', 'Zona de alerta', 'Zona de risco')) +
+          scale_x_continuous(expand = c(0,0), breaks = c(1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52)) +
+          scale_y_continuous(expand = c(0,0), limits = c(0, as.double(y.upper))) +
+          scale_linetype_manual(name = NULL, values = c('SRAG' = 1, 'X50.' = 1, 'X2.5.' = 2, 'X97.5.' = 2, 'limiar.pré.epidêmico' = 2, 'intensidade.alta' = 2, 'intensidade.muito.alta' = 2),
+                                breaks = c('SRAG', 'X50.', 'X2.5.', 'limiar.pré.epidêmico', 'intensidade.alta', 'intensidade.muito.alta'),
+                                labels = c('Casos notificados', 'Casos estimados', 'Intervalo de confiança', 'Limiar pré-epidêmico', 'Intensidade alta', 'Intensidade muito alta')) +
+          scale_color_manual(name = NULL, values = c('SRAG' = 'black', 'X50.' = 'red', 'X2.5.' = 'black', 'X97.5.' = 'black', 'limiar.pré.epidêmico' = 'green', 'intensidade.alta' = 'blue', 'intensidade.muito.alta' = 'red'),
+                             breaks = c('SRAG', 'X50.', 'X2.5.', 'limiar.pré.epidêmico', 'intensidade.alta', 'intensidade.muito.alta'),
+                             labels = c('Casos notificados', 'Casos estimados', 'Intervalo de confiança', 'Limiar pré-epidêmico', 'Intensidade alta', 'Intensidade muito alta')) +
+          labs(x = 'Semana epidemiológica', y = 'Incidência (por 100mil hab.)') +
+          theme_Publication() + theme(legend.key.size = unit(15, 'pt'), legend.text=element_text(size = rel(leg.pt)), legend.position = leg.pos, plot.margin=unit(c(2, 10, 5, 5), 'pt'))
+        if (territory_id == 0){
+          p <- p +
+            guides(fill=guide_legend(nrow = leg.nrow, byrow = TRUE, title = NULL), color=guide_legend(nrow = leg.nrow, byrow = TRUE, title = NULL), linetype=guide_legend(nrow = leg.nrow, byrow = TRUE, title = NULL))
+        }
+        return(p)
+    }
+    
+    if (territory_id == 0){
+      p.grid <- lapply(c(1, 2, 3), plot.dataset)
+      pdf(paste0('Figs/', 'Brazil_timeseries.pdf'), width = 12, height = 4, onefile = FALSE)
+      grid_arrange_shared_legend(p.grid[[1]], p.grid[[2]], p.grid[[3]], ncol = 3, nrow = 1, position = 'bottom')
+      dev.off()
+    } else {
+      pdf(paste0('Figs/', 'Territory_', territory_id, '_timeseries.pdf'), width = 6, height = 4)
+      p <- plot.dataset(1)
+      p
+      dev.off()
+    }
+    return()
+  }
+  
+}
+
+#### Generate contingency map: ####
+print('Loading contingency data')
+df.contingency <- read.csv(paste0(data.folder, 'contingency_level.csv'), stringsAsFactors = F) %>%
+  filter(epiyear == args$epiyear)
+if (args$plot){
+  print('Generating contingency map')
+  contingency.maps(df.contingency)
+}
+
+##### Generate activity maps: ####
+df.weekly.alert <- read.csv(paste0(data.folder, 'weekly_alert.csv'), stringsAsFactors = F)
+df.weekly.alert <- df.weekly.alert %>%
+  filter(epiyear == args$epiyear,
+         epiweek == args$epiweek)
+
+if (args$plot){
+  datasets = list('srag' = 1, 'sragflu' = 2, 'obitoflu' = 3)
+  for (dataset in names(datasets)){
+    print(paste0('Generating activity map: ', dataset))
+    df.weekly.alert %>%
+      filter(dataset_id == datasets[dataset]) %>%
+      activity.maps(dataset = dataset)
+  }
+}
+
+#### Prepare data for timeseries and tables ####
+df.current <- read.csv(paste0(data.folder, 'current_estimated_values.csv'), stringsAsFactors = F)
+df.typical <- read.csv(paste0(data.folder, 'mem-typical.csv'), stringsAsFactors = F)
+df.report <- read.csv(paste0(data.folder, 'mem-report.csv'), stringsAsFactors = F)
+
+df.report$territory_id <- df.report$UF
+df.report$territory_id[df.report$UF %in% region.indeces] <- as.integer(unlist(region.id[df.report$UF[df.report$UF %in% region.indeces]]))
+df.report$territory_id <- as.integer(df.report$territory_id)
+df.report <- df.report %>%
+  mutate(
+    dataset_id = case_when(
+      dado == 'srag' ~ 1,
+      dado == 'sragflu' ~ 2,
+      dado == 'obitoflu' ~ 3
+    ),
+    scale_id = case_when(
+      escala == 'incidência' ~ 1,
+      escala == 'casos' ~ 2
+    )
+  )
+
+df.typical$territory_id <- df.typical$UF
+df.typical$territory_id[df.typical$UF %in% region.indeces] <- as.integer(unlist(region.id[df.typical$UF[df.typical$UF %in% region.indeces]]))
+df.typical$territory_id <- as.integer(df.typical$territory_id)
+df.typical <- df.typical %>%
+  mutate(
+    dataset_id = case_when(
+      dado == 'srag' ~ 1,
+      dado == 'sragflu' ~ 2,
+      dado == 'obitoflu' ~ 3
+    ),
+    scale_id = case_when(
+      escala == 'incidência' ~ 1,
+      escala == 'casos' ~ 2
+    )
+  )
+
+
+last.epiyear.flag = (args$epiweek - 4 <= 0)
+if (last.epiyear.flag){
+  last.year.maxweek <- df.current %>%
+    dplyr::filter(epiyear == args$epiyear - 1) %>%
+    select(epiweek) %>%
+    max()
+  current.minus.4.epiweek <- last.year.maxweek - (4 - args$epiwee)
+  current.minus.4.epiyear <- args$epiyear - 1  
+} else {
+  current.minus.4.epiweek <- args$epiweek - 4
+  current.minus.4.epiyear <- args$epiyear  
+}
+
+df.current$territory_id <- df.current$UF
+df.current$territory_id[df.current$UF %in% region.indeces] <- as.integer(unlist(region.id[df.current$UF[df.current$UF %in% region.indeces]]))
+df.current$territory_id <- as.integer(df.current$territory_id)
+df.current <- df.current %>%
+  mutate(
+    dataset_id = case_when(
+      dado == 'srag' ~ 1,
+      dado == 'sragflu' ~ 2,
+      dado == 'obitoflu' ~ 3
+    ),
+    scale_id = case_when(
+      escala == 'incidência' ~ 1,
+      escala == 'casos' ~ 2
+    )
+  )
+
+#### Plot timeseries ####
+if (args$plot){
+  for (t.id in unique(df.current$territory_id)){
+    print(t.id)
+    df.plot.ts <- df.current %>%
+      select(-Tipo) %>%
+      filter(territory_id == t.id, scale_id == 1, epiyear == args$epiyear) %>%
+      right_join(df.typical %>% filter(territory_id == t.id, scale_id == 1)) %>%
+      mutate(SRAG = case_when(
+        epiweek >= args$epiweek - 4 ~ NA_real_,
+        TRUE ~ SRAG
+      ))
+    df.plot.ts <- df.report %>%
+      select(territory_id, dataset_id, scale_id, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta) %>%
+      right_join(df.plot.ts)
+    plot.timeseries(df.plot.ts)
+  }
+}
+
+#### Tables for report ####
+estimated <- list(1, 2, 3)
+for (d in c(1, 2, 3)){
+  estimated[d] <- df.current %>%
+    filter(epiyear == args$epiyear, epiweek == args$epiweek, Situation == 'estimated', dataset_id == d, scale_id == 1) %>%
+    select(territory_id) %>%
+    as.vector()
+}
+     
+df.current <- df.current %>%
+  filter(scale_id == 1) %>%
+  dplyr::filter(
+    (dataset_id == 1 &
+       ((territory_id %in% estimated[[1]] & epiyear == args$epiyear & epiweek == args$epiweek) |
+       (!(territory_id %in% estimated[[1]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
+    ) |
+      (dataset_id == 2 &
+         ((territory_id %in% estimated[[2]] & epiyear == args$epiyear & epiweek == args$epiweek) |
+         (!(territory_id %in% estimated[[2]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
+      ) |
+      (dataset_id == 3 &
+         ((territory_id %in% estimated[[3]] & epiyear == args$epiyear & epiweek == args$epiweek) |
+         (!(territory_id %in% estimated[[3]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
+      )
+  ) %>%
+  select(territory_id, epiyear, epiweek, dataset_id, scale_id, Situation, X50.) %>%
+  left_join(df.typical) %>%
+  mutate(canal.endemico = case_when(
+    X50. > corredor.alto ~ 4,
+    X50. <= corredor.alto & X50. > corredor.mediano ~ 3,
+    X50. <= corredor.mediano & X50. > corredor.baixo ~ 2,
+    TRUE ~ 1
+  ))
+
+df.siglas <- read.csv('territorios.csv', stringsAsFactors = F)
+df.siglas <- df.current %>%
+  right_join(df.siglas) %>%
+  left_join(df.weekly.alert %>% select(territory_id, dataset_id, alert, low_level, epidemic_level, high_level, very_high_level)) %>%
+  mutate(alert.probability = case_when(
+    Situation != 'estimated' ~ low_level,
+    Situation == 'estimated' & alert == 1 ~ low_level,
+    Situation == 'estimated' & alert == 2 ~ epidemic_level,
+    Situation == 'estimated' & alert == 3 ~ high_level,
+    Situation == 'estimated' & alert == 4 ~ very_high_level
+  ))
+
+df.table <- expand.grid(list(dado = c(1, 2, 3),
+                             territorio = c('geopolítico', 'perfil de atividade', 'UF'),
+                             indicador = c('canal endêmico', 'atividade semanal'),
+                             nivel = c(1, 2, 3, 4)),
+                        stringsAsFactors = F)
+df.table <- df.siglas %>%
+  filter(Tipo != 'País') %>%
+  mutate(sigla = case_when(
+    Situation != 'estimated' ~ paste0(sigla, '*'),
+    TRUE ~ sigla
+  )) %>%
+  group_by(Tipo, dataset_id, canal.endemico) %>%
+  summarise(lista = stri_paste(sigla, collapse= ', ')) %>%
+  ungroup() %>%
+  transmute(dado = dataset_id,
+            territorio = case_when(
+              Tipo == 'Estado' ~ 'UF',
+              Tipo == 'Região' ~ 'geopolítico',
+              Tipo == 'Regional' ~ 'perfil de atividade'),
+            indicador = 'canal endêmico',
+            nivel = canal.endemico,
+            lista = case_when(
+              !is.na(lista) ~ lista,
+              TRUE ~ ' ')) %>%
+  right_join(df.table)
+
+df.table <- df.siglas %>%
+  filter(Tipo != 'País') %>%
+  mutate(sigla.prob = case_when(
+    !is.na(alert.probability) ~ paste0(sigla, '(', 100*alert.probability, '\\%)'),
+    is.na(alert.probability) ~ paste0(sigla, '*'))) %>%
+  group_by(Tipo, dataset_id, alert) %>%
+  summarise(lista = stri_paste(sigla.prob, collapse= ', ')) %>%
+  ungroup() %>%
+  transmute(dado = dataset_id,
+            territorio = case_when(
+              Tipo == 'Estado' ~ 'UF',
+              Tipo == 'Região' ~ 'geopolítico',
+              Tipo == 'Regional' ~ 'perfil de atividade'),
+            indicador = 'atividade semanal',
+            nivel = alert,
+            lista = lista) %>%
+  right_join(df.table, by = c('dado', 'territorio', 'indicador', 'nivel')) %>%
+  mutate(lista = case_when(
+    !is.na(lista.x) ~ lista.x,
+    is.na(lista.x) ~ lista.y),
+    lista = case_when(
+      !is.na(lista) ~ lista,
+      TRUE ~ ' ')) %>%
+  select(-lista.x, -lista.y)
+
+df.table <- df.siglas %>%
+  filter(Tipo == 'País') %>%
+  transmute(dado = dataset_id,
+            territorio = Tipo,
+            indicador = 'canal endêmico',
+            nivel = canal.endemico,
+            lista = 'BR') %>%
+  union(df.table)
+
+df.table <- df.siglas %>%
+  filter(Tipo == 'País') %>%
+  transmute(dado = dataset_id,
+            territorio = Tipo,
+            indicador = 'atividade semanal',
+            nivel = alert,
+            lista = paste0('BR', ' (', 100*alert.probability, '\\%)' )) %>%
+  union(df.table)
+
+df.table$ano.epi <- args$epiyear
+df.table$se.epi <- args$epiweek
+df.table$data.fim <- epiweek.sunday
+write.csv(df.table, 'tabela_de_alertas.csv', na = ' ', row.names = F)
+
+tmp <- as.data.frame(list(indicador = c(rep('canal endêmico', 4), rep('atividade semanal', 4)),
+                          nivel = rep(c(1, 2, 3, 4), 2),
+                          texto = c('zona de êxito', 'zona de segurança', 'zona de alerta', 'zona de risco', 'baixa', 'epidêmica', 'alta', 'muito alta')
+                          )) %>%
+  mutate(indicador = as.character(indicador), texto = as.character(texto))
+
+br.report <- df.table %>%
+  filter(territorio == 'País') %>%
+  left_join(tmp)
+
+df.lab <- read.csv(paste0(data.folder, 'clean_data_epiweek-weekly-incidence_w_situation.csv'), stringsAsFactors = F) %>%
+  filter(dado == 'srag' & epiyear == args$epiyear & escala == 'casos' & sexo == 'Total' & UF == 'BR') %>%
+  select(FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek)
+
+df.lab.grp <- df.lab %>%
+  transmute(FLU_A = FLU_A/POSITIVE_CASES,
+            FLU_B = FLU_B/POSITIVE_CASES,
+            VSR = VSR/POSITIVE_CASES,
+            SARS2 = SARS2/POSITIVE_CASES,
+            epiweek = epiweek)
+print(df.lab.grp)
+
+df.lab <- df.lab %>%
+  colSums(na.rm = T) %>%
+  t() %>%
+  as.data.frame() %>%
+  mutate(FLU_A = round(100*FLU_A/POSITIVE_CASES),
+         FLU_B = round(100*FLU_B/POSITIVE_CASES),
+         VSR = round(100*VSR/POSITIVE_CASES),
+         SARS2 = round(100*SARS2/POSITIVE_CASES))
+
+Sweave('Boletim_InfoGripe_template.Rnw')
+texi2dvi(file = 'Boletim_InfoGripe_template.tex', pdf = TRUE, quiet=TRUE, clean=TRUE)
+system(paste("mv", 'Boletim_InfoGripe_template.pdf', paste0('Boletim_InfoGripe_SE', args$epiyear, sprintf('%02d', args$epiweek), '.pdf')))

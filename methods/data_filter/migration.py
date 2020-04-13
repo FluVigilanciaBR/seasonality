@@ -446,6 +446,8 @@ def migrate_delay_table(df):
 
     migration_rules = {
         'UF': 'territory_id',
+        'SinPri2Interna_DelayDays': 'symptoms2hospitalization',
+        'Interna2Evoluca_DelayDays': 'hospitalization2evolution',
         'Notific2Digita_DelayDays': 'notification2digitalization',
         'SinPri2Digita_DelayDays': 'symptoms2digitalization',
         'SinPri2Antivir_DelayDays': 'symptoms2antiviral',
@@ -480,6 +482,8 @@ def migrate_delay_table(df):
         'SinPri2Antivir_DelayWeeks',
         'SinPri2Notific_DelayWeeks',
         'SinPri2Coleta_DelayWeeks',
+        'SinPri2Interna_DelayWeeks',
+        'Interna2Evoluca_DelayWeeks',
         'Notific2Encerra_DelayWeeks',
         'Coleta2IFI_DelayWeeks',
         'Coleta2PCR_DelayWeeks',

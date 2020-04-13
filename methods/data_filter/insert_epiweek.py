@@ -30,7 +30,7 @@ def opportunity_calc_days(df, colA, colB, colnew):
 
 def insert_epiweek(df):
     target_cols = ['DT_NOTIFIC', 'DT_DIGITA', 'DT_SIN_PRI', 'DT_ANTIVIR', 'DT_COLETA', 'DT_IFI', 'DT_PCR',
-                   'DT_ENCERRA']
+                   'DT_ENCERRA', 'DT_INTERNA', 'DT_EVOLUCA']
     yearweek_cols = ['%s_epiyearweek' % k for k in target_cols]
     year_cols = ['%s_epiyear' % k for k in target_cols]
     week_cols = ['%s_epiweek' % k for k in target_cols]
@@ -43,6 +43,7 @@ def insert_epiweek(df):
     df = opportunity_calc_epiweeks(df, colA='DT_SIN_PRI', colB='DT_ANTIVIR', colnew='SinPri2Antivir_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_SIN_PRI', colB='DT_NOTIFIC', colnew='SinPri2Notific_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_SIN_PRI', colB='DT_COLETA', colnew='SinPri2Coleta_DelayWeeks')
+    df = opportunity_calc_epiweeks(df, colA='DT_SIN_PRI', colB='DT_INTERNA', colnew='SinPri2Interna_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_ENCERRA', colnew='Notific2Encerra_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_COLETA', colB='DT_IFI', colnew='Coleta2IFI_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_COLETA', colB='DT_PCR', colnew='Coleta2PCR_DelayWeeks')
@@ -50,11 +51,13 @@ def insert_epiweek(df):
     df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_COLETA', colnew='Notific2Coleta_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_NOTIFIC', colB='DT_ANTIVIR', colnew='Notific2Antivir_DelayWeeks')
     df = opportunity_calc_epiweeks(df, colA='DT_DIGITA', colB='DT_ANTIVIR', colnew='Digita2Antivir_DelayWeeks')
+    df = opportunity_calc_epiweeks(df, colA='DT_INTERNA', colB='DT_EVOLUCA', colnew='Interna2Evoluca_DelayWeeks')
 
     df = opportunity_calc_days(df, colA='DT_SIN_PRI', colB='DT_DIGITA', colnew='SinPri2Digita_DelayDays')
     df = opportunity_calc_days(df, colA='DT_SIN_PRI', colB='DT_ANTIVIR', colnew='SinPri2Antivir_DelayDays')
     df = opportunity_calc_days(df, colA='DT_SIN_PRI', colB='DT_NOTIFIC', colnew='SinPri2Notific_DelayDays')
     df = opportunity_calc_days(df, colA='DT_SIN_PRI', colB='DT_COLETA', colnew='SinPri2Coleta_DelayDays')
+    df = opportunity_calc_days(df, colA='DT_SIN_PRI', colB='DT_INTERNA', colnew='SinPri2Interna_DelayDays')
     df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_ENCERRA', colnew='Notific2Encerra_DelayDays')
     df = opportunity_calc_days(df, colA='DT_COLETA', colB='DT_IFI', colnew='Coleta2IFI_DelayDays')
     df = opportunity_calc_days(df, colA='DT_COLETA', colB='DT_PCR', colnew='Coleta2PCR_DelayDays')
@@ -62,6 +65,7 @@ def insert_epiweek(df):
     df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_COLETA', colnew='Notific2Coleta_DelayDays')
     df = opportunity_calc_days(df, colA='DT_NOTIFIC', colB='DT_ANTIVIR', colnew='Notific2Antivir_DelayDays')
     df = opportunity_calc_days(df, colA='DT_DIGITA', colB='DT_ANTIVIR', colnew='Digita2Antivir_DelayDays')
+    df = opportunity_calc_days(df, colA='DT_INTERNA', colB='DT_EVOLUCA', colnew='Interna2Evoluca_DelayDays')
 
     return df
 

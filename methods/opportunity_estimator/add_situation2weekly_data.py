@@ -5,6 +5,7 @@ import pandas as pd
 import argparse
 from argparse import RawDescriptionHelpFormatter
 
+
 def main(preflist):
 
     def mergesituation(dfa, dfb):
@@ -33,7 +34,7 @@ def main(preflist):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Insert data status.\n" +
                                      "Exemple usage:\n" +
-                                     "python3 sinan-convert2mem-fmt-regiao.py --path clean_data.csv",
+                                     "python3 add_situation2weekly_data.py --type srag sragflu obitoflu",
                                      formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--type', nargs='*', action='append', help='Prefix: srag, sragflu ou obitoflu',
                         default=['srag', 'sragflu', 'obitoflu'])

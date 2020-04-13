@@ -9,8 +9,11 @@ import smtplib
 from argparse import RawDescriptionHelpFormatter
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from email.encoders import encode_base64
 from subprocess import run
-from settings import EMAIL, SERVER
+from settings import EMAIL, SERVER, REPORT
+from data_filter.episem import episem, lastepiweek
 
 
 logger = logging.getLogger('update_system')
@@ -55,6 +58,17 @@ logfile_path = os.path.join(os.getcwd(), logger_fname)
 data_folder = os.path.join(os.getcwd(), '..', 'data', 'data')
 time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 timesmpl = datetime.datetime.now().strftime('%Y%m%d')
+modules_list = ['all',
+                'full_email_update',
+                'email',
+                'dbf2csv',
+                'filter',
+                'convert2mem',
+                'estimator',
+                'consolidate',
+                'export',
+                'report',
+                'sendreport']
 
 
 def send_email(mail_dict):
@@ -84,6 +98,53 @@ def send_email(mail_dict):
     return
 
 
+def send_report_email(epiyear: int, epiweek: int):
+    module_name = 'send_report_email.settings'
+    logger.info(module_name)
+
+    mail_report = {
+        'subject': "[InfoGripe] Boletim da SE %s %02d" % (epiyear, epiweek),
+        'email_body': """
+Caro(a),
+      
+Segue o boletim semanal gerado automaticamente pelo InfoGripe, com base nos dados do Sivep-gripe até a SE %s %02d.
+Esta é uma mensagem automática, não é necessário responder o e-mail.
+
+Acesse o site para mais informações:
+http://info.gripe.fiocruz.br
+
+Atenciosamente,
+Equipe InfoGripe
+InfoGripe - http://info.gripe.fiocruz.br
+FluDashboard - https://github.com/FluVigilanciaBR/fludashboard
+""" % (epiyear, epiweek),
+        **REPORT
+    }
+
+    email_msg = MIMEMultipart()
+    email_msg['From'] = '%(NAME)s <%(USER)s>' % mail_report
+    email_msg['Subject'] = mail_report['subject']
+    body = MIMEText(mail_report['email_body'], 'plain')
+    email_msg.attach(body)
+    report_fname = 'Boletim_InfoGripe_SE%s%02d.pdf' % (epiyear, epiweek)
+    fp = open(report_fname, 'rb')
+    attachment = MIMEApplication(fp.read(), _subtype='pdf', _encoder=encode_base64)
+    attachment.add_header("Content-Disposition", "attachment", filename=report_fname)
+    email_msg.attach(attachment)
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.ehlo()
+        server.login(REPORT['USER'], REPORT['PASSWORD'])
+        server.send_message(email_msg, to_addrs=mail_report['CCO'].split(', '))
+        server.close()
+    except Exception as exception:
+        logger.exception(exception)
+        raise
+
+    logger.info('%s : DONE', module_name)
+    return
+
+
 def convert_dbf(flist):
     from data_filter import dbf2csv
 
@@ -107,9 +168,14 @@ def email_update(dir, years):
     module_name = email_extract.__name__
 
     try:
-        for year in years:
-            logger.info('Updating over e-mail. Base year: %s' % year)
-            email_extract.main(dir, year)
+        if years:
+            for year in years:
+                logger.info('Updating over e-mail. Base year: %s' % year)
+                email_extract.main(dir, year)
+        else:
+            logger.info('Updating over e-mail.')
+            email_extract.main(dir)
+
     except Exception as err:
         logger.exception(module_name)
         logger.exception(err)
@@ -335,8 +401,29 @@ def exportdb(fname=None):
     return
 
 
+def generate_report(epiyear=None, epiweek=None, plot=None):
+
+    Rscript = 'report.data.R'
+
+    logger.info('Generating weekly report: %s %s' % (epiyear, epiweek))
+    module_name = 'report.report.data.R'
+    try:
+        if plot:
+            run(['Rscript', '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek), '-p'], check=True)
+        else:
+            run(['Rscript', '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek)], check=True)
+    except Exception as err:
+        logger.exception(module_name)
+        logger.exception(err)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        send_email(mail_error)
+        raise
+
+    return
+
+
 def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, years=None, date='max',
-         dbdump=None):
+         dbdump=None, plot=None):
     '''
     Run all scripts to update the system with new database.
     Optional: update MEM thresholds
@@ -344,22 +431,34 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     :param update_mem:
     :return:
     '''
+
+    logger.info('System update: START')
+    for m in module_list:
+        if m not in modules_list:
+            logger.error('Unknown module request: %s', m)
+            mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': 'caller'}
+            send_email(mail_error)
+            exit(0)
+
     if module_list and 'all' in module_list:
         module_list = ['dbf2csv',
                        'filter',
                        'convert2mem',
                        'estimator',
                        'consolidate',
-                       'export']
+                       'export',
+                       'report',
+                       'sendreport']
     if module_list and 'full_email_update' in module_list:
         module_list = ['email',
                        'filter',
                        'convert2mem',
                        'estimator',
                        'consolidate',
-                       'export']
+                       'export',
+                       'report',
+                       'sendreport']
 
-    logger.info('System update: START')
     logger.info('Update MEM: %s', update_mem)
     logger.info('Update modules: %s', module_list)
 
@@ -410,17 +509,39 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
         logger.info('Export DB')
         exportdb(dbdump)
 
+    os.chdir('./report')
+    epiyear, epiweek = episem(date).split('W')
+    if epiweek == 1:
+        epiyear = int(epiyear) - 1
+        epiweek = int(lastepiweek(epiyear))
+    else:
+        epiyear = int(epiyear)
+        epiweek = int(epiweek) - 1
+
+    if 'report' in module_list:
+        logger.info('Report generation')
+        generate_report(epiyear=epiyear, epiweek=epiweek, plot=plot)
+
+    if 'sendreport' in module_list:
+        logger.info('Send report over email')
+        send_report_email(epiyear=epiyear, epiweek=epiweek)
+
+    os.chdir('../')
+
     logger.info('System update: DONE')
     mail_success['email_body'] = mail_success['email_body'] % {'time': time}
     send_email(mail_success)
 
 
 if __name__ == '__main__':
+    today = datetime.datetime.strftime(datetime.datetime.today(), '%Y-%m-%d')
+
     parser = argparse.ArgumentParser(description="Update InfoGripe database.\n" +
                                                  "python3 update_system.py --mem --path ./data/influ*.DBF\n",
                                      formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--mem', action='store_true', help='Update MEM thresholds.')
-    parser.add_argument('--modules', nargs='*', action='append', help='Which modules should be ran.',
+    parser.add_argument('--modules', nargs='*', action='append',
+                        help='Which modules should be ran.\nModule list: %s' % modules_list,
                         default=[])
     parser.add_argument('--path', nargs='*', action='append', help='Path to data file. Optional',
                         default=None)
@@ -431,9 +552,11 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--years', nargs='*', action='append', help='Base years for e-mail update module. Optional',
                         default=None)
-    parser.add_argument('--date', help='Base date for estimator in the format YYYY-MM-DD or max. Optional. Default=max',
-                        default='max')
+    parser.add_argument('--date', help='Base date for estimator in the format YYYY-MM-DD or max. Optional.',
+                        default=today)
     parser.add_argument('--dbdump', help='Path do database dump for export. Optional', default=None)
+    parser.add_argument('--plot', action='store_true', help='Should the module updat report plots?')
+
     args = parser.parse_args()
     if args.path:
         args.path = args.path[0]
@@ -445,4 +568,4 @@ if __name__ == '__main__':
         args.years = args.years[0]
 
     main(flist=args.path, update_mem=args.mem, module_list=args.modules, history_files=args.history, dir=args.dir,
-         years=args.years, date=args.date, dbdump=args.dbdump)
+         years=args.years, date=args.date, dbdump=args.dbdump, plot=args.plot)

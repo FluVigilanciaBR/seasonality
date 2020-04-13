@@ -126,7 +126,7 @@ for (today in epiweek.list){
   print(paste0('Database reference epiweek: ', today))
   
   # Discard incomplete data from the current week and older than 2 years
-  d <- d.orig[d.orig$epiyearweek <= today,]
+  d <- d.orig[d.orig$epiyearweek <= today, ]
   
   #### Discard runoff triangle (important for retroactive calculations):
   uf_list <- unique(d$UF)

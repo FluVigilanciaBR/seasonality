@@ -19,10 +19,8 @@ def dbf2csv(fin, fout):
         try:
             table = DBF(fin, encoding=enc)
             df = pd.DataFrame(iter(table))
-            print('yep: %s' % enc)
             break
         except UnicodeDecodeError:
-            print('nope: %s' % enc)
             pass
 
     df.to_csv(fout, encoding='utf-8')

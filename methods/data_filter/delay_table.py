@@ -102,7 +102,7 @@ def delayimputation(df=pd.DataFrame()):
     return df
 
 
-def createtable(df=pd.DataFrame()):
+def createtable(df_in = pd.DataFrame()):
     """Generate digitalization opportunity table by epidemiological week.
 
     From notification data, creates a table with total number of notified cases on column Notifications
@@ -126,11 +126,11 @@ def createtable(df=pd.DataFrame()):
     """
 
     # Fill with all epiweeks:
-    yearlist = set(df.epiyear.unique()).union((df.DT_DIGITA_epiyear.unique()))
+    yearlist = list(df_in.epiyear.unique())
     # Remove NaN:
     yearlist = sorted([y for y in yearlist if y == y])
-    lastweek = int(df.DT_DIGITA_epiweek[df.DT_DIGITA_epiyear == max(yearlist)].max())
-    df.drop(columns=['DT_DIGITA_epiyear', 'DT_DIGITA_epiweek'], inplace=True)
+    lastweek = int(df_in.DT_DIGITA_epiweek[df_in.DT_DIGITA_epiyear == max(yearlist)].max())
+    df = df_in.drop(columns=['DT_DIGITA_epiyear', 'DT_DIGITA_epiweek'])
     cols = ['UF', 'dado', 'epiyearweek', 'epiyear', 'epiweek', 'Notifications']
     dcols = ['d%s' % d for d in range(0, 27)]
     cols.extend(dcols)

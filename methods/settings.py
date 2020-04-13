@@ -1,8 +1,10 @@
 import os
 import yaml
+import pandas as pd
 
 home_path = os.path.expanduser("~")
 settings_path = os.path.join(home_path, '.seasonality.yaml')
+mailing_list = pd.read_csv(os.path.join(home_path, '.InfoGripe.mailing_list'))
 
 EMAIL = {
     'NAME': None,
@@ -13,6 +15,11 @@ EMAIL = {
 SERVER = {
     'USER': None,
     'HOST': None
+}
+REPORT = {
+    'NAME': None,
+    'USER': None,
+    'PASSWORD': None,
 }
 
 if not os.path.exists(settings_path):
@@ -36,3 +43,5 @@ if not os.path.exists(settings_path):
 
 with open(os.path.join(settings_path), 'r') as f:
     globals().update(yaml.load(f))
+
+REPORT['CCO'] = ', '.join(mailing_list.lista_de_emails.values)

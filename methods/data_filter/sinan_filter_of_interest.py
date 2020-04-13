@@ -41,6 +41,9 @@ tabela_siglauf = {'RO': 11,
                  'DF': 53,
                  'NI': 99}
 
+sars_cov_2_regex = 'novo coronavírus|novo coronavirus|novo corona vírus|novo corona virus|covid|coovid|sars-cov-2|' \
+                   'sars-cov2|sarscov2|sars cov2|sars- cov|sars cov|covi-19'
+
 
 def readtable(fname, sep):
     try:
@@ -122,9 +125,9 @@ def filter_db2019(df, tag=None):
                'ID_MN_RESI', 'ID_MUNICIP', 'ID_REGIONA', 'ID_RG_RESI', 'IF_ADENO', 'IF_OUTRO', 'IF_PARA1',
                'IF_PARA2', 'IF_PARA3', 'IF_RESUL', 'IF_VSR', 'NU_CEP', 'NU_IDADE_N', 'NU_NOTIFIC', 'OUT_ANTIVIR',
                'PCR_ADENO', 'PCR_BOCA', 'PCR_FLUASU', 'PCR_FLUBLI', 'PCR_METAP', 'PCR_OUTRO', 'PCR_PARA1',
-               'PCR_PARA2', 'PCR_PARA3', 'PCR_PARA4', 'PCR_RESUL', 'PCR_RINO', 'PCR_VSR', 'POS_IF_FLU', 'POS_IF_OUT',
-               'POS_PCRFLU', 'POS_PCROUT', 'SATURACAO', 'SEM_NOT', 'SEM_PRI', 'SG_UF', 'SG_UF_NOT', 'TOSSE',
-               'TP_ANTIVIR', 'TP_FLU_IF', 'TP_FLU_PCR', 'TP_IDADE', 'VACINA']
+               'PCR_PARA2', 'PCR_PARA3', 'PCR_PARA4', 'PCR_RESUL', 'PCR_RINO', 'PCR_SARS2', 'PCR_VSR', 'POS_IF_FLU',
+               'POS_IF_OUT', 'POS_PCRFLU', 'POS_PCROUT', 'SATURACAO', 'SEM_NOT', 'SEM_PRI', 'SG_UF', 'SG_UF_NOT',
+               'TOSSE', 'TP_ANTIVIR', 'TP_FLU_IF', 'TP_FLU_PCR', 'TP_IDADE', 'VACINA']
 
     cols = df.columns
     for col in set(tgtcols).difference(cols):
@@ -147,7 +150,9 @@ def filter_db2019(df, tag=None):
 
     # Convert UF abbreviation to numeric code:
     df.loc[pd.notnull(df.SG_UF_NOT), 'SG_UF_NOT'] = df.loc[pd.notnull(df.SG_UF_NOT), 'SG_UF_NOT'].map(tabela_siglauf)
+    df.loc[pd.isnull(df.SG_UF_NOT), 'SG_UF_NOT'] = 99
     df.loc[pd.notnull(df.SG_UF), 'SG_UF'] = df.loc[pd.notnull(df.SG_UF), 'SG_UF'].map(tabela_siglauf)
+    df.loc[pd.isnull(df.SG_UF), 'SG_UF'] = 99
 
     # Clean up PCR_RESUL and IF_RESUL fields:
     def labresultcleanup(dfin, x):
@@ -177,6 +182,7 @@ def filter_db2019(df, tag=None):
     df['METAP'] = None
     df['BOCA'] = None
     df['RINO'] = None
+    df['SARS2'] = None
     df['OTHERS'] = None
 
     df['NEGATIVE'] = None
@@ -209,6 +215,10 @@ def filter_db2019(df, tag=None):
     df.loc[(df.PCR_RINO == 1), 'RINO'] = 1
     df.loc[(df.PCR_METAP == 1), 'METAP'] = 1
     df.loc[(df.IF_OUTRO == 1) | (df.PCR_OUTRO == 1), 'OTHERS'] = 1
+    df.loc[(df.PCR_SARS2 == 1) | (df.DS_PCR_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)) |
+           (df.DS_IF_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)), 'SARS2'] = 1
+    df.loc[(df.PCR_SARS2 == 1) | (df.DS_PCR_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)) |
+           (df.DS_IF_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)), 'OTHERS'] = None
 
     # Positive cases:
     df.loc[(df.POS_PCRFLU == 1) | (df.POS_PCROUT == 1), 'PCR_RESUL'] = 1
@@ -218,24 +228,25 @@ def filter_db2019(df, tag=None):
     df.loc[(df.POS_PCRFLU == 2) & (df.POS_PCROUT == 2), 'PCR_RESUL'] = 2
     df.loc[(df.POS_IF_FLU == 2) & (df.POS_IF_OUT == 2), 'IF_RESUL'] = 2
     mask = (
-            df.POSITIVE != 1 &
+            (df.POSITIVE != 1) &
             ((df.FLU_LAB == 0) | (df.POS_PCROUT == 2) | (df.POS_IF_OUT == 2))
     )
     df.loc[mask, 'NEGATIVE'] = 1
 
     df.loc[(df.POSITIVE == 1) | (df.NEGATIVE == 1), 'TESTED'] = 1
 
-    # TODO: adequate remaining filters according to 2019 database structure:
     df.loc[:, 'DELAYED'] = (
-            ((df.IF_RESUL == 5) & (df.TESTED != 1)) |
-            ((df.PCR_RESUL == 5) & (df.TESTED != 1))
+            ((df.IF_RESUL == 5) & (pd.isnull(df.TESTED))) |
+            ((df.PCR_RESUL == 5) & (pd.isnull(df.TESTED)))
     ).astype(int)
     df.loc[:, 'INCONCLUSIVE'] = (
         ((df.IF_RESUL == 3) & (~df.PCR_RESUL.isin([1, 2, 5]))) |
         ((df.PCR_RESUL == 3) & (~df.IF_RESUL.isin([1, 2, 5])))
     ).astype(int)
-    df.loc[((df.IF_RESUL == 2) & (df.PCR_RESUL.isin([2, 4, 9]))) |
-           ((df.PCR_RESUL == 2) & (df.IF_RESUL.isin([2, 4, 9]))), 'NEGATIVE'] = 1
+    df.loc[((df.IF_RESUL == 2) & (df.PCR_RESUL.isin([2, 3, 4, 5, 9]))) |
+           ((df.PCR_RESUL == 2) & (df.IF_RESUL.isin([2, 3, 4, 5, 9]))), 'NEGATIVE'] = 1
+
+    df.loc[(df.POSITIVE == 1) | (df.NEGATIVE == 1), 'TESTED'] = 1
 
     # Clinical and clinical-epidemiological diagnose:
     df['FLU_CLINIC'] = ((df.POS_IF_FLU != 1) & (df.POS_PCRFLU != 1) & (df.CLASSI_FIN == 1) &
@@ -269,14 +280,21 @@ def applysinanfilter(df, tag=None):
                'PCR_ETIOL', 'PCR_TIPO_H', 'PCR_TIPO_N', 'DT_CULTURA', 'CULT_RES', 'DT_HEMAGLU', 'HEMA_RES',
                'HEMA_ETIOL', 'HEM_TIPO_H', 'HEM_TIPO_N', 'VACINA', 'DT_UT_DOSE', 'ANT_PNEUMO', 'DT_PNEUM',
                'CO_UF_INTE', 'CO_MU_INTE', 'CO_UN_INTE', 'DT_ENCERRA', 'NU_NOTIFIC', 'ID_AGRAVO', 'ID_MUNICIP',
-               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'CS_SEXO', 'CS_GESTANT', 'CS_RACA', 'DT_ANTIVIR', 'DT_OBITO']
+               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'CS_SEXO', 'CS_GESTANT', 'CS_RACA', 'DT_ANTIVIR', 'DT_EVOLUCA']
 
     cols = df.columns
     if 'RES_VRS' in cols:
         df.rename(columns={'RES_VRS': 'RES_VSR'}, inplace=True)
     if 'DT_PCR_1' in cols:
         df.DT_PCR.update(df.DT_PCR_1)
+    if 'DT_OBITO' in cols:
+        df.rename(columns={'DT_OBITO': 'DT_EVOLUCA'}, inplace=True)
+        if 'DT_EVOL' in cols:
+            df.DT_EVOLUCA.update(df.DT_EVOL)
+    elif 'DT_EVOL' in cols:
+        df.rename(columns={'DT_EVOL': 'DT_EVOLUCA'})
 
+    cols = df.columns
     for col in set(tgtcols).difference(cols):
         df[col] = None
 
@@ -327,6 +345,7 @@ def applysinanfilter(df, tag=None):
     df['METAP'] = None
     df['BOCA'] = None
     df['RINO'] = None
+    df['SARS2'] = None
 
     df['OTHERS'] = None
     df['NEGATIVE'] = None
@@ -346,6 +365,7 @@ def applysinanfilter(df, tag=None):
     df.loc[labrows, 'PARA2'] = (df.RES_PARA2[labrows] == 1).astype(int)
     df.loc[labrows, 'PARA3'] = (df.RES_PARA3[labrows] == 1).astype(int)
     df.loc[labrows, 'ADNO'] = (df.RES_ADNO[labrows] == 1).astype(int)
+    df.loc[labrows, 'SARS2'] = 0
 
     df.loc[labrows, 'OTHERS'] = (
         (df.PCR_ETIOL[labrows] == 5) |
@@ -428,24 +448,28 @@ def delays_dist(df_in=pd.DataFrame()):
                 'SinPri2Antivir_DelayWeeks',
                 'SinPri2Notific_DelayWeeks',
                 'SinPri2Coleta_DelayWeeks',
+                'SinPri2Interna_DelayWeeks',
                 'Notific2Encerra_DelayWeeks',
                 'Coleta2IFI_DelayWeeks',
                 'Coleta2PCR_DelayWeeks',
                 'Notific2Coleta_DelayWeeks',
                 'Notific2Antivir_DelayWeeks',
                 'Digita2Antivir_DelayWeeks',
+                'Interna2Evoluca_DelayWeeks',
 
                 'Notific2Digita_DelayDays',
                 'SinPri2Digita_DelayDays',
                 'SinPri2Antivir_DelayDays',
                 'SinPri2Notific_DelayDays',
                 'SinPri2Coleta_DelayDays',
+                'SinPri2Interna_DelayDays',
                 'Notific2Encerra_DelayDays',
                 'Coleta2IFI_DelayDays',
                 'Coleta2PCR_DelayDays',
                 'Notific2Coleta_DelayDays',
                 'Notific2Antivir_DelayDays',
                 'Digita2Antivir_DelayDays',
+                'Interna2Evoluca_DelayDays',
 
                 'sragflu',
                 'obitoflu']
@@ -500,7 +524,10 @@ def delays_dist(df_in=pd.DataFrame()):
                 'SinPri2Antivir_DelayDays', 'SinPri2Antivir_DelayWeeks',
                 'SinPri2Coleta_DelayDays', 'SinPri2Coleta_DelayWeeks',
                 'SinPri2Digita_DelayDays', 'SinPri2Digita_DelayWeeks',
-                'SinPri2Notific_DelayDays', 'SinPri2Notific_DelayWeeks', 'UF', 'dado',
+                'SinPri2Notific_DelayDays', 'SinPri2Notific_DelayWeeks',
+                'SinPri2Interna_DelayDays', 'SinPri2Interna_DelayWeeks',
+                'Interna2Evoluca_DelayDays', 'Interna2Evoluca_DelayWeeks',
+                'UF', 'dado',
                 'epiweek', 'epiyear', 'Regional', 'Regiao', 'Pais']
 
     df_out = df_out.sort_values(by=['dado', 'UF', 'DT_SIN_PRI_epiyearweek', 'DT_NOTIFIC_epiyearweek',
@@ -554,8 +581,10 @@ def main(flist, sep=',', yearmax=None):
         dftmp = readtable(fname, sep)
         # Check if data file has 2019's database or not:
         if int(re.findall(r'\d+', fname)[0]) < 2019:
+            module_logger.info('DB pre-2019')
             df = df.append(applysinanfilter(dftmp, tag=fname), ignore_index=True, sort=True)
         else:
+            module_logger.info('DB 2019 onwards')
             df = df.append(filter_db2019(dftmp, tag=fname), ignore_index=True, sort=True)
 
     if (yearmax):
@@ -563,9 +592,10 @@ def main(flist, sep=',', yearmax=None):
 
     # Convert date fields to text and leave NaT as empty cell
     target_cols = ['DT_NOTIFIC', 'DT_DIGITA', 'DT_SIN_PRI', 'DT_ANTIVIR', 'DT_COLETA', 'DT_IFI', 'DT_PCR',
-                   'DT_ENCERRA']
+                   'DT_ENCERRA', 'DT_INTERNA', 'DT_EVOLUCA']
     df[target_cols] = df[target_cols].applymap(lambda x: str(x.date())).where(lambda x: x != 'NaT', np.nan)
     df = insert_epiweek(df)
+    df.CO_UNI_NOT.update(df.ID_UNIDADE)
 
     mask_flu = ((pd.notnull(df.FLU_A) & (df.FLU_A == 1)) |
                (pd.notnull(df.FLU_B) & (df.FLU_B == 1)) |
