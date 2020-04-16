@@ -51,7 +51,7 @@ def readtable(fname):
 
 def main():
 
-    dataset = ['srag', 'sragflu', 'obitoflu']
+    dataset = ['srag', 'sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']
     dataset_name = dataset[0]
     module_logger.info('Processing dataset: %s', dataset_name)
     df = readtable('../clean_data/clean_data_%s_epiweek.csv' % dataset_name)

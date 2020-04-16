@@ -1,0 +1,450 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Boletim semanal do InfoDengue
+% Adapted by Marcelo F C Gomes (Feb 2020)
+%
+% Based on template from:
+% Boletim semanal municipal do InfoDengue
+% Adapted by Claudia Codeco (Jun 2016)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[10pt,dvipsnames,svgnames,table]{article}
+\usepackage[utf8]{inputenc}
+%\usepackage[brazilian]{babel}
+\usepackage{wallpaper}
+\SweaveOpts{keep.source=TRUE}
+\input{structure_infogripe.tex} 
+
+\fancyfoot[C]{Boletim semanal - InfoGripe}
+\fancyfoot[L]{\href{http://info.gripe.fiocruz.br}{InfoGripe}}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+%--------------------------------------------------------------------------------
+%	HEADER IMAGE
+%--------------------------------------------------------------------------------
+  
+%\ULCornerWallPaper{Figs/infogripe.png}
+\URCornerWallPaper{1}{Figs/info-emap-procc-fiocruz-sus-ms-logo.png}
+\centerline {\color{altncolor}\rule{1\linewidth}{2.75pt}} % Horizontal line
+
+%--------------------------------------------------------------------------------
+%	CAIXA LATERAL - PRIMEIRA PAGINA
+%--------------------------------------------------------------------------------
+  
+%-----------------------------------------------------------
+%\textbf{{\LARGE{cidade do Rio de Janeiro}}}
+\begin{minipage}[t]{.30\linewidth} % Mini page taking up 30% of the actual page
+\begin{mdframed}[style=sidebar,frametitle={}] % Sidebar box
+
+\hypertarget{contents}{\textbf{{\large Boletim\newline Semanal}}}
+
+\textbf{Semana $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$} % se, ano
+
+\begin{itemize}
+\item \hyperlink{Serie nacional}{Situação nacional}
+\item \hyperlink{Mapas contingencia}{Mapas de situação para o plano de contingência}
+\item \hyperlink{Mapas atividade}{Mapas de alerta de atividade semanal}
+\item \hyperlink{Tabelas de alerta}{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}
+\end{itemize}
+\centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
+
+\textbf{Contato}
+\begin{description}
+\item \href{mailto:fluvigilanciabr@gmail.com}{fluvigilanciabr@gmail.com}  
+\end{description}
+\end{mdframed}
+\end{minipage}\hfill % End the sidebar mini page 
+\begin{minipage}[t]{.66\linewidth} % Nao pode colocar espaco acima senao ela nao fica lado a lado
+
+%--------------------------------------------------------------------------------
+  %	TEXTO PRINCIPAL - PRIMEIRA PAGINA - ALERTA A NIVEL DO ESTADO
+%-------------------------------------------------------------------------------
+
+%\hypertarget{estado}{\heading{Situação da Dengue e Chikungunya na Cidade do Rio de Janeiro}{6pt}} % \hypertarget provides a label to reference using 
+
+O sistema InfoGripe (\href{http://info.gripe.fiocruz.br}{http://info.gripe.fiocruz.br}) monitora os dados de notificação de síndrome respiratória aguda grave (SRAG) no Brasil, tendo como fonte de dados o sistema Sivep-gripe da Secretaria de Vigilância em Saúde do Ministério da Saúde (SVS/MS), gerando alertas de situação com base no padrão histórico de cada região analisada.
+
+O presente relatório é referente aos dados digitados até a SE $\Sexpr{sprintf('%02d', args$epiweek)}$ $\Sexpr{args$epiyear}$, que encerra-se no dia \Sexpr{epiweek.sunday}. Apresentamos análises nacional, por região geopolítica, por regional baseada em perfil de atividade, e por UF, relatando o nível relativo ao plano de contingência, zona no canal endêmico e nível de atividade semanal para os dados de SRAG, SRAG por Influenza, e óbitos de SRAG por Influenza.
+
+Os níveis de atenção com respeito ao plano de contingência e limiares de atividade semanal são reportados em formas de mapa, enquanto indicadores relacionados aos canais endêmicos são reportados em forma de tabela.
+
+\end{minipage}
+
+\hypertarget{Serie nacional}{\heading{Situação nacional}{6pt}}
+A nível nacional, o cenário atual sugere que a situação de cada indicador se encontra nos seguintes níveis:
+\begin{description}
+	\item [Casos notificados de SRAG:] \hfill
+	\begin{itemize}
+		\item [] Dado semanal na \textbf{\Sexpr{br.report$texto[br.report$indicador == 'canal endêmico' & br.report$dado == 1]}}.
+		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 1]}}.
+		\item [] Total de \textbf{\Sexpr{df.lab$SRAG} casos} já reportados no ano, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
+		\textbf{\Sexpr{df.lab$NEGATIVE} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED} aguardando resultado}.
+		\item [] Dentre os positivos, \Sexpr{df.lab$FLU_A}\% \textbf{Influenza A}, \Sexpr{df.lab$FLU_B}\% \textbf{Influenza B}, \Sexpr{df.lab$VSR}\% \textbf{vírus sincicial respiratório}, e \Sexpr{df.lab$SARS2}\% \textbf{SARS-CoV-2} (COVID-19).
+	\end{itemize}
+
+	\item [Casos notificados de SRAG por influenza:] \hfill
+	\begin{itemize}
+		\item [] Dado semanal na \textbf{\Sexpr{br.report$texto[br.report$indicador == 'canal endêmico' & br.report$dado == 2]}}.
+		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 2]}}.
+	\end{itemize}
+
+	\item [Óbitos notificados de SRAG por influenza:] \hfill
+	\begin{itemize}
+		\item [] Dado semanal na \textbf{\Sexpr{br.report$texto[br.report$indicador == 'canal endêmico' & br.report$dado == 3]}}.
+		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 3]}}.
+	\end{itemize}
+\end{description}
+
+A Fig.\ref{fig:st} apresenta a estimativa da incidência no país para cada um dos três conjuntos de dados analisados, bem como os canais endêmicos, e limiares de atividade correspondentes.
+
+\begin{figure}[hb]
+	\centering
+	\includegraphics[width=1\columnwidth]{Figs/Brazil_timeseries.pdf}
+	\caption{Incidência de SRAG (esquerda), SRAG por influenza (centro), e óbitos por influenza (direita) em todo o território nacional, com estimativa de casos recentes até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st}}
+\end{figure}
+
+\newpage
+\hypertarget{Mapas contingencia}{\heading{Mapas de situação para o plano de contingência}{6pt}}
+Além das análises por Unidade da Federação, o sistema InfoGripe reporta análise por agregados regionais, utilizando tanto a divisão geopolítica quanto por perfil de atividade de SRAG. A Fig.\ref{fig:regioes} apresenta essas duas divisões para referência.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.25\textwidth]{Figs/regioes_pq.pdf} \includegraphics[width=0.25\textwidth]{Figs/regionais_pq.pdf}
+	\caption{Estados agregados por regiões geopolíticas (esquerda) e com base na similaridade do perfil de aividade de SRAG (direita)}\label{fig:regioes}
+\end{figure}
+
+Os mapas referentes ao plano de contingência seguem os critérios definidos pela SVS:
+\begin{description}
+	\item[Nível basal:] quando nenhum dos critéiros a seguir forem satisfeitos;
+	\item[Nível 0:] casos de SRAG em ascensão por 4 semanas consecutivas \textbf{e}, em ao menos uma delas, dentro da zona de alerta (região laranja dos canais endêmicos) ou acima;
+	\item[Nível 1:] casos de SRAG por influenza em ascensão por 4 semanas consecutivas \textbf{e}, em ao menos uma delas, dentro da zona de alerta (região laranja dos canais endêmicos) ou acima;
+	\item[Nível 2:] óbitos de SRAG por influenza em ascensão por 3 semanas consecutivas \textbf{e}, em ao menos uma delas, dentro da zona de alerta (região laranja dos canais endêmicos) ou acima.
+\end{description}
+
+Níveis superiores são ativados assim que o critério se cumprir, independentemente do nível em que o sistema se encontrava até então. Isto é, pode passar de nível basal diretamente para nível 2, por exemplo, se as condições assim indicarem.
+A desativação de cada nível se dará de forma progressiva, atendendo os seguintes critérios:
+
+\begin{itemize}
+	\item Quando a curva de incidência correspondente (SRAG para nível 0, SRAGFLU para nível 1 e OBITOFLU para nível 2) ao nível atual retornar a patamares da zona de segurança ou êxito (regiões amarela e verde dos canais endêmicos) por ao menos 2 semanas consecutivas, esse nível será desativado e a curva de incidência do nível imediatamente inferior será analisada.
+	\item Caso a curva de incidência do novo nível não tenha registrado ao menos duas semanas consecutivas na zona de segurança ou êxito desde a SE de ativação do nível em que o sistema se encontrava, o sistema adotará este nível como o atual. Caso contrário, este passo será repetido com a curva de incidência do nível imediatamente inferior.
+\end{itemize}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{Figs/contingency.pdf}
+	\caption{Nível do plano de contingência para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita).}\label{fig:contingencia}
+\end{figure}
+
+\newpage
+
+\hypertarget{Mapas atividade}{\heading{Mapas de alerta de atividade semanal}{6pt}}
+Em paralelo aos níveis de ativação do plano de contingência, o limiares de atividade semanal (linhas horizontais apresentadas na Fig\ref{fig:st}), calculados para cada nível de agregação espacial e para cada um dos três conjuntos de dados (SRAG, SRAG por influenza, e óbitos por influenza), definem alertas de situação com base na incidência semanal correspondente.
+O sistema InfoGripe utiliza três limiares: pré-epidêmico, atividade alta, e atividade muito alta.
+
+Com base neles, cada região é classificada em quatro níveis de atividade:
+\begin{description}
+	\item[Atividade baixa:] incidência abaixo do limiar pré-epidêmico.
+	\item[Ativiade epidêmcia:] incidência acima do limiar pré-epidêmico (linha verde tracejada na série temporal) e abaixo do limiar de atividade alta (linha azul tracejada na série temporal).
+	\item[Atividade alta:] incidência acima do limiar de atividade alta e abaixo do de atividade muito alta (linha vermelha tracejada na série temporal).
+	\item[Atividade muito alta:] incidência acima do limiar de atividade muito alta.
+\end{description}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{Figs/srag-activity.pdf}
+	\caption{Nível de atividade de SRAG para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita).}\label{fig:srag}
+\end{figure}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{Figs/sragflu-activity.pdf}
+	\caption{Nível de atividade de SRAG por influenza para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita).}\label{fig:sragflu}
+\end{figure}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{Figs/obitoflu-activity.pdf}
+	\caption{Nível de atividade de óbitos de SRAG por influenza para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita).}\label{fig:obitoflu}
+\end{figure}
+
+\newpage
+\hypertarget{Tabelas de alerta}{\heading{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}{6pt}}
+A análise com base nos canais endêmicos permite avaliar a situação atual de cada território em comparação com o esperado para a mesma semana epidemiológica com base em seu padrão histórico. Os canais endêmicos do InfoGripe são gerados utilizando apenas as temporadas consideradas típicas, de forma a evitar que temporadas com atividade desproporcionalmente altas ou baixas afetem a sensibilidade do sistema. Os canais são indicados por áreas coloridas no pano de fundo do painel das séries temporais na página do InfoGripe (Fig.\ref{fig:st}).
+
+Os canais endêmicos definem as seguintes zonas de atividade semanal:
+
+\begin{itemize}
+	\gsquare \textbf{Zona de êxito:} incidência abaixo do percentil 2.5 esperado para cada SE.
+	\ysquare \textbf{Zona de segurança:} incidência entre os percentis 2.5 e 50 (mediana) esperados para cada SE.
+	\osquare \textbf{Zona de alerta:} incidência entre os percentís 50 e 97.5 esperados para cada SE.
+	\rsquare \textbf{Zona de risco:} incidência acima do percentil 97.5 esperado para cada SE.
+\end{itemize}
+
+As tabelas \ref{tab:canal} e \ref{tab:alerta} apresentam a lista detalhada de onde se situam os dados atuais em termos dos canais endêmicos de cada território e o nível de alerta de atividade semanal mais provável, respectivamente.
+\newpage
+
+\begin{table}[!h]
+\centering
+\settowidth\tymin{Zona de risco}
+	\begin{tabulary}{1.0\textwidth}{l|C|C|C|C|C}
+		Dado & Nível territorial & \cellcolor{green!80}Zona de êxito & \cellcolor{yellow!80}Zona de segurança & \cellcolor{orange!80}Zona de alerta & \cellcolor{red!80}Zona de risco \\
+		\hline
+		\multirow{3}{*}{SRAG} & Geopolítico &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 1]} &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 2]} &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 3]} &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 4]} \\
+		\cline{2-6}
+		& Perfil de atividade &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 1]} &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 2]} &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 3]} &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 4]} \\
+		\cline{2-6}
+		& UF &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 1]} &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 2]} &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 3]} &
+		\Sexpr{df.table$lista[df.table$dado == 1 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 4]} \\
+		\hline		
+		\multirow{3}{*}{\parbox{5em}{SRAG por infludenza}} & Geopolítico &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 1]} &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 2]} &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 3]} &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 4]} \\
+		\cline{2-6}
+		& Perfil de atividade &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 1]} &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 2]} &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 3]} &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 4]} \\
+		\cline{2-6}
+		& UF &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 1]} &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 2]} &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 3]} &
+		\Sexpr{df.table$lista[df.table$dado == 2 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 4]} \\
+		\hline
+		\multirow{3}{*}{\parbox{5em}{óbito de SRAG por influenza}} & Geopolítico &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 1]} &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 2]} &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 3]} &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'geopolítico' & df.table$indicador == 'canal endêmico' & df.table$nivel == 4]} \\
+		\cline{2-6}
+		& Perfil de atividade &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 1]} &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 2]} &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 3]} &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'canal endêmico' & df.table$nivel == 4]} \\
+		\cline{2-6}
+		& UF &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 1]} &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 2]} &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 3]} &
+		\Sexpr{df.table$lista[df.table$dado == 3 & df.table$territorio == 'UF' & df.table$indicador == 'canal endêmico' & df.table$nivel == 4]}
+	\end{tabulary}
+	\caption{Níveis relativos aos canais endêmicos e limiares de atividade. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador.}\label{tab:canal}
+\end{table}
+
+\newpage
+
+\begin{table}[h!]
+\centering
+\settowidth\tymin{Zona de risco}
+\begin{tabulary}{1.0\textwidth}{l|C|C|C|C|C}
+Dado & Nível territorial & \cellcolor{green!80}Baixa & \cellcolor{yellow!80}Epidêmica & \cellcolor{orange!80}Alta & \cellcolor{red!80}Muito alta \\
+\hline
+\multirow{3}{*}{SRAG} & Geopolítico &
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 1])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 2])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 3])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 4])
+@
+\\
+\cline{2-6}
+& Perfil de atividade &
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 1])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 2])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 3])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 4])
+@
+\\
+\cline{2-6}
+& UF &
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 1])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 2])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 3])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 1 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 4])
+@
+\\
+\hline		
+\multirow{3}{*}{\parbox{5em}{SRAG por infludenza}} & Geopolítico &
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 1])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 2])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 3])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 4])
+@
+\\
+\cline{2-6}
+& Perfil de atividade &
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 1])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 2])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 3])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 4])
+@
+\\
+\cline{2-6}
+& UF &
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 1])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 2])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 3])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 2 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 4])
+@
+\\
+\hline
+\multirow{3}{*}{\parbox{5em}{óbito de SRAG por influenza}} & Geopolítico &
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 1])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 2])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 3])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'geopolítico' & df.table$indicador == 'atividade semanal' & df.table$nivel == 4])
+@
+\\
+\cline{2-6}
+& Perfil de atividade &
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 1])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 2])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 3])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'perfil de atividade' & df.table$indicador == 'atividade semanal' & df.table$nivel == 4])
+@
+\\
+\cline{2-6}
+& UF &
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 1])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 2])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 3])
+@
+&
+<<echo=FALSE, results=tex>>=
+cat(df.table$lista[df.table$dado == 3 & df.table$territorio == 'UF' & df.table$indicador == 'atividade semanal' & df.table$nivel == 4])
+@
+\end{tabulary}
+\caption{Níveis de atividade semanal com maior probabilidade para cada território. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador.}\label{tab:alerta}
+\end{table}
+
+
+\newpage
+
+  \hypertarget{notas}{\heading{Notas}{6pt}}  
+  \begin{itemize}
+  \item Os dados do Sivep-gripe mais recentes ainda não foram totalmente digitados. Estimamos o número esperado de casos notificados considerando o tempo até os casos serem digitados em cada agregado espacial.
+  \item Algumas vezes, o conjunto de dados de um determinado território não possui volume suficiente para significância estatística do modelo de estimativa de casos recentes. Nesses casos, a estimativa não é apresentada e os indicadores utilizam as notificações da SE referente à última semana considerada consolidada.
+  \item As análises e o boletim do sistema InfoGripe são gerados automaticamente a partir dos dados recebidos do Sivep-gripe.
+  \item O sistema InfoGripe possui documentação no site, com descrição dos painéis e modos de visualização. Você pode acessar clicando no link "Ajuda" na página principal ou clicando \href{http://info.gripe.fiocruz.br/help}{aqui}.
+  \end{itemize}
+  
+  \hypertarget{creditos}{\heading{Créditos}{6pt}}
+  
+  Este é um projeto desenvolvido com apoio da SVS/MS em parceria com o Núcleo de Métodos Analíticos para Vigilância em Saúde Pública:
+    
+    \begin{itemize}
+  \item Programa de Computação Científica, Fundação Oswaldo Cruz, Rio de Janeiro.
+  \item Escola de Matemática Aplicada, Fundação Getúlio Vargas, Rio de Janeiro.
+  \end{itemize}
+  
+  \BackToContents % Link back to the contents of the newsletter
+  
+  \vspace{1cm}
+  
+  \hrule
+  Para mais detalhes sobre o sistema de alerta InfoGripe, consultar: \url{http://info.gripe.fiocruz.br}\\
+  
+  \textbf{Contato}: \href{fluvigilanciabr@gmail.com}{\nolinkurl{fluvigilanciabr@gmail.com} }
+  
+  \end{document} 

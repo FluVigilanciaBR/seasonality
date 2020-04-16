@@ -11,6 +11,9 @@ dataset_id = {
     'srag': 1,
     'sragflu': 2,
     'obitoflu': 3,
+    'sragcovid': 4,
+    'obitocovid': 5,
+    'obito': 6
 }
 
 # ### 1.2 Scale

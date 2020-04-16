@@ -18,7 +18,7 @@ def readtable(fname, sep=','):
 
     target_col = ['SG_UF_NOT', 'DT_SIN_PRI_epiyearweek', 'DT_SIN_PRI_epiyear', 'DT_SIN_PRI_epiweek', 'CS_SEXO',
                   'idade_em_anos', 'FLU_A', 'FLU_B', 'SARS2', 'VSR', 'PARA1', 'PARA2', 'PARA3', 'ADNO', 'OTHERS',
-                  'NEGATIVE', 'INCONCLUSIVE', 'TESTING_IGNORED', 'NOTTESTED', 'DELAYED']
+                  'NEGATIVE', 'INCONCLUSIVE', 'TESTING_IGNORED', 'NOTTESTED', 'DELAYED', 'POSITIVE']
     df = pd.read_csv(fname, sep=sep, low_memory=False, encoding='utf-8')[target_col].rename(columns={'CS_SEXO': 'sexo',
                                                                                    'DT_SIN_PRI_epiyearweek':
                                                                                        'epiyearweek',
@@ -41,8 +41,9 @@ def readtable(fname, sep=','):
                 'Exames laboratoriais': ['POSITIVE_CASES', 'NEGATIVE', 'INCONCLUSIVE',
                                          'TESTING_IGNORED', 'NOTTESTED', 'DELAYED']}
 
-    df['POSITIVE_CASES'] = np.logical_not(df['NOTTESTED'] | df['TESTING_IGNORED'] | df['NEGATIVE'] |
-                                          df['DELAYED'] | df['INCONCLUSIVE']).astype(int)
+    # df['POSITIVE_CASES'] = np.logical_not(df['NOTTESTED'] | df['TESTING_IGNORED'] | df['NEGATIVE'] |
+    #                                       df['DELAYED'] | df['INCONCLUSIVE']).astype(int)
+    df['POSITIVE_CASES'] = (df.POSITIVE == 1).astype(int)
 
     df.rename(columns={'SG_UF_NOT': 'UF'}, inplace=True)
     grp_cols = ['UF', 'epiyearweek', 'epiyear', 'epiweek', '< 2 anos', '2-4 anos'] + age_cols + \

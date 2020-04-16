@@ -28,7 +28,8 @@ def extract_quantile(dforig=pd.DataFrame):
             for tgt_col in tgt_cols:
                 out_cols = [tgt_col, 'dado', 'delayweeks']
                 dfqtmp = pd.DataFrame([{tgt_col: uf, 'dado': dado, 'epiyearweek': '%sW%02d' % (year, week), 'epiyear':
-                    year, 'epiweek': week} for uf in uflist[tgt_col] for dado in ['srag', 'sragflu', 'obitoflu']])
+                    year, 'epiweek': week} for uf in uflist[tgt_col] for dado in ['srag', 'sragflu', 'obitoflu',
+                                                                                  'sragcovid', 'obitocovid', 'obito']])
 
                 dfqtmp = dfqtmp.merge((np.ceil(dftmp[out_cols].groupby(out_cols[0:2]).quantile(.95))).reset_index()[
                     out_cols], on=[tgt_col, 'dado'], how='left').fillna(0)

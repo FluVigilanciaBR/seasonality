@@ -203,7 +203,8 @@ def filter_db2019(df, tag=None):
 
     df.FLU_A = df[['TP_FLU_PCR', 'TP_FLU_IF']].apply(lambda s: labresult(s[0], s[1]), axis=1)
     df.FLU_B = df[['TP_FLU_PCR', 'TP_FLU_IF']].apply(lambda s: labresult(s[0], s[1], pos=2), axis=1)
-    df.loc[(df.POS_IF_FLU == 1) | (df.POS_PCRFLU == 1) | (df.FLU_A == 1) | (df.FLU_B == 1), 'FLU_LAB'] = 1
+    df.loc[(df.POS_IF_FLU == 1) | (df.POS_PCRFLU == 1) | (df.FLU_A == 1) | (df.FLU_B == 1) |
+           ((df.CLASSI_FIN == 1) & (df.CRITERIO == 1)), 'FLU_LAB'] = 1
     df.loc[(df.FLU_LAB != 1) & ((df.POS_IF_FLU == 2) | (df.POS_PCRFLU == 2)), 'FLU_LAB'] = 0
     df.loc[(df.IF_VSR == 1) | (df.PCR_VSR == 1), 'VSR'] = 1
     df.loc[(df.IF_PARA1 == 1) | (df.PCR_PARA1 == 1), 'PARA1'] = 1
@@ -216,14 +217,15 @@ def filter_db2019(df, tag=None):
     df.loc[(df.PCR_METAP == 1), 'METAP'] = 1
     df.loc[(df.IF_OUTRO == 1) | (df.PCR_OUTRO == 1), 'OTHERS'] = 1
     df.loc[(df.PCR_SARS2 == 1) | (df.DS_PCR_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)) |
-           (df.DS_IF_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)), 'SARS2'] = 1
+           (df.DS_IF_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)) |
+           ((df.CLASSI_FIN == 5) & (df.CRITERIO == 1)), 'SARS2'] = 1
     df.loc[(df.PCR_SARS2 == 1) | (df.DS_PCR_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)) |
            (df.DS_IF_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)), 'OTHERS'] = None
 
     # Positive cases:
     df.loc[(df.POS_PCRFLU == 1) | (df.POS_PCROUT == 1), 'PCR_RESUL'] = 1
     df.loc[(df.POS_IF_FLU == 1) | (df.POS_IF_OUT == 1), 'IF_RESUL'] = 1
-    df.loc[(df.PCR_RESUL == 1) | (df.IF_RESUL == 1), 'POSITIVE'] = 1
+    df.loc[(df.PCR_RESUL == 1) | (df.IF_RESUL == 1) | (df.FLU_LAB == 1) | (df.SARS2 == 1), 'POSITIVE'] = 1
     # Negative cases:
     df.loc[(df.POS_PCRFLU == 2) & (df.POS_PCROUT == 2), 'PCR_RESUL'] = 2
     df.loc[(df.POS_IF_FLU == 2) & (df.POS_IF_OUT == 2), 'IF_RESUL'] = 2
@@ -472,7 +474,11 @@ def delays_dist(df_in=pd.DataFrame()):
                 'Interna2Evoluca_DelayDays',
 
                 'sragflu',
-                'obitoflu']
+                'obitoflu',
+                'sragcovid',
+                'obitocovid',
+                'obito']
+
     df = df_in[tgt_cols].rename(columns={'DT_NOTIFIC_epiyear': 'epiyear', 'DT_NOTIFIC_epiweek': 'epiweek',
                                                                         'SG_UF_NOT': 'UF'})
     df.loc[pd.isnull(df.UF), 'UF'] = 99
@@ -499,19 +505,48 @@ def delays_dist(df_in=pd.DataFrame()):
     except:
         df[cols] = df[cols].astype(float)
 
-    dftmp = df.copy()
-    dftmp['dado'] = 'srag'
-    df_out = dftmp.drop(columns=['sragflu', 'obitoflu'])
+    def wide2long(df):
 
-    # sragflu:
-    dftmp = dftmp[dftmp.sragflu == 1]
-    dftmp['dado'] = 'sragflu'
-    df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu']), ignore_index=True, sort=True)
+        dftmp = df.copy()
+        dftmp['dado'] = 'srag'
+        df_out = dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito'])
 
-    # obitoflu:
-    dftmp = dftmp[dftmp.obitoflu == 1]
-    dftmp['dado'] = 'obitoflu'
-    df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu']), ignore_index=True, sort=True)
+        # obito:
+        dftmp = dftmp[dftmp.obito == 1]
+        dftmp['dado'] = 'obito'
+        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+                               ignore_index=True,
+                               sort=True)
+
+        # sragflu:
+        dftmp = dftmp[dftmp.sragflu == 1]
+        dftmp['dado'] = 'sragflu'
+        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+                               ignore_index=True,
+                               sort=True)
+
+        # obitoflu:
+        dftmp = dftmp[dftmp.obitoflu == 1]
+        dftmp['dado'] = 'obitoflu'
+        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+                               ignore_index=True, sort=True)
+
+        # sragcovid:
+        dftmp = dftmp[dftmp.sragcovid == 1]
+        dftmp['dado'] = 'sragcovid'
+        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+                               ignore_index=True, sort=True)
+
+        # obitocovid:
+        dftmp = dftmp[dftmp.obitocovid == 1]
+        dftmp['dado'] = 'obitocovid'
+        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+                               ignore_index=True, sort=True)
+
+        return df_out
+
+    df_out = wide2long(df)
+
     out_cols = ['Coleta2IFI_DelayDays', 'Coleta2IFI_DelayWeeks', 'Coleta2PCR_DelayDays',
                 'Coleta2PCR_DelayWeeks', 'DT_DIGITA_epiweek', 'DT_DIGITA_epiyear',
                 'DT_DIGITA_epiyearweek', 'DT_NOTIFIC_epiyearweek', 'DT_SIN_PRI_epiweek',
@@ -545,24 +580,14 @@ def delays_dist(df_in=pd.DataFrame()):
     df_out.UF = df_out.UF.astype(int).astype(str)
     extract_quantile(df_out)
     # Impute digitalization date if needed:
-    opp_cols = list(set(tgt_cols).difference(['dado']).union(['sragflu', 'obitoflu']))
+    opp_cols = list(set(tgt_cols).difference(['dado']).union(['sragflu', 'obitoflu', 'sragcovid', 'obitocovid',
+                                                              'obito']))
     df = df[opp_cols].rename(columns={'DT_SIN_PRI_epiyearweek': 'epiyearweek', 'DT_SIN_PRI_epiyear': 'epiyear',
                                       'DT_SIN_PRI_epiweek': 'epiweek', 'SinPri2Digita_DelayWeeks': 'delayweeks'})
     df.UF = df.UF.astype(int).astype(str)
     df = delayimputation(df)
-    dftmp = df.copy()
-    dftmp['dado'] = 'srag'
-    df_out = dftmp.drop(columns=['sragflu', 'obitoflu'])
 
-    # sragflu:
-    dftmp = dftmp[dftmp.sragflu == 1]
-    dftmp['dado'] = 'sragflu'
-    df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu']), ignore_index=True, sort=True)
-
-    # obitoflu:
-    dftmp = dftmp[dftmp.obitoflu == 1]
-    dftmp['dado'] = 'obitoflu'
-    df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu']), ignore_index=True, sort=True)
+    df_out = wide2long(df)
 
     # Create tables and save to file:
     df_out = createtable(df_out)
@@ -600,14 +625,23 @@ def main(flist, sep=',', yearmax=None):
     mask_flu = ((pd.notnull(df.FLU_A) & (df.FLU_A == 1)) |
                (pd.notnull(df.FLU_B) & (df.FLU_B == 1)) |
                (df.FLU_CLINIC == 1))
-    mask_obitoflu = mask_flu & (df.EVOLUCAO == 2)
+    mask_covid = (df.SARS2 == 1)
+    mask_obito = (df.EVOLUCAO == 2)
+    mask_obitoflu = mask_flu & mask_obito
+    mask_obitocovid = mask_covid & mask_obito
 
     df.to_csv('../clean_data/clean_data_srag_epiweek.csv', index=False)
     df[mask_flu].to_csv('../clean_data/clean_data_sragflu_epiweek.csv', index=False)
     df[mask_obitoflu].to_csv('../clean_data/clean_data_obitoflu_epiweek.csv', index=False)
+    df[mask_covid].to_csv('../clean_data/clean_data_sragcovid_epiweek.csv', index=False)
+    df[mask_obitocovid].to_csv('../clean_data/clean_data_obitocovid_epiweek.csv', index=False)
+    df[mask_obito].to_csv('../clean_data/clean_data_obito_epiweek.csv', index=False)
 
+    df['obito'] = mask_obito.astype(int)
     df['sragflu'] = mask_flu.astype(int)
     df['obitoflu'] = mask_obitoflu.astype(int)
+    df['sragcovid'] = mask_covid.astype(int)
+    df['obitocovid'] = mask_obitocovid.astype(int)
 
     delays_dist(df)
 

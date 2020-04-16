@@ -117,7 +117,7 @@ def main(update_db=False):
     if update_db:
         dfdict = {}
 
-    preflist = ['srag', 'sragflu', 'obitoflu']
+    preflist = ['srag', 'sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']
 
     for estimate_file in ['current_estimated', 'historical_estimated']:
         # Files current_estimated_values

@@ -214,7 +214,8 @@ def add_epiweek():
     from data_filter import insert_epiweek
 
     module_name = insert_epiweek.__name__
-    flist = ['clean_data_srag.csv', 'clean_data_sragflu.csv', 'clean_data_obitoflu.csv']
+    flist = ['clean_data_srag.csv', 'clean_data_sragflu.csv', 'clean_data_obitoflu.csv', 'clean_data_sragcovid.csv',
+             'clean_data_obitocovid.csv', 'clean_data_obito.csv']
     for fname in flist:
         logger.info('Inserting epiweek on file %s' % fname)
         try:
@@ -238,7 +239,10 @@ def convert2mem():
     module_name = sinan_convert2mem.__name__
     flist = ['../clean_data/clean_data_srag_epiweek.csv',
              '../clean_data/clean_data_sragflu_epiweek.csv',
-             '../clean_data/clean_data_obitoflu_epiweek.csv']
+             '../clean_data/clean_data_obitoflu_epiweek.csv',
+             '../clean_data/clean_data_sragcovid_epiweek.csv',
+             '../clean_data/clean_data_obitocovid_epiweek.csv',
+             '../clean_data/clean_data_obito_epiweek.csv']
     for fname in flist:
         logger.info('Converting to MEM structure: %s' % fname)
         try:
@@ -260,7 +264,7 @@ def apply_mem():
     from mem import sinan_mem_inset_thresholds
 
     module_name = sinan_mem_inset_thresholds.__name__
-    dataset = ['srag', 'sragflu', 'obitoflu']
+    dataset = ['srag', 'sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']
     for data in dataset:
         fname = '../clean_data/clean_data_%s_epiweek4mem-incidence.csv' % data
         logger.info('Calculating MEM thresholds for dataset: %s' % data)
@@ -312,7 +316,7 @@ def apply_opportunities():
 def apply_estimator(date='max'):
     from opportunity_estimator import add_situation2weekly_data
 
-    dataset = ['srag', 'sragflu', 'obitoflu']
+    dataset = ['srag', 'sragflu', 'obitoflu', 'obito', 'sragcovid', 'obitocovid']
     Rscript = 'opportunity.estimator.R'
 
     for data in dataset:
