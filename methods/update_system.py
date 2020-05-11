@@ -60,6 +60,8 @@ time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 timesmpl = datetime.datetime.now().strftime('%Y%m%d')
 modules_list = ['all',
                 'full_email_update',
+                'local_email_update',
+                'local_update',
                 'email',
                 'dbf2csv',
                 'filter',
@@ -68,7 +70,22 @@ modules_list = ['all',
                 'consolidate',
                 'export',
                 'report',
-                'sendreport']
+                'sendreport',
+                'public_dataset']
+
+convert_region_id = {'NI': 99,
+                     'BR': 0,
+                     'RegN': 1001,
+                     'RegL': 1002,
+                     'RegC': 1003,
+                     'RegS': 1004,
+                     'RegNI': 9999,
+                     'N': 1,
+                     'NE': 2,
+                     'SE': 3,
+                     'S': 4,
+                     'CO': 5,
+                     'RNI': 9}
 
 
 def send_email(mail_dict):
@@ -187,7 +204,7 @@ def email_update(dir, years):
     return
 
 
-def apply_filters(flist=None):
+def apply_filters(flist=None, filtertype='srag'):
     from data_filter import sinan_filter_of_interest
 
     module_name = sinan_filter_of_interest.__name__
@@ -197,7 +214,7 @@ def apply_filters(flist=None):
 
     logger.info('Historical files: %s', flist)
     try:
-        sinan_filter_of_interest.main(flist)
+        sinan_filter_of_interest.main(flist, filtertype=filtertype)
     except Exception as err:
         logger.exception(module_name)
         logger.exception(err)
@@ -210,12 +227,17 @@ def apply_filters(flist=None):
     return
 
 
-def add_epiweek():
+def add_epiweek(filtertype='srag'):
     from data_filter import insert_epiweek
 
     module_name = insert_epiweek.__name__
-    flist = ['clean_data_srag.csv', 'clean_data_sragflu.csv', 'clean_data_obitoflu.csv', 'clean_data_sragcovid.csv',
-             'clean_data_obitocovid.csv', 'clean_data_obito.csv']
+    
+    suff = ''
+    if filtertype != 'srag':
+        suff = '_%s' % filtertype
+    
+    flist = ['clean_data_srag%s.csv' % suff, 'clean_data_sragflu%s.csv' % suff, 'clean_data_obitoflu%s.csv' % suff, 
+             'clean_data_sragcovid%s.csv' % suff, 'clean_data_obitocovid%s.csv' % suff, 'clean_data_obito%s.csv' % suff]
     for fname in flist:
         logger.info('Inserting epiweek on file %s' % fname)
         try:
@@ -233,16 +255,21 @@ def add_epiweek():
     return
 
 
-def convert2mem():
+def convert2mem(filtertype='srag'):
     from data_filter import sinan_convert2mem
 
     module_name = sinan_convert2mem.__name__
-    flist = ['../clean_data/clean_data_srag_epiweek.csv',
-             '../clean_data/clean_data_sragflu_epiweek.csv',
-             '../clean_data/clean_data_obitoflu_epiweek.csv',
-             '../clean_data/clean_data_sragcovid_epiweek.csv',
-             '../clean_data/clean_data_obitocovid_epiweek.csv',
-             '../clean_data/clean_data_obito_epiweek.csv']
+
+    suff = ''
+    if filtertype != 'srag':
+        suff = '_%s' % filtertype
+
+    flist = ['../clean_data/clean_data_srag%s_epiweek.csv' % suff,
+             '../clean_data/clean_data_sragflu%s_epiweek.csv' % suff,
+             '../clean_data/clean_data_obitoflu%s_epiweek.csv' % suff,
+             '../clean_data/clean_data_sragcovid%s_epiweek.csv' % suff,
+             '../clean_data/clean_data_obitocovid%s_epiweek.csv' % suff,
+             '../clean_data/clean_data_obito%s_epiweek.csv' % suff]
     for fname in flist:
         logger.info('Converting to MEM structure: %s' % fname)
         try:
@@ -260,16 +287,21 @@ def convert2mem():
     return
 
 
-def apply_mem():
+def apply_mem(filtertype='srag'):
     from mem import sinan_mem_inset_thresholds
 
     module_name = sinan_mem_inset_thresholds.__name__
+
+    suff = ''
+    if filtertype != 'srag':
+        suff = '_%s' % filtertype
+
     dataset = ['srag', 'sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']
     for data in dataset:
-        fname = '../clean_data/clean_data_%s_epiweek4mem-incidence.csv' % data
-        logger.info('Calculating MEM thresholds for dataset: %s' % data)
+        fname = '../clean_data/clean_data_%s%s_epiweek4mem-incidence.csv' % (data, suff)
+        logger.info('Calculating MEM thresholds for dataset: %s %s' % (data, filtertype))
         try:
-            sinan_mem_inset_thresholds.main(fname)
+            sinan_mem_inset_thresholds.main(fname, out_pref='%s%s_' % (data, suff))
         except Exception as err:
             logger.exception(module_name)
             logger.exception(err)
@@ -277,23 +309,23 @@ def apply_mem():
             send_email(mail_error)
             raise
 
-        os.rename('../clean_data/mem-report.csv',
-                  '../clean_data/%s_mem-report.csv' % data)
-        os.rename('../clean_data/mem-typical.csv',
-                  '../clean_data/%s_mem-typical.csv' % data)
-
         logger.info('... DONE')
 
     logger.info('%s : DONE', module_name)
     return
 
 
-def apply_opportunities():
+def apply_opportunities(filtertype='srag'):
     from data_filter import delay_datasets, delay_table
 
     module_name = delay_datasets.__name__
+
+    suff = ''
+    if filtertype != 'srag':
+        suff = '_%s' % filtertype
+
     try:
-        delay_datasets.main()
+        delay_datasets.main(filtertype)
     except Exception as err:
         logger.exception(module_name)
         logger.exception(err)
@@ -303,8 +335,8 @@ def apply_opportunities():
 
     module_name = delay_table.__name__
     try:
-        fname = os.path.join(data_folder, 'delay_table.csv')
-        delay_table.main(fname)
+        fname = os.path.join(data_folder, 'delay_table%s.csv' % suff)
+        delay_table.main(fname, filtertype)
     except Exception as err:
         logger.exception(module_name)
         logger.exception(err)
@@ -313,7 +345,7 @@ def apply_opportunities():
         raise
 
 
-def apply_estimator(date='max'):
+def apply_estimator(date='max', filtertype='srag'):
     from opportunity_estimator import add_situation2weekly_data
 
     dataset = ['srag', 'sragflu', 'obitoflu', 'obito', 'sragcovid', 'obitocovid']
@@ -323,7 +355,7 @@ def apply_estimator(date='max'):
         logger.info('Calculating estimates for dataset: %s' % data)
         module_name = 'opportunity_estimator.opportunity.estimator.R'
         try:
-            run(['Rscript', '--vanilla', Rscript, '-d', date, '-t', data], check=True)
+            run(['Rscript', '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype], check=True)
         except Exception as err:
             logger.exception(module_name)
             logger.exception(err)
@@ -333,7 +365,7 @@ def apply_estimator(date='max'):
 
         logger.info('Adding situation info for dataset: %s' % data)
         try:
-            add_situation2weekly_data.main([data])
+            add_situation2weekly_data.main([data], filtertype)
         except Exception as err:
             logger.exception(module_name)
             logger.exception(err)
@@ -347,13 +379,14 @@ def apply_estimator(date='max'):
     return
 
 
-def consolidate(fname=None):
+def consolidate(fname=None, filtertype='srag'):
     from data_filter import consolidate_datasets
     from data_filter.settings import DATABASE
 
     module_name = consolidate_datasets.__name__
+
     try:
-        consolidate_datasets.main(True)
+        consolidate_datasets.main(True, filtertype)
     except Exception as err:
         logger.exception(module_name)
         logger.exception(err)
@@ -405,7 +438,7 @@ def exportdb(fname=None):
     return
 
 
-def generate_report(epiyear=None, epiweek=None, plot=None):
+def generate_report(epiyear=None, epiweek=None, plot=None, filtertype='srag'):
 
     Rscript = 'report.data.R'
 
@@ -413,9 +446,10 @@ def generate_report(epiyear=None, epiweek=None, plot=None):
     module_name = 'report.report.data.R'
     try:
         if plot:
-            run(['Rscript', '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek), '-p'], check=True)
+            run(['Rscript', '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek), '-p', '-f', filtertype],
+                check=True)
         else:
-            run(['Rscript', '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek)], check=True)
+            run(['Rscript', '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek), '-f', filtertype], check=True)
     except Exception as err:
         logger.exception(module_name)
         logger.exception(err)
@@ -423,18 +457,172 @@ def generate_report(epiyear=None, epiweek=None, plot=None):
         send_email(mail_error)
         raise
 
+    logger.info('%s : DONE', module_name)
+    return
+
+
+def generate_public_datasets(filtertype='srag'):
+
+    import pandas as pd
+
+    module_name = 'generate_public_datasets'
+
+    suff = ''
+    if filtertype != 'srag':
+        suff = '_%s' % filtertype
+
+    try:
+        situation_dict = {
+            'stable': 'Dado estável. Sujeito a pequenas alterações.',
+            'estimated': 'Estimado. Sujeito a alterações.',
+            'unknown': 'Dados incompletos. Sujeito a grandes alterações.',
+            'incomplete': 'Dados incompletos. Sujeito a grandes alterações.'
+        }
+
+        rename_cols = {
+            'Situation': 'Situação do dado',
+            'SRAG': 'Total reportado até a última atualização',
+            'POSITIVE_CASES': "Testes positivos",
+            'FLU_A': "Influenza A",
+            'FLU_B': "Influenza B",
+            "SARS2": "SARS-CoV-2",
+            "VSR": 'Vírus sincicial respiratório (VSR)',
+            "ADNO": "Adenovirus",
+            "PARA1": "Parainfluenza 1",
+            "PARA2": "Parainfluenza 2",
+            "PARA3": "Parainfluenza 3",
+            'NEGATIVE': "Testes negativos",
+            'NOTTESTED': "Casos sem teste laboratorial",
+            'DELAYED': "Casos aguardando resultado",
+            'TESTING_IGNORED': "Casos sem informação laboratorial",
+            'epiyear': 'Ano epidemiológico',
+            'epiweek': 'Semana epidemiológica',
+            'epiyearweek': 'Ano e semana epidemiológica',
+            'cntry_percentage': 'Percentual em relação ao país',
+            'bounded_97.5%': 'limite superior da estimativa',
+            '2.5%': 'limite inferior da estimativa',
+            '50%': 'casos estimados',
+            'Run date': 'data de publicação',
+            'População': 'População de referência para cálculo de incidência',
+            'temporadas utilizadas para os corredores endêmicos':
+                'temporadas consideradas regulares',
+            'population': 'População'
+        }
+
+        suff_out = {
+            'srag': '',
+            'sragnofever': '_sem_filtro_febre',
+            'hospdeath': '_sem_filtro_sintomas'
+        }
+
+        #MEM
+        fname = os.path.join(data_folder, 'mem-report%s.csv' % suff)
+        dfreport = pd.read_csv(fname)
+        dfreport = dfreport.rename(columns={'População': 'População de referência para cálculo de incidência',
+                                            'temporadas utilizadas para os corredores endêmicos': 'temporadas consideradas regulares'})
+
+        tgt_cols = ['UF', 'Unidade da Federação', 'Tipo', 'dado', 'escala',
+                    'limiar pré-epidêmico',  'intensidade alta', 'intensidade muito alta',
+                    'temporadas consideradas regulares',
+                    'População de referência para cálculo de incidência']
+        dfreport = dfreport[tgt_cols]
+
+        fname = os.path.join(data_folder, 'mem-typical%s.csv' % suff)
+        dftypical = pd.read_csv(fname)
+        dftypical = dftypical.drop(columns='População').merge(dfreport)
+        dftypical.loc[dftypical.Tipo != 'Estado', 'UF'] = dftypical.loc[dftypical.Tipo != 'Estado', 'UF'].map(
+            convert_region_id)
+
+        fname = os.path.join(data_folder, 'valores_esperados_por_localidade%s.csv' % suff_out[filtertype])
+        tgt_cols = ['UF', 'Unidade da Federação', 'Tipo', 'dado', 'escala', 'epiweek',
+                    'corredor baixo', 'corredor mediano', 'corredor alto',
+                    'limiar pré-epidêmico', 'intensidade alta',
+                    'intensidade muito alta', 'temporadas consideradas regulares',
+                    'População de referência para cálculo de incidência']
+        dftypical[tgt_cols].rename(columns=rename_cols).to_csv(fname, sep=';', index=False, decimal=',')
+
+        #time series
+        fname = os.path.join(data_folder, 'current_estimated_values%s.csv' % suff)
+        df = pd.read_csv(fname)
+        run_date = df['Run date'].unique()[0]
+        tgt_cols = ['Run date', 'UF', 'dado', 'escala', 'epiyear', 'epiweek', 'Situation', 'SRAG', '2.5%', '50%',
+                    'bounded_97.5%', 'cntry_percentage', 'population']
+        df = df[tgt_cols].copy()
+        df = df.merge(dfreport[['UF', 'Unidade da Federação', 'Tipo']].drop_duplicates())
+        df = df[['Run date', 'UF', 'Unidade da Federação', 'Tipo', 'dado', 'escala', 'epiyear', 'epiweek', 'Situation',
+                 'SRAG', '2.5%', '50%', 'bounded_97.5%', 'cntry_percentage', 'population']]
+        df.loc[df.Situation != 'estimated', ['2.5%', '50%', 'bounded_97.5%']] = None
+        epiweekmax = df.loc[df.Situation == 'estimated', ['epiyear', 'epiweek']].max()
+        df.loc[(df.epiyear == epiweekmax.epiyear) & (df.epiweek >= epiweekmax.epiweek-1), 'SRAG'] = None
+
+        df.Situation = df.Situation.map(situation_dict)
+        df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
+        df = df.rename(columns=rename_cols)
+
+        fname = os.path.join(data_folder, 'serie_temporal_com_estimativas_recentes%s.csv' % suff_out[filtertype])
+        df.to_csv(fname, sep=';', index=False, decimal=',')
+
+        # Data by age, gender, and virus:
+        fname = os.path.join(data_folder, 'clean_data_epiweek-weekly-incidence_w_situation%s.csv' % suff)
+        df = pd.read_csv(fname)
+        df.Situation = df.Situation.map(situation_dict)
+        df['Run date'] = run_date
+        df = df.rename(columns=rename_cols)
+        df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
+
+        drop_cols = ['INCONCLUSIVE', 'OTHERS']
+        df = df.drop(columns=drop_cols)
+        tgt_cols = ['data de publicação',
+                    'UF',
+                    'Unidade da Federação',
+                    'Tipo',
+                    'dado',
+                    'escala',
+                    'sexo',
+                    'Ano epidemiológico',
+                    'Semana epidemiológica',
+                    'Ano e semana epidemiológica',
+                    'Situação do dado',
+                    'Total reportado até a última atualização',
+                    'Idade desconhecida',
+                    '< 2 anos', '0-4 anos', '10-19 anos', '2-4 anos', '20-29 anos', '30-39 anos', '40-49 anos',
+                    '5-9 anos', '50-59 anos', '60+ anos',
+                    'Testes positivos', 'Testes negativos', 'Casos aguardando resultado',
+                    'Casos sem informação laboratorial', 'Casos sem teste laboratorial',
+                    'Influenza A', 'Influenza B', 'SARS-CoV-2', 'Vírus sincicial respiratório (VSR)',
+                    'Parainfluenza 1', 'Parainfluenza 2', 'Parainfluenza 3', 'Adenovirus'
+                    ]
+        fname = os.path.join(data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv' % suff_out[filtertype])
+        df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
+
+    except Exception as err:
+        logger.exception(module_name)
+        logger.exception(err)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        send_email(mail_error)
+        raise
+
+    logger.info('%s : DONE', module_name)
+
     return
 
 
 def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, years=None, date='max',
-         dbdump=None, plot=None):
-    '''
+         dbdump=None, plot=None, filtertype='srag'):
+    """
     Run all scripts to update the system with new database.
-    Optional: update MEM thresholds
 
+    :param flist:
     :param update_mem:
-    :return:
-    '''
+    :param module_list:
+    :param history_files:
+    :param dir:
+    :param years:
+    :param date:
+    :param dbdump:
+    :param plot:
+    :param filtertype:
+    """
 
     logger.info('System update: START')
     for m in module_list:
@@ -444,12 +632,19 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
             send_email(mail_error)
             exit(0)
 
+    if filtertype not in ['srag', 'sragnofever', 'hospdeath']:
+        logger.error('Unknown filter type: %s\nAccepted values: srag, sragnofever, hospdeath', filtertype)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': 'caller'}
+        send_email(mail_error)
+        exit(0)
+
     if module_list and 'all' in module_list:
         module_list = ['dbf2csv',
                        'filter',
                        'convert2mem',
                        'estimator',
                        'consolidate',
+                       'public_dataset',
                        'export',
                        'report',
                        'sendreport']
@@ -459,9 +654,27 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
                        'convert2mem',
                        'estimator',
                        'consolidate',
+                       'public_dataset',
                        'export',
                        'report',
                        'sendreport']
+
+    if module_list and 'local_email_update' in module_list:
+        module_list = ['email',
+                       'filter',
+                       'convert2mem',
+                       'estimator',
+                       'consolidate',
+                       'public_dataset',
+                       'report']
+
+    if module_list and 'local_update' in module_list:
+        module_list = ['filter',
+                       'convert2mem',
+                       'estimator',
+                       'consolidate',
+                       'public_dataset',
+                       'report']
 
     logger.info('Update MEM: %s', update_mem)
     logger.info('Update modules: %s', module_list)
@@ -479,36 +692,40 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
 
     if 'filter' in module_list:
         logger.info('Aggregate and filter data')
-        apply_filters(history_files)
+        apply_filters(history_files, filtertype)
 
     if 'epiweek' in module_list:
         logger.info('Insert epiweek')
-        add_epiweek()
+        add_epiweek(filtertype)
 
     if 'opportunities' in module_list:
         logger.info('Create table of opportunities')
-        apply_opportunities()
+        apply_opportunities(filtertype)
 
     if 'convert2mem' in module_list:
         logger.info('Convert to MEM structure and aggregate by epiweek')
-        convert2mem()
+        convert2mem(filtertype)
 
     os.chdir('../mem')
     if update_mem:
         logger.info('Apply MEM')
-        apply_mem()
+        apply_mem(filtertype)
 
     os.chdir('../opportunity_estimator')
     if 'estimator' in module_list:
         logger.info('Apply opportunity estimator')
-        apply_estimator(date)
+        apply_estimator(date, filtertype)
 
     os.chdir('../data_filter')
     if 'consolidate' in module_list:
         logger.info('Consolidate dataset and update DB')
-        consolidate(dbdump)
+        consolidate(dbdump, filtertype)
 
     os.chdir('../')
+    if 'public_dataset' in module_list:
+        logger.info('Generate public dataset')
+        generate_public_datasets(filtertype)
+
     if 'export' in module_list:
         logger.info('Export DB')
         exportdb(dbdump)
@@ -524,7 +741,7 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
 
     if 'report' in module_list:
         logger.info('Report generation')
-        generate_report(epiyear=epiyear, epiweek=epiweek, plot=plot)
+        generate_report(epiyear=epiyear, epiweek=epiweek, plot=plot, filtertype=filtertype)
 
     if 'sendreport' in module_list:
         logger.info('Send report over email')
@@ -560,6 +777,8 @@ if __name__ == '__main__':
                         default=today)
     parser.add_argument('--dbdump', help='Path do database dump for export. Optional', default=None)
     parser.add_argument('--plot', action='store_true', help='Should the module updat report plots?')
+    parser.add_argument('--filtertype', help='Default=srag. Which filter should be used? [srag, sragnofever, '
+                                             'hospdeath]', default='srag')
 
     args = parser.parse_args()
     if args.path:
@@ -572,4 +791,4 @@ if __name__ == '__main__':
         args.years = args.years[0]
 
     main(flist=args.path, update_mem=args.mem, module_list=args.modules, history_files=args.history, dir=args.dir,
-         years=args.years, date=args.date, dbdump=args.dbdump, plot=args.plot)
+         years=args.years, date=args.date, dbdump=args.dbdump, plot=args.plot, filtertype=args.filtertype)

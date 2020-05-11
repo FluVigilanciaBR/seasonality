@@ -48,12 +48,16 @@ def extract_csv(dir, year=None):
 
     if glob.glob('*.csv'):
         flist = glob.glob('*.csv')
+        suff = '.csv'
     elif glob.glob('*.CSV'):
         flist = glob.glob('*.CSV')
+        suff = '.CSV'
     elif glob.glob('*.dbf'):
         flist = glob.glob('*.dbf')
+        suff = '.dbf'
     elif glob.glob('*.DBF'):
         flist = glob.glob('*.DBF')
+        suff = '.DBF'
     elif glob.glob('SRAGHOSP*'):
         flist = [f for f in glob.glob("SRAGHOSP*") if not fnmatch(f, "*.zip")]
 
@@ -67,7 +71,7 @@ def extract_csv(dir, year=None):
         if 'csv' in file.lower():
             for enc in ['utf-8', 'utf-16', 'latin-1']:
                 try:
-                    df = pd.read_csv(file, header=2, encoding=enc)
+                    df = pd.read_csv(file, header=0, encoding=enc, low_memory=False)
                     break
                 except UnicodeDecodeError:
                     pass

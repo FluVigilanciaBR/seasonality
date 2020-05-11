@@ -532,7 +532,7 @@ def migrate_season_level(df):
     return df
 
 
-def migrate_from_csv_to_psql(dfs=None, basic_tables=True):
+def migrate_from_csv_to_psql(dfs=None, suff='', basic_tables=True):
     """
 
     :return:
@@ -563,7 +563,7 @@ def migrate_from_csv_to_psql(dfs=None, basic_tables=True):
 
     for k, df in dfs.items():
         print('Polishing table: %s' % k)
-        dfs[k] = datasets_migration[k](dfs[k])
+        dfs[k] = datasets_migration[k.replace(suff, '')](dfs[k])
         print('Done!')
 
     # ## 1. Setting IDs

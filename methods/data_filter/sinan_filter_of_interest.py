@@ -42,7 +42,7 @@ tabela_siglauf = {'RO': 11,
                  'NI': 99}
 
 sars_cov_2_regex = 'novo coronavírus|novo coronavirus|novo corona vírus|novo corona virus|covid|coovid|sars-cov-2|' \
-                   'sars-cov2|sarscov2|sars cov2|sars- cov|sars cov|covi-19'
+                   'sars-cov2|sarscov2|sars cov2|sars- cov|sars cov|covi-19|civid 19|cobid-19'
 
 
 def readtable(fname, sep):
@@ -98,7 +98,7 @@ def date_cleanup(df, dt_cols):
     return df
 
 
-def symptoms_filter(df):
+def symptoms_filter(df, filtertype='srag'):
 
     # Filter by symptoms:
     # All cases, regardless of year, must either attend symptoms definition or have evolved to
@@ -106,20 +106,25 @@ def symptoms_filter(df):
     # of Health request. For all other years, they must have been hospitalized or have evolved to death.
     # The filter regarding hospitalization and case evolution is done after date columns consolidation to attend
     # 2009's particularity.
-    df = df[(
-                (df.FEBRE == 1) &
-                ((df.TOSSE == 1) | (df.GARGANTA == 1)) &
-                ((df.DISPNEIA == 1) | (df.SATURACAO == 1) | (df.DESC_RESP == 1))
-            ) |
-            (df.EVOLUCAO == 2)].copy()
+    if filtertype == 'srag':
+        df = df[(
+                    (df.FEBRE == 1) &
+                    ((df.TOSSE == 1) | (df.GARGANTA == 1)) &
+                    ((df.DISPNEIA == 1) | (df.SATURACAO == 1) | (df.DESC_RESP == 1))
+                )].copy()
+    elif filtertype == 'sragnofever':
+        df = df[(
+                    ((df.TOSSE == 1) | (df.GARGANTA == 1)) &
+                    ((df.DISPNEIA == 1) | (df.SATURACAO == 1) | (df.DESC_RESP == 1))
+                )].copy()
 
     return df
 
 
-def filter_db2019(df, tag=None):
+def filter_db2019(df, tag=None, filtertype='srag'):
     tgtcols = ['AMOSTRA', 'ANTIVIRAL', 'AVE_SUINO', 'CLASSI_FIN', 'CLASSI_OUT', 'CO_LAB_IF', 'CO_LAB_PCR', 'CO_MU_INTE',
-               'CO_MUN_NOT', 'CO_MUN_RES', 'CO_PAIS', 'CO_REGIONA', 'CO_RG_RESI', 'CO_UNI_NOT', 'CRITERIO',
-               'CS_GESTANT', 'CS_RACA', 'CS_SEXO', 'DESC_RESP', 'DISPNEIA', 'DS_IF_OUT', 'DS_PCR_OUT', 'DT_ANTIVIR',
+               'CO_MUN_NOT', 'CO_MUN_RES', 'CO_PAIS', 'CO_REGIONA', 'CO_RG_RESI', 'CO_UNI_NOT', 'CRITERIO', 'CS_ETNIA',
+               'CS_RACA', 'CS_SEXO', 'DESC_RESP', 'DISPNEIA', 'DIARREIA', 'DS_IF_OUT', 'DS_PCR_OUT', 'DT_ANTIVIR',
                'DT_COLETA', 'DT_DIGITA', 'DT_ENCERRA', 'DT_EVOLUCA', 'DT_IF', 'DT_INTERNA', 'DT_NOTIFIC', 'DT_PCR',
                'DT_SIN_PRI', 'DT_UT_DOSE', 'EVOLUCAO', 'FEBRE', 'FLUASU_OUT', 'FLUBLI_OUT', 'GARGANTA', 'HOSPITAL',
                'ID_MN_RESI', 'ID_MUNICIP', 'ID_REGIONA', 'ID_RG_RESI', 'IF_ADENO', 'IF_OUTRO', 'IF_PARA1',
@@ -129,12 +134,35 @@ def filter_db2019(df, tag=None):
                'POS_IF_OUT', 'POS_PCRFLU', 'POS_PCROUT', 'SATURACAO', 'SEM_NOT', 'SEM_PRI', 'SG_UF', 'SG_UF_NOT',
                'TOSSE', 'TP_ANTIVIR', 'TP_FLU_IF', 'TP_FLU_PCR', 'TP_IDADE', 'VACINA']
 
+    tgtcols_uti = ['UTI',
+                   'DT_ENTUTI',
+                   'DT_SAIDUTI']
+
+    tgtcols_comorb = ['CS_GESTANT',
+                      'PUERPERA',
+                      'CARDIOPATI',
+                      'HEMATOLOGI',
+                      'SIND_DOWN',
+                      'HEPATICA',
+                      'ASMA',
+                      'DIABETES',
+                      'NEUROLOGIC',
+                      'PNEUMOPATI',
+                      'IMUNODEPRE',
+                      'RENAL',
+                      'OBESIDADE',
+                      'OBES_IMC',
+                      'OUT_MORBI',
+                      'MORB_DESC']
+
+    tgtcols = list(set(tgtcols).union(tgtcols_uti).union(tgtcols_comorb))
+
     cols = df.columns
     for col in set(tgtcols).difference(cols):
         df[col] = None
 
     df = df[tgtcols].copy()
-    df = symptoms_filter(df)
+    df = symptoms_filter(df, filtertype=filtertype)
 
     regexp = re.compile('^DT')
     dt_cols = list(filter(regexp.match, tgtcols))
@@ -225,7 +253,22 @@ def filter_db2019(df, tag=None):
     # Positive cases:
     df.loc[(df.POS_PCRFLU == 1) | (df.POS_PCROUT == 1), 'PCR_RESUL'] = 1
     df.loc[(df.POS_IF_FLU == 1) | (df.POS_IF_OUT == 1), 'IF_RESUL'] = 1
-    df.loc[(df.PCR_RESUL == 1) | (df.IF_RESUL == 1) | (df.FLU_LAB == 1) | (df.SARS2 == 1), 'POSITIVE'] = 1
+    df.loc[(df.PCR_RESUL == 1) |
+           (df.IF_RESUL == 1) |
+           (df.FLU_LAB == 1) |
+           (df.SARS2 == 1) |
+           (df.VSR == 1) |
+           (df.PARA1 == 1) |
+           (df.PARA2 == 1) |
+           (df.PARA3 == 1) |
+           (df.PARA4 == 1) |
+           (df.ADNO == 1) |
+           (df.BOCA == 1) |
+           (df.RINO == 1) |
+           (df.METAP == 1) |
+           (df.OTHERS == 1),
+           'POSITIVE'] = 1
+
     # Negative cases:
     df.loc[(df.POS_PCRFLU == 2) & (df.POS_PCROUT == 2), 'PCR_RESUL'] = 2
     df.loc[(df.POS_IF_FLU == 2) & (df.POS_IF_OUT == 2), 'IF_RESUL'] = 2
@@ -235,32 +278,46 @@ def filter_db2019(df, tag=None):
     )
     df.loc[mask, 'NEGATIVE'] = 1
 
-    df.loc[(df.POSITIVE == 1) | (df.NEGATIVE == 1), 'TESTED'] = 1
+    df.loc[(((df.IF_RESUL == 2) & (df.PCR_RESUL.isin([2, 3, 4, 5, 9]))) |
+           ((df.PCR_RESUL == 2) & (df.IF_RESUL.isin([2, 3, 4, 5, 9])))) &
+           (df.POSITIVE != 1), 'NEGATIVE'] = 1
+    df.loc[:, 'INCONCLUSIVE'] = (
+                                    (
+                                            ((df.IF_RESUL == 3) & (~df.PCR_RESUL.isin([1, 2, 5]))) |
+                                            ((df.PCR_RESUL == 3) & (~df.IF_RESUL.isin([1, 2, 5])))
+                                    ) &
+                                    (df.POSITIVE != 1) &
+                                    (df.NEGATIVE != 1)
+    ).astype(int)
+    df.loc[(df.POSITIVE == 1) | (df.NEGATIVE == 1) | (df.INCONCLUSIVE == 1), 'TESTED'] = 1
 
     df.loc[:, 'DELAYED'] = (
-            ((df.IF_RESUL == 5) & (pd.isnull(df.TESTED))) |
-            ((df.PCR_RESUL == 5) & (pd.isnull(df.TESTED)))
+                               (
+                                       ((df.IF_RESUL == 5) & (pd.isnull(df.TESTED))) |
+                                       ((df.PCR_RESUL == 5) & (pd.isnull(df.TESTED)))
+                               ) &
+                               (df.POSITIVE != 1) &
+                               (df.NEGATIVE != 1) &
+                               (df.INCONCLUSIVE != 1)
     ).astype(int)
-    df.loc[:, 'INCONCLUSIVE'] = (
-        ((df.IF_RESUL == 3) & (~df.PCR_RESUL.isin([1, 2, 5]))) |
-        ((df.PCR_RESUL == 3) & (~df.IF_RESUL.isin([1, 2, 5])))
-    ).astype(int)
-    df.loc[((df.IF_RESUL == 2) & (df.PCR_RESUL.isin([2, 3, 4, 5, 9]))) |
-           ((df.PCR_RESUL == 2) & (df.IF_RESUL.isin([2, 3, 4, 5, 9]))), 'NEGATIVE'] = 1
-
-    df.loc[(df.POSITIVE == 1) | (df.NEGATIVE == 1), 'TESTED'] = 1
 
     # Clinical and clinical-epidemiological diagnose:
     df['FLU_CLINIC'] = ((df.POS_IF_FLU != 1) & (df.POS_PCRFLU != 1) & (df.CLASSI_FIN == 1) &
                         (df.CRITERIO.isin([2, 3]))).astype(int)
 
-    notknownrows = ((df.PCR_RESUL == 9) | pd.isnull(df.PCR_RESUL)) & \
-                   ((df.IF_RESUL == 9) | pd.isnull(df.IF_RESUL))
-
+    notknownrows = (
+                           ((df.PCR_RESUL == 9) | pd.isnull(df.PCR_RESUL)) &
+                           ((df.IF_RESUL == 9) | pd.isnull(df.IF_RESUL)) &
+                           (df.POSITIVE != 1) &
+                           (df.NEGATIVE != 1) &
+                           (df.DELAYED != 1) &
+                           (df.INCONCLUSIVE != 1)
+    )
     nottestedrows = (
             ~(notknownrows) &
             (df.PCR_RESUL.isin([4, 9])) &
-            (df.IF_RESUL.isin([4, 9]))
+            (df.IF_RESUL.isin([4, 9])) &
+            (df.TESTED != 1)
     )
     df['NOTTESTED'] = nottestedrows.astype(int)
     df['TESTING_IGNORED'] = notknownrows.astype(int)
@@ -271,7 +328,7 @@ def filter_db2019(df, tag=None):
     return df
 
 
-def applysinanfilter(df, tag=None):
+def applysinanfilter(df, tag=None, filtertype='srag'):
     # Filter columns of interest
     # Na solicitação, além das variáveis abaixo, necessitamos também do ID do caso
     tgtcols = ['SEM_NOT', 'DT_NOTIFIC', 'SG_UF_NOT', 'DT_INTERNA', 'DT_SIN_PRI', 'DT_DIGITA', 'HOSPITAL',
@@ -282,7 +339,30 @@ def applysinanfilter(df, tag=None):
                'PCR_ETIOL', 'PCR_TIPO_H', 'PCR_TIPO_N', 'DT_CULTURA', 'CULT_RES', 'DT_HEMAGLU', 'HEMA_RES',
                'HEMA_ETIOL', 'HEM_TIPO_H', 'HEM_TIPO_N', 'VACINA', 'DT_UT_DOSE', 'ANT_PNEUMO', 'DT_PNEUM',
                'CO_UF_INTE', 'CO_MU_INTE', 'CO_UN_INTE', 'DT_ENCERRA', 'NU_NOTIFIC', 'ID_AGRAVO', 'ID_MUNICIP',
-               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'CS_SEXO', 'CS_GESTANT', 'CS_RACA', 'DT_ANTIVIR', 'DT_EVOLUCA']
+               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'CS_SEXO', 'CS_RACA', 'DT_ANTIVIR', 'DT_EVOLUCA']
+
+    tgtcols_uti = ['UTI',
+                   'DT_ENTUTI',
+                   'DT_SAIDUTI']
+
+    tgtcols_comorb = ['CS_GESTANT',
+                      'PUERPERA',
+                      'CARDIOPATI',
+                      'HEMATOLOGI',
+                      'SIND_DOWN',
+                      'HEPATICA',
+                      'ASMA',
+                      'DIABETES',
+                      'NEUROLOGIC',
+                      'PNEUMOPATI',
+                      'IMUNODEPRE',
+                      'RENAL',
+                      'OBESIDADE',
+                      'OBES_IMC',
+                      'OUT_MORBI',
+                      'MORB_DESC']
+
+    tgtcols = list(set(tgtcols).union(tgtcols_uti).union(tgtcols_comorb))
 
     cols = df.columns
     if 'RES_VRS' in cols:
@@ -294,7 +374,9 @@ def applysinanfilter(df, tag=None):
         if 'DT_EVOL' in cols:
             df.DT_EVOLUCA.update(df.DT_EVOL)
     elif 'DT_EVOL' in cols:
-        df.rename(columns={'DT_EVOL': 'DT_EVOLUCA'})
+        df.rename(columns={'DT_EVOL': 'DT_EVOLUCA'}, inplace=True)
+    if 'METABOLICA' in cols:
+        df.rename(columns={'METABOLICA': 'DIABETES'}, inplace=True)
 
     cols = df.columns
     for col in set(tgtcols).difference(cols):
@@ -302,7 +384,7 @@ def applysinanfilter(df, tag=None):
 
     df = df[tgtcols].copy()
 
-    df = symptoms_filter(df)
+    df = symptoms_filter(df, filtertype=filtertype)
 
     regexp = re.compile('^DT')
     dt_cols = list(filter(regexp.match, tgtcols))
@@ -399,6 +481,7 @@ def applysinanfilter(df, tag=None):
                                    (df.PARA1[labrows] == 0) & (df.PARA2[labrows] == 0) & (df.PARA3[labrows] == 0) &
                                    (df.ADNO[labrows] == 0) & (df.OTHERS[labrows] == 0) & (df.DELAYED[labrows] == 0) &
                                    (df.INCONCLUSIVE[labrows] == 0)).astype(int)
+    df.loc[labrows & (df.INCONCLUSIVE != 1) & (df.NEGATIVE != 1) & (df.DELAYED != 1), 'POSITIVE'] = 1
 
     # Clinical and clinical-epidemiological diagnose:
     df['FLU_CLINIC'] = ((df.FLU_A != 1) & (df.FLU_B != 1) & (df.CLASSI_FIN == 1) & (df.CRITERIO.isin([2, 3]))).astype(
@@ -434,7 +517,15 @@ def applysinanfilter(df, tag=None):
     return (df)
 
 
-def delays_dist(df_in=pd.DataFrame()):
+def delays_dist(df_in=pd.DataFrame(), filtertype='srag'):
+    
+    if filtertype not in ['srag', 'sragnofever', 'hospdeath']:
+        exit('Invalid filter type: %s' % filtertype)
+        
+    suff = ''
+    if filtertype != 'srag':
+        suff = '_%s' % filtertype
+        
     tgt_cols = ['SG_UF_NOT',
                 'DT_NOTIFIC_epiyearweek',
                 'DT_NOTIFIC_epiyear',
@@ -505,45 +596,45 @@ def delays_dist(df_in=pd.DataFrame()):
     except:
         df[cols] = df[cols].astype(float)
 
-    def wide2long(df):
+    def wide2long(dfwide2long):
 
-        dftmp = df.copy()
+        dftmp = dfwide2long.copy()
         dftmp['dado'] = 'srag'
-        df_out = dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito'])
+        dfwide2long_out = dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito'])
 
         # obito:
-        dftmp = dftmp[dftmp.obito == 1]
+        dftmp = dfwide2long[dfwide2long.obito == 1].copy()
         dftmp['dado'] = 'obito'
-        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+        dfwide2long_out = dfwide2long_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
                                ignore_index=True,
                                sort=True)
 
         # sragflu:
-        dftmp = dftmp[dftmp.sragflu == 1]
+        dftmp = dfwide2long[dfwide2long.sragflu == 1].copy()
         dftmp['dado'] = 'sragflu'
-        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+        dfwide2long_out = dfwide2long_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
                                ignore_index=True,
                                sort=True)
 
         # obitoflu:
-        dftmp = dftmp[dftmp.obitoflu == 1]
+        dftmp = dfwide2long[dfwide2long.obitoflu == 1].copy()
         dftmp['dado'] = 'obitoflu'
-        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+        dfwide2long_out = dfwide2long_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
                                ignore_index=True, sort=True)
 
         # sragcovid:
-        dftmp = dftmp[dftmp.sragcovid == 1]
+        dftmp = dfwide2long[dfwide2long.sragcovid == 1].copy()
         dftmp['dado'] = 'sragcovid'
-        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+        dfwide2long_out = dfwide2long_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
                                ignore_index=True, sort=True)
 
         # obitocovid:
-        dftmp = dftmp[dftmp.obitocovid == 1]
+        dftmp = dfwide2long[dfwide2long.obitocovid == 1].copy()
         dftmp['dado'] = 'obitocovid'
-        df_out = df_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
+        dfwide2long_out = dfwide2long_out.append(dftmp.drop(columns=['sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']),
                                ignore_index=True, sort=True)
 
-        return df_out
+        return dfwide2long_out
 
     df_out = wide2long(df)
 
@@ -568,7 +659,7 @@ def delays_dist(df_in=pd.DataFrame()):
     df_out = df_out.sort_values(by=['dado', 'UF', 'DT_SIN_PRI_epiyearweek', 'DT_NOTIFIC_epiyearweek',
                                     'DT_DIGITA_epiyearweek'])
     df_out = df_out.reset_index()[out_cols]
-    df_out[out_cols].to_csv('../../data/data/delay_table.csv', index=False)
+    df_out[out_cols].to_csv('../../data/data/delay_table%s.csv' % suff, index=False)
 
     #### Opportunities estimation
     tgt_cols = ['UF', 'Regional', 'Regiao', 'Pais', 'dado', 'DT_SIN_PRI_epiyearweek', 'DT_SIN_PRI_epiyear',
@@ -578,7 +669,7 @@ def delays_dist(df_in=pd.DataFrame()):
     df_out = df_out[tgt_cols].rename(columns={'DT_SIN_PRI_epiyearweek': 'epiyearweek', 'DT_SIN_PRI_epiyear': 'epiyear',
                                      'DT_SIN_PRI_epiweek': 'epiweek', 'SinPri2Digita_DelayWeeks': 'delayweeks'})
     df_out.UF = df_out.UF.astype(int).astype(str)
-    extract_quantile(df_out)
+    extract_quantile(df_out, filtertype)
     # Impute digitalization date if needed:
     opp_cols = list(set(tgt_cols).difference(['dado']).union(['sragflu', 'obitoflu', 'sragcovid', 'obitocovid',
                                                               'obito']))
@@ -592,14 +683,23 @@ def delays_dist(df_in=pd.DataFrame()):
     # Create tables and save to file:
     df_out = createtable(df_out)
     for dataset in df_out.dado.unique():
-        fout = '../clean_data/%s_sinpri2digita_table_weekly.csv' % dataset
+        fout = '../clean_data/%s%s_sinpri2digita_table_weekly.csv' % (dataset, suff)
         module_logger.info('Write table %s' % fout)
         df_out[df_out.dado == dataset].to_csv(fout, index=False)
 
     return
 
 
-def main(flist, sep=',', yearmax=None):
+def main(flist, sep=',', yearmax=None, filtertype='srag'):
+
+    if filtertype not in ['srag', 'sragnofever', 'hospdeath']:
+        module_logger.error('Invalid filter type: %s', filtertype)
+        exit(1)
+
+    suff = ''
+    if filtertype != 'srag':
+        suff = '_%s' % filtertype
+
     df = pd.DataFrame()
     for fname in flist:
         module_logger.info('Processing database file: %s', fname)
@@ -607,10 +707,10 @@ def main(flist, sep=',', yearmax=None):
         # Check if data file has 2019's database or not:
         if int(re.findall(r'\d+', fname)[0]) < 2019:
             module_logger.info('DB pre-2019')
-            df = df.append(applysinanfilter(dftmp, tag=fname), ignore_index=True, sort=True)
+            df = df.append(applysinanfilter(dftmp, tag=fname, filtertype=filtertype), ignore_index=True, sort=True)
         else:
             module_logger.info('DB 2019 onwards')
-            df = df.append(filter_db2019(dftmp, tag=fname), ignore_index=True, sort=True)
+            df = df.append(filter_db2019(dftmp, tag=fname, filtertype=filtertype), ignore_index=True, sort=True)
 
     if (yearmax):
         df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) <= yearmax)]
@@ -630,12 +730,12 @@ def main(flist, sep=',', yearmax=None):
     mask_obitoflu = mask_flu & mask_obito
     mask_obitocovid = mask_covid & mask_obito
 
-    df.to_csv('../clean_data/clean_data_srag_epiweek.csv', index=False)
-    df[mask_flu].to_csv('../clean_data/clean_data_sragflu_epiweek.csv', index=False)
-    df[mask_obitoflu].to_csv('../clean_data/clean_data_obitoflu_epiweek.csv', index=False)
-    df[mask_covid].to_csv('../clean_data/clean_data_sragcovid_epiweek.csv', index=False)
-    df[mask_obitocovid].to_csv('../clean_data/clean_data_obitocovid_epiweek.csv', index=False)
-    df[mask_obito].to_csv('../clean_data/clean_data_obito_epiweek.csv', index=False)
+    df.to_csv('../clean_data/clean_data_srag%s_epiweek.csv' % suff, index=False)
+    df[mask_flu].to_csv('../clean_data/clean_data_sragflu%s_epiweek.csv' % suff, index=False)
+    df[mask_obitoflu].to_csv('../clean_data/clean_data_obitoflu%s_epiweek.csv' % suff, index=False)
+    df[mask_covid].to_csv('../clean_data/clean_data_sragcovid%s_epiweek.csv' % suff, index=False)
+    df[mask_obitocovid].to_csv('../clean_data/clean_data_obitocovid%s_epiweek.csv' % suff, index=False)
+    df[mask_obito].to_csv('../clean_data/clean_data_obito%s_epiweek.csv' % suff, index=False)
 
     df['obito'] = mask_obito.astype(int)
     df['sragflu'] = mask_flu.astype(int)
@@ -643,7 +743,7 @@ def main(flist, sep=',', yearmax=None):
     df['sragcovid'] = mask_covid.astype(int)
     df['obitocovid'] = mask_obitocovid.astype(int)
 
-    delays_dist(df)
+    delays_dist(df, filtertype)
 
 
 if __name__ == '__main__':
@@ -653,6 +753,8 @@ if __name__ == '__main__':
     parser.add_argument('--path', nargs='*', action='append', help='Path to data file')
     parser.add_argument('--sep', help='Column separator', default=',')
     parser.add_argument('--year', help='Maximum year', default=None)
+    parser.add_argument('--filtertype', help='Default=srag. Which filter should be used? [srag, sragnofever, '
+                                             'hospdeath]', default='srag')
     args = parser.parse_args()
     print(args)
-    main(args.path[0], args.sep, args.year)
+    main(args.path[0], args.sep, args.year, args.filtertype)

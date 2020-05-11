@@ -20,11 +20,21 @@ parser$add_argument("-w", "--epiweek", type="integer",
                     help="Epidemiological week")
 parser$add_argument("-p", "--plot", action='store_true',
                     help="Update plots?")
+parser$add_argument("-f", "--filtertype", type="character", default='srag',
+                    help="Type of filter [srag, sragnofever, hospdeath]. Default %(default)s")
+
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults,
 args <- parser$parse_args()
 epiweek.sunday <- epiweek2date(as.integer(args$epiyear), as.integer(args$epiweek)) %>%
   as.Date(format='%Y%m%d') + 6
+
+if (!(args$filtertype %in% c('srag', 'sragnofever', 'hospdeath'))){
+  stop(paste0('Invalid filter type', args$filtertype))
+}
+
+suff_list <- list('srag' = '', 'sragnofever' = '_sragnofever', 'hospdeath' = '_hospdeath')
+suff_out <- suff_list[args$filtertype]
 
 # Base folders
 data.folder <- '../../data/data/'
@@ -118,7 +128,7 @@ if (args$plot){
     plot.colors <- c('#ffffcc', '#a1dab4', '#41b6c4', '#225ea8')
     plot.breaks <- c(1, 2, 3, 4)
     plot.labels <- c('Nível Basal', 'Nível 0', 'Nível 1', 'Nível 2')
-    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, plot.title = 'Níveis do plano de contingência', 'contingency.pdf')
+    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, plot.title = 'Níveis do plano de contingência', paste0('contingency', suff_out, '.pdf'))
     return()
   }
   
@@ -144,22 +154,27 @@ if (args$plot){
     plot.labels <- c('Baixa', 'Epidêmica', 'Alta', 'Muito alta')
     plot.title <- list(
       'srag' = 'Nível de atividade de SRAG',
+      'obito' = 'Nível de atividade de óbitos de SRAG',
       'sragflu' = 'Nível de atividade de SRAG por influenza',
-      'obitoflu' = 'Nível de atividade de óbitos de SRAG por influenza'
+      'obitoflu' = 'Nível de atividade de óbitos de SRAG por influenza',
+      'sragcovid' = 'Nível de atividade de SRAG por COVID-19',
+      'obitocovid' = 'Nível de atividade de óbitos de SRAG por COVID-19'
     )
-    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, as.character(plot.title[dataset]), paste0(dataset, '-activity.pdf'))
+    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, as.character(plot.title[dataset]), paste0(dataset, '-activity', suff_out, '.pdf'))
     return()
   }
   
-  plot.timeseries <- function(df){
+  plot.timeseries <- function(df, scale_val=1){
     # Function for timeseries plot with endemic channels, activity thresholds and estimates
     # Generate plot with 3 datasets if Brazil (territory_id == 0) or else plot only SRAG data (dataset_id == 1)
     territory_id <- unique(df$territory_id)
-    print(territory_id)
+
+    df <- df %>%
+      filter(scale_id == scale_val)
     df.ts <- df %>%
       select(dataset_id, epiweek, X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta) %>%
       mutate(SRAG = case_when(
-        epiweek >= args$epiweek[1] - 4 ~ NA_real_,
+        epiweek >= args$epiweek[1] - 1 ~ NA_real_,
         TRUE ~ SRAG
       )) %>%
       gather(ts.name, measure, c(X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta))
@@ -168,16 +183,67 @@ if (args$plot){
       # Internal function plot based on dataset_id
       y.upper <- df %>%
         filter(dataset_id == d) %>%
+        select(SRAG) %>%
+        max(na.rm=T)*1.1
+      y.upper.veryhigh <- df %>%
+        filter(dataset_id == d) %>%
         select(intensidade.muito.alta) %>%
-        unique()*1.1
+        unique(na.rm=T)*1.1
       y.upper.ic <- df %>%
         filter(dataset_id == d) %>%
         select(X97.5.) %>%
         max(na.rm=T)*1.1
-      y.upper <- max(y.upper, y.upper.ic)
+      y.upper <- max(y.upper, y.upper.veryhigh$intensidade.muito.alta, y.upper.ic)
+      
+      acumulado <- df %>% 
+        filter(dataset_id == d) %>%
+        transmute(acum = case_when(
+          is.na(X50.) ~ SRAG,
+          !is.na(X50.) ~ X50.
+        ), lim.inf = case_when(
+          is.na(X2.5.) ~ SRAG,
+          !is.na(X2.5.) ~ X2.5.
+        ), lim.sup = case_when(
+          is.na(X97.5.) ~ SRAG,
+          !is.na(X97.5.) ~ X97.5.
+        )) %>%
+        colSums(na.rm=T) %>%
+        t() %>%
+        as.data.frame()
+      
+      if (scale_val == 1){
+        fmt='%.02f'
+        acumulado$acum <- sprintf(fmt=fmt, acumulado$acum)
+        acumulado$lim.inf <- sprintf(fmt=fmt, acumulado$lim.inf)
+        acumulado$lim.sup <- sprintf(fmt=fmt, acumulado$lim.sup)
+      } else {
+        fmt='%d'
+        acumulado$acum <- sprintf(fmt=fmt, round(acumulado$acum))
+        acumulado$lim.inf <- sprintf(fmt=fmt, round(acumulado$lim.inf))
+        acumulado$lim.sup <- sprintf(fmt=fmt, round(acumulado$lim.sup))
+      }
+
+      if (sum(df$Situation[df$dataset_id == d] == 'estimated', na.rm=T) > 0){
+        min.epiweek <- df %>%
+          filter(dataset_id == d & Situation == 'estimated') %>%
+          select(epiweek) %>%
+          min()
+        min.epiweek <- max(1, min.epiweek-1)
+        df.ts$measure[df.ts$dataset_id == d & df.ts$epiweek == min.epiweek & df.ts$ts.name %in% c('X2.5.', 'X50.', 'X97.5.')] <- df$SRAG[df$dataset_id == d & df$epiweek == min.epiweek]
+        total.titl <- paste0('Total estimado: ', acumulado$acum, ' [', acumulado$lim.inf, '-', acumulado$lim.sup, ']')
+      } else {
+        total.titl <- paste0('Total notificado (dado incompleto): ', acumulado$acum)
+      }
+      
+      
       leg.pt <- ifelse(territory_id == 0, .8, .7)
       leg.nrow <- ifelse(territory_id == 0, 2, 3)
       leg.pos <- ifelse(territory_id == 0, 'bottom', 'right')
+      # leg.pt <- ifelse(territory_id == 0, .8, .7)
+      # leg.nrow <- ifelse(territory_id == 0, 2, 2)
+      # leg.pos <- ifelse(territory_id == 0, 'bottom', 'bottom')
+      ylabs <- c('Incidência (por 100mil hab.)', 'Casos')
+      title <- c('SRAG', 'SRAG por Influenza', 'Óbitos de SRAG por Influenza', 'SRAG por COVID-19', 'Óbitos de SRAG por COVID-19', 'Óbitos de SRAG')
       p <- df %>%
           filter(dataset_id == d) %>%
           ggplot(aes(x = epiweek)) +
@@ -196,8 +262,9 @@ if (args$plot){
           scale_color_manual(name = NULL, values = c('SRAG' = 'black', 'X50.' = 'red', 'X2.5.' = 'black', 'X97.5.' = 'black', 'limiar.pré.epidêmico' = 'green', 'intensidade.alta' = 'blue', 'intensidade.muito.alta' = 'red'),
                              breaks = c('SRAG', 'X50.', 'X2.5.', 'limiar.pré.epidêmico', 'intensidade.alta', 'intensidade.muito.alta'),
                              labels = c('Casos notificados', 'Casos estimados', 'Intervalo de confiança', 'Limiar pré-epidêmico', 'Intensidade alta', 'Intensidade muito alta')) +
-          labs(x = 'Semana epidemiológica', y = 'Incidência (por 100mil hab.)') +
-          theme_Publication() + theme(legend.key.size = unit(15, 'pt'), legend.text=element_text(size = rel(leg.pt)), legend.position = leg.pos, plot.margin=unit(c(2, 10, 5, 5), 'pt'))
+          labs(x = 'Semana epidemiológica', y = ylabs[scale_val], title=title[d], subtitle = total.titl) +
+          theme_Publication() + theme(legend.key.size = unit(15, 'pt'), legend.text=element_text(size = rel(leg.pt)), legend.position = leg.pos, plot.margin=unit(c(2, 10, 5, 5), 'pt'),
+                                      plot.title = element_text(size = rel(.8)), plot.subtitle = element_text(size = rel(.8), hjust=0.5))
         if (territory_id == 0){
           p <- p +
             guides(fill=guide_legend(nrow = leg.nrow, byrow = TRUE, title = NULL), color=guide_legend(nrow = leg.nrow, byrow = TRUE, title = NULL), linetype=guide_legend(nrow = leg.nrow, byrow = TRUE, title = NULL))
@@ -206,15 +273,32 @@ if (args$plot){
     }
     
     if (territory_id == 0){
-      p.grid <- lapply(c(1, 2, 3), plot.dataset)
-      pdf(paste0('Figs/', 'Brazil_timeseries.pdf'), width = 12, height = 4, onefile = FALSE)
-      grid_arrange_shared_legend(p.grid[[1]], p.grid[[2]], p.grid[[3]], ncol = 3, nrow = 1, position = 'bottom')
+      p.grid <- lapply(c(1, 2, 3, 4, 5, 6), plot.dataset)
+      pdf(paste0('Figs/', 'Brazil_timeseries', suff_out, '.pdf'), width = 12, height = 8, onefile = FALSE)
+      p.grid[[2]] <- p.grid[[2]] + ylab(" ")
+      p.grid[[4]] <- p.grid[[4]] + ylab(" ")
+      p.grid[[3]] <- p.grid[[3]] + ylab(" ")
+      p.grid[[5]] <- p.grid[[5]] + ylab(" ")
+      
+      p.grid[[1]] <- p.grid[[1]] + xlab(" ")
+      p.grid[[2]] <- p.grid[[2]] + xlab(" ")
+      p.grid[[4]] <- p.grid[[4]] + xlab(" ")
+
+      grid_arrange_shared_legend(p.grid[[1]], p.grid[[2]], p.grid[[4]], p.grid[[6]], p.grid[[3]], p.grid[[5]], ncol = 3, nrow = 2, position = 'bottom')
       dev.off()
     } else {
-      pdf(paste0('Figs/', 'Territory_', territory_id, '_timeseries.pdf'), width = 6, height = 4)
-      p <- plot.dataset(1)
-      p
+      p.grid <- lapply(c(1, 6), plot.dataset)
+      pdf(paste0('Figs/', 'Territory_', territory_id, '_dataset_1_6_timeseries', suff_out, '.pdf'), width = 10, height = 3, onefile = FALSE)
+      p.grid[[2]] <- p.grid[[2]] + ylab(" ")
+
+      grid_arrange_shared_legend(p.grid[[1]], p.grid[[2]], ncol = 2, nrow = 1, position = 'right')
       dev.off()
+      # for (d in c(1, 6)){
+      #   p <- plot.dataset(d=d)
+      #   pdf(paste0('Figs/', 'Territory_', territory_id, '_dataset_', d, '_timeseries.pdf'), width = 6, height = 3)
+      #   print(p)
+      #   dev.off()
+      # }
     }
     return()
   }
@@ -223,7 +307,7 @@ if (args$plot){
 
 #### Generate contingency map: ####
 print('Loading contingency data')
-df.contingency <- read.csv(paste0(data.folder, 'contingency_level.csv'), stringsAsFactors = F) %>%
+df.contingency <- read.csv(paste0(data.folder, 'contingency_level', suff_out, '.csv'), stringsAsFactors = F) %>%
   filter(epiyear == args$epiyear)
 if (args$plot){
   print('Generating contingency map')
@@ -231,13 +315,13 @@ if (args$plot){
 }
 
 ##### Generate activity maps: ####
-df.weekly.alert <- read.csv(paste0(data.folder, 'weekly_alert.csv'), stringsAsFactors = F)
+df.weekly.alert <- read.csv(paste0(data.folder, 'weekly_alert', suff_out, '.csv'), stringsAsFactors = F)
 df.weekly.alert <- df.weekly.alert %>%
   filter(epiyear == args$epiyear,
          epiweek == args$epiweek)
 
 if (args$plot){
-  datasets = list('srag' = 1, 'sragflu' = 2, 'obitoflu' = 3)
+  datasets = list('srag' = 1, 'sragflu' = 2, 'obitoflu' = 3, 'sragcovid' = 4, 'obitocovid' = 5, 'obito' = 6)
   for (dataset in names(datasets)){
     print(paste0('Generating activity map: ', dataset))
     df.weekly.alert %>%
@@ -247,9 +331,9 @@ if (args$plot){
 }
 
 #### Prepare data for timeseries and tables ####
-df.current <- read.csv(paste0(data.folder, 'current_estimated_values.csv'), stringsAsFactors = F)
-df.typical <- read.csv(paste0(data.folder, 'mem-typical.csv'), stringsAsFactors = F)
-df.report <- read.csv(paste0(data.folder, 'mem-report.csv'), stringsAsFactors = F)
+df.current <- read.csv(paste0(data.folder, 'current_estimated_values', suff_out, '.csv'), stringsAsFactors = F)
+df.typical <- read.csv(paste0(data.folder, 'mem-typical', suff_out, '.csv'), stringsAsFactors = F)
+df.report <- read.csv(paste0(data.folder, 'mem-report', suff_out, '.csv'), stringsAsFactors = F)
 
 df.report$territory_id <- df.report$UF
 df.report$territory_id[df.report$UF %in% region.indeces] <- as.integer(unlist(region.id[df.report$UF[df.report$UF %in% region.indeces]]))
@@ -259,7 +343,10 @@ df.report <- df.report %>%
     dataset_id = case_when(
       dado == 'srag' ~ 1,
       dado == 'sragflu' ~ 2,
-      dado == 'obitoflu' ~ 3
+      dado == 'obitoflu' ~ 3,
+      dado == 'sragcovid' ~ 4,
+      dado == 'obitocovid' ~ 5,
+      dado == 'obito' ~ 6
     ),
     scale_id = case_when(
       escala == 'incidência' ~ 1,
@@ -275,7 +362,10 @@ df.typical <- df.typical %>%
     dataset_id = case_when(
       dado == 'srag' ~ 1,
       dado == 'sragflu' ~ 2,
-      dado == 'obitoflu' ~ 3
+      dado == 'obitoflu' ~ 3,
+      dado == 'sragcovid' ~ 4,
+      dado == 'obitocovid' ~ 5,
+      dado == 'obito' ~ 6
     ),
     scale_id = case_when(
       escala == 'incidência' ~ 1,
@@ -284,16 +374,16 @@ df.typical <- df.typical %>%
   )
 
 
-last.epiyear.flag = (args$epiweek - 4 <= 0)
+last.epiyear.flag = (args$epiweek - 2 <= 0)
 if (last.epiyear.flag){
   last.year.maxweek <- df.current %>%
     dplyr::filter(epiyear == args$epiyear - 1) %>%
     select(epiweek) %>%
     max()
-  current.minus.4.epiweek <- last.year.maxweek - (4 - args$epiwee)
+  current.minus.4.epiweek <- last.year.maxweek - (2 - args$epiwee)
   current.minus.4.epiyear <- args$epiyear - 1  
 } else {
-  current.minus.4.epiweek <- args$epiweek - 4
+  current.minus.4.epiweek <- args$epiweek - 2
   current.minus.4.epiyear <- args$epiyear  
 }
 
@@ -305,7 +395,10 @@ df.current <- df.current %>%
     dataset_id = case_when(
       dado == 'srag' ~ 1,
       dado == 'sragflu' ~ 2,
-      dado == 'obitoflu' ~ 3
+      dado == 'obitoflu' ~ 3,
+      dado == 'sragcovid' ~ 4,
+      dado == 'obitocovid' ~ 5,
+      dado == 'obito' ~ 6
     ),
     scale_id = case_when(
       escala == 'incidência' ~ 1,
@@ -313,28 +406,29 @@ df.current <- df.current %>%
     )
   )
 
+df.current2plot <- df.current
+df.current2plot$X2.5.[df.current2plot$Situation != 'estimated'] <- NA
+df.current2plot$X50.[df.current2plot$Situation != 'estimated'] <- NA
+df.current2plot$X97.5.[df.current2plot$Situation != 'estimated'] <- NA
+
 #### Plot timeseries ####
 if (args$plot){
-  for (t.id in unique(df.current$territory_id)){
+  for (t.id in unique(df.current2plot$territory_id)){
     print(t.id)
-    df.plot.ts <- df.current %>%
+    df.plot.ts <- df.current2plot %>%
       select(-Tipo) %>%
-      filter(territory_id == t.id, scale_id == 1, epiyear == args$epiyear) %>%
-      right_join(df.typical %>% filter(territory_id == t.id, scale_id == 1)) %>%
-      mutate(SRAG = case_when(
-        epiweek >= args$epiweek - 4 ~ NA_real_,
-        TRUE ~ SRAG
-      ))
+      filter(territory_id == t.id, epiyear == args$epiyear) %>%
+      right_join(df.typical %>% filter(territory_id == t.id))
     df.plot.ts <- df.report %>%
       select(territory_id, dataset_id, scale_id, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta) %>%
       right_join(df.plot.ts)
-    plot.timeseries(df.plot.ts)
+    plot.timeseries(df.plot.ts, ifelse(t.id == 0, 2, 1))
   }
 }
 
 #### Tables for report ####
-estimated <- list(1, 2, 3)
-for (d in c(1, 2, 3)){
+estimated <- list(1, 2, 3, 4, 5, 6)
+for (d in c(1, 2, 3, 4, 5, 6)){
   estimated[d] <- df.current %>%
     filter(epiyear == args$epiyear, epiweek == args$epiweek, Situation == 'estimated', dataset_id == d, scale_id == 1) %>%
     select(territory_id) %>%
@@ -346,15 +440,27 @@ df.current <- df.current %>%
   dplyr::filter(
     (dataset_id == 1 &
        ((territory_id %in% estimated[[1]] & epiyear == args$epiyear & epiweek == args$epiweek) |
-       (!(territory_id %in% estimated[[1]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
+          (!(territory_id %in% estimated[[1]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
     ) |
       (dataset_id == 2 &
          ((territory_id %in% estimated[[2]] & epiyear == args$epiyear & epiweek == args$epiweek) |
-         (!(territory_id %in% estimated[[2]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
+            (!(territory_id %in% estimated[[2]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
       ) |
       (dataset_id == 3 &
          ((territory_id %in% estimated[[3]] & epiyear == args$epiyear & epiweek == args$epiweek) |
-         (!(territory_id %in% estimated[[3]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
+            (!(territory_id %in% estimated[[3]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
+      ) |
+      (dataset_id == 4 &
+         ((territory_id %in% estimated[[4]] & epiyear == args$epiyear & epiweek == args$epiweek) |
+            (!(territory_id %in% estimated[[4]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
+      ) |
+      (dataset_id == 5 &
+         ((territory_id %in% estimated[[5]] & epiyear == args$epiyear & epiweek == args$epiweek) |
+            (!(territory_id %in% estimated[[5]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
+      ) |
+      (dataset_id == 6 &
+         ((territory_id %in% estimated[[6]] & epiyear == args$epiyear & epiweek == args$epiweek) |
+            (!(territory_id %in% estimated[[6]]) & epiyear == current.minus.4.epiyear & epiweek == current.minus.4.epiweek))
       )
   ) %>%
   select(territory_id, epiyear, epiweek, dataset_id, scale_id, Situation, X50.) %>%
@@ -378,7 +484,7 @@ df.siglas <- df.current %>%
     Situation == 'estimated' & alert == 4 ~ very_high_level
   ))
 
-df.table <- expand.grid(list(dado = c(1, 2, 3),
+df.table <- expand.grid(list(dado = c(1, 2, 3, 4, 5, 6),
                              territorio = c('geopolítico', 'perfil de atividade', 'UF'),
                              indicador = c('canal endêmico', 'atividade semanal'),
                              nivel = c(1, 2, 3, 4)),
@@ -450,7 +556,7 @@ df.table <- df.siglas %>%
 df.table$ano.epi <- args$epiyear
 df.table$se.epi <- args$epiweek
 df.table$data.fim <- epiweek.sunday
-write.csv(df.table, 'tabela_de_alertas.csv', na = ' ', row.names = F)
+write.csv(df.table, paste0('tabela_de_alertas', suff_out, '.csv'), na = ' ', row.names = F)
 
 tmp <- as.data.frame(list(indicador = c(rep('canal endêmico', 4), rep('atividade semanal', 4)),
                           nivel = rep(c(1, 2, 3, 4), 2),
@@ -462,27 +568,39 @@ br.report <- df.table %>%
   filter(territorio == 'País') %>%
   left_join(tmp)
 
-df.lab <- read.csv(paste0(data.folder, 'clean_data_epiweek-weekly-incidence_w_situation.csv'), stringsAsFactors = F) %>%
-  filter(dado == 'srag' & epiyear == args$epiyear & escala == 'casos' & sexo == 'Total' & UF == 'BR') %>%
-  select(FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek)
+df.lab.orig <- read.csv(paste0(data.folder, 'clean_data_epiweek-weekly-incidence_w_situation', suff_out, '.csv'), stringsAsFactors = F) %>%
+  filter(epiyear == args$epiyear & escala == 'casos' & sexo == 'Total' & UF == 'BR') %>%
+  select(dado, FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek)
 
-df.lab.grp <- df.lab %>%
-  transmute(FLU_A = FLU_A/POSITIVE_CASES,
-            FLU_B = FLU_B/POSITIVE_CASES,
-            VSR = VSR/POSITIVE_CASES,
-            SARS2 = SARS2/POSITIVE_CASES,
-            epiweek = epiweek)
-print(df.lab.grp)
-
-df.lab <- df.lab %>%
+df.lab <- df.lab.orig %>%
+  filter(dado == 'srag') %>%
+  select(-dado) %>%
   colSums(na.rm = T) %>%
   t() %>%
   as.data.frame() %>%
-  mutate(FLU_A = round(100*FLU_A/POSITIVE_CASES),
-         FLU_B = round(100*FLU_B/POSITIVE_CASES),
-         VSR = round(100*VSR/POSITIVE_CASES),
-         SARS2 = round(100*SARS2/POSITIVE_CASES))
+  mutate(FLU_A = 100*FLU_A/POSITIVE_CASES,
+         FLU_B = 100*FLU_B/POSITIVE_CASES,
+         VSR = 100*VSR/POSITIVE_CASES,
+         SARS2 = 100*SARS2/POSITIVE_CASES,
+         dado = 'srag')
+df.lab <- df.lab.orig %>%
+  filter(dado == 'obito') %>%
+  select(-dado) %>%
+  colSums(na.rm = T) %>%
+  t() %>%
+  as.data.frame() %>%
+  mutate(FLU_A = 100*FLU_A/POSITIVE_CASES,
+         FLU_B = 100*FLU_B/POSITIVE_CASES,
+         VSR = 100*VSR/POSITIVE_CASES,
+         SARS2 = 100*SARS2/POSITIVE_CASES,
+         dado = 'obito') %>%
+  rbind(df.lab)
 
-Sweave('Boletim_InfoGripe_template.Rnw')
-texi2dvi(file = 'Boletim_InfoGripe_template.tex', pdf = TRUE, quiet=TRUE, clean=TRUE)
-system(paste("mv", 'Boletim_InfoGripe_template.pdf', paste0('Boletim_InfoGripe_SE', args$epiyear, sprintf('%02d', args$epiweek), '.pdf')))
+Sweave(paste0('Boletim_InfoGripe_template', suff_out, '.Rnw'))
+texi2dvi(file = paste0('Boletim_InfoGripe_template', suff_out, '.tex'), pdf = TRUE, quiet=TRUE, clean=TRUE)
+if (args$filtertype == 'sragnofever'){
+  suff_out_ptbr <- '_sem_filtro_febre'
+} else if (args$filtertype == 'hospdeath'){
+  suff_out_ptbr <- '_sem_filtro_sintomas'
+}
+system(paste("mv", paste0('Boletim_InfoGripe_template', suff_out, '.pdf'), paste0('Boletim_InfoGripe_SE', args$epiyear, sprintf('%02d', args$epiweek), suff_out_ptbr, '.pdf')))

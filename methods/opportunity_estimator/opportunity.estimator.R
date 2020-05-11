@@ -34,6 +34,8 @@ parser <- ArgumentParser()
 # by default ArgumentParser will add an help option
 parser$add_argument("-t", "--type", type="character", default='srag',
                     help="Type of data input [srag, sragflu, obitoflu]. Default %(default)s")
+parser$add_argument("-f", "--filtertype", type="character", default='srag',
+                    help="Type of filter [srag, sragnofever, hospdeath]. Default %(default)s")
 parser$add_argument("-d", "--date", type="character", default=format(Sys.Date(), '%Y-%m-%d'),
                     help="Date to use as base, in format YYYY-MM-DD [default Sys.Date()]")
 parser$add_argument("-g", "--graphs", type="character", default="F",
@@ -51,8 +53,15 @@ if (args$graphs %in% c('F', 'False', 'f', 'false')){
     source('theme.publication.R')
 }
 
+if (!(args$filtertype %in% c('srag', 'sragnofever', 'hospdeath'))){
+  stop(paste0('Invalid filter type', args$filtertype))
+}
+
+suff_list <- list('srag' = '', 'sragnofever' = '_sragnofever', 'hospdeath' = '_hospdeath')
+suff <- suff_list[args$filtertype]
+
 # Read data and filter columns
-d.orig <- read.csv(paste0("../clean_data/",args$type,"_sinpri2digita_table_weekly.csv"), check.names = F,
+d.orig <- read.csv(paste0("../clean_data/",args$type, suff, "_sinpri2digita_table_weekly.csv"), check.names = F,
               encoding='utf-8',
               stringsAsFactors=FALSE)
 
@@ -74,7 +83,7 @@ print(paste0('Database reference epiweek: ', today))
 
 
 # Check if previous weeks have been processed yet:
-fname <- file.path('../clean_data/', paste0(args$type, '_historical_estimated_incidence.csv'))
+fname <- file.path('../clean_data/', paste0(args$type, suff, '_historical_estimated_incidence.csv'))
 if (file.exists(fname)){
   historical <- read.csv(fname, stringsAsFactors=FALSE)
   histo.base_epiyearweek <- historical$base_epiyearweek %>%
@@ -113,10 +122,13 @@ if (file.exists(fname)){
 d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', check.names = F, encoding='utf-8',
                   stringsAsFactors = FALSE)
 # Read dquantile file:
-dquantile.tbl <- read.csv('../clean_data/sinpri2digita_quantiles.csv', encoding='utf-8', stringsAsFactors = FALSE)
+dquantile.tbl <- read.csv(paste0('../clean_data/sinpri2digita_quantiles', suff, '.csv'), encoding='utf-8',
+stringsAsFactors =
+FALSE)
 
 ### Read activity thresholds:
-df.thresholds <- read.csv(paste0('../clean_data/', args$type, '_mem-report.csv'), check.names = F, encoding='utf-8',
+df.thresholds <- read.csv(paste0('../clean_data/', args$type, suff, '_mem-report', '.csv'), check.names = F,
+encoding='utf-8',
                           stringsAsFactors = FALSE)
 low.activity <- df.thresholds[df.thresholds$`região de baixa atividade típica` == 1,'UF']
 
@@ -182,9 +194,10 @@ for (today in epiweek.list){
     }
   }
   
-  start.epiweek <- paste0(lyear-2,'W', min(lastepiweek(lyear-2), sprintf('%02d',today.week)))
+  #start.epiweek <- paste0(lyear-2,'W', min(lastepiweek(lyear-2), sprintf('%02d',today.week)))
+  start.epiweek <- paste0(lyear,'W', sprintf('%02d', 1))
   for (uf in uf_list){
-    qthreshold <- dquantile$delayweeks[dquantile$UF == as.character(uf)]
+    qthreshold <- min(dquantile$delayweeks[dquantile$UF == as.character(uf)], 15)
     delay.tbl.tmp <- droplevels(d[d$UF==uf,]) %>%
       dplyr::select(-dado, -Notifications) %>%
       rename(Notifications=Notifications_within_26w) %>%
@@ -329,21 +342,21 @@ for (today in epiweek.list){
   d_weekly <- d_weekly[,c('UF', 'epiyear', 'epiweek', 'Tipo', 'SRAG', 'Situation',
                           new.vars, 'L0', 'L1', 'L2', 'L3')]
   d_weekly[,'Run date'] <- Sys.Date()
-  con<-file(file.path('../clean_data/',paste0(args$type,'_', today, 'estimated_incidence.csv')), encoding="UTF-8")
+  con<-file(file.path('../clean_data/',paste0(args$type, suff,'_', today, 'estimated_incidence.csv')), encoding="UTF-8")
   write.csv(d_weekly, file=con, na='', row.names = F)
   
-  con<-file(file.path(paste0('../clean_data/', args$type, '_current_estimated_incidence.csv')), encoding="UTF-8")
+  con<-file(file.path(paste0('../clean_data/', args$type, suff, '_current_estimated_incidence.csv')), encoding="UTF-8")
   write.csv(d_weekly, file=con, na='', row.names = F)
   
   df.Dmax <- dquantile %>%
     rename(Dmax = delayweeks)
   df.Dmax$Execution <- Sys.Date()
-  fname <- file.path('../clean_data/', paste0(args$type, '_Dmax.csv'))
+  fname <- file.path('../clean_data/', paste0(args$type, suff, '_Dmax.csv'))
   ifelse(file.exists(fname), print.col.names <- FALSE, print.col.names <- TRUE)
   write.table(df.Dmax, file=fname, sep=',', quote=F, na='', row.names = F, col.names = print.col.names,
               append=T, fileEncoding='UTF-8')
   
-  fname <- file.path('../clean_data/', paste0(args$type, '_historical_estimated_incidence.csv'))
+  fname <- file.path('../clean_data/', paste0(args$type, suff, '_historical_estimated_incidence.csv'))
   if (file.exists(fname)){
     print.col.names <- FALSE
     file.copy(from=fname, to=paste0(fname, '.', today, '.bkp'))

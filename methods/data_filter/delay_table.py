@@ -10,7 +10,14 @@ from .episem import lastepiweek, epiweek2date
 module_logger = logging.getLogger('update_system.delay_table')
 
 
-def extract_quantile(dforig=pd.DataFrame):
+def extract_quantile(dforig=pd.DataFrame, filtertype='srag'):
+    if filtertype not in ['srag', 'sragnofever', 'hospdeath']:
+        exit('Invalid filter type: %s' % filtertype)
+
+    suff = ''
+    if filtertype != 'srag':
+        suff = '_%s' % filtertype
+
     dfquant = pd.DataFrame(columns=['UF', 'dado', 'epiyearweek', 'epiyear', 'epiweek'])
     df = dforig[(dforig.delayweeks <= 26) & (dforig.epiyear >= 2013)].copy()
     tgt_cols = ['UF', 'Regional', 'Regiao', 'Pais']
@@ -36,7 +43,7 @@ def extract_quantile(dforig=pd.DataFrame):
                 dfquant = dfquant.append(dfqtmp.rename(columns={tgt_col: 'UF'}), ignore_index=True, sort=False)
 
     dfquant.sort_values(by=['dado', 'UF', 'epiyearweek'], inplace=True)
-    dfquant.to_csv('../clean_data/sinpri2digita_quantiles.csv', index=False)
+    dfquant.to_csv('../clean_data/sinpri2digita_quantiles%s.csv' % suff, index=False)
 
     return
 

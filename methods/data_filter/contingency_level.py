@@ -95,7 +95,7 @@ def check_contingency_decrease(year: int, territory_id: int, cont_level: int, we
 
 
 def contingency_level(year: int, territory_id: int, maximum=False):
-    for dataset_id in range(3,0,-1):
+    for dataset_id in range(3, 0, -1):
         alert, week = contingency_trigger(dataset_id=dataset_id, year=year, territory_id=territory_id)
         if alert & (not maximum):
             return check_contingency_decrease(year=year, territory_id=territory_id,
@@ -124,7 +124,7 @@ def calc_weekly_alert_level(se: pd.Series):
 def apply_filter_alert_by_epiweek(year: int, territory_id: int):
 
     df = pd.DataFrame()
-    for dataset_id in range(1, 4):
+    for dataset_id in range(1, 7):
         df = df.append(
             db.get_data(
                 dataset_id=dataset_id, scale_id=1, year=year, territory_id=territory_id
@@ -143,7 +143,9 @@ def apply_filter_alert_by_epiweek(year: int, territory_id: int):
                 ignore_index=True
             )
 
-    df.loc[df.situation_id.isin([1, 4]), ['low_level', 'epidemic_level', 'high_level', 'very_high_level']] = None
+    epiweek = max(df.epiweek[~df.situation_id.isin([1, 4]) & (df.epiyear == year)])
+    df.loc[(df.situation_id.isin([1, 4])) & (df.epiweek > epiweek - 2) & (df.epiyear == year),
+           ['low_level', 'epidemic_level', 'high_level', 'very_high_level']] = None
     df['alert'] = df.apply(calc_weekly_alert_level, axis=1)
     df.sort_values(by=['territory_id', 'dataset_id', 'epiyear', 'epiweek'], inplace=True)
     df.loc[df.alert == 0, 'alert'] = None

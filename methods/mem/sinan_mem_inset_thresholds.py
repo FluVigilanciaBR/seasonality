@@ -491,7 +491,7 @@ def recalc_incidence(x, popnorm):
     return round(x/popnorm)*popnorm
 
 
-def main(fname, plot_curves=False, sep=',', uflist='all'):
+def main(fname, plot_curves=False, sep=',', uflist='all', out_pref=''):
     pref = ('.'.join(fname.replace('-incidence', '').split('.')[:-1])).split('/')[-1]
     df = pd.read_csv(fname, sep=sep, encoding='utf-8')
     dfinset = pd.read_csv(fname.replace('-incidence', ''), sep=sep, encoding='utf-8')
@@ -810,19 +810,20 @@ def main(fname, plot_curves=False, sep=',', uflist='all'):
         dfloop.loc[dfloop['UF'] == 'BR' ,'Tipo'] = 'País'
 
     dfreport.to_csv('./mem-data/%s-mem-report-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
-    dfreport.to_csv('../clean_data/mem-report.csv', index=False)
+    dfreport.to_csv('../clean_data/%smem-report.csv' % out_pref, index=False)
     dfreport_cases[['Unidade da Federação', 'Tipo']] = dfreport[['Unidade da Federação', 'Tipo']]
     dfreport_cases.to_csv('./mem-data/%s-mem-report_cases-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]),
                           index=False)
-    dfreport_cases.to_csv('../clean_data/mem-report_cases.csv', index=False)
+    dfreport_cases.to_csv('../clean_data/%smem-report_cases.csv' % out_pref, index=False)
 
     dfcorredor.to_csv('./mem-data/%s-mem-typical-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]), index=False)
-    dfcorredor.to_csv('../clean_data/mem-typical.csv', index=False)
+    dfcorredor.to_csv('../clean_data/%smem-typical.csv' % out_pref, index=False)
     dfcorredor_cases[['Unidade da Federação', 'Tipo']] = dfcorredor[['Unidade da Federação', 'Tipo']]
     dfcorredor_cases.to_csv('./mem-data/%s-mem-typical_cases-%s-method.csv' % (pref, wdw_method_lbl[wdw_method]),
                           index=False)
-    dfcorredor_cases.to_csv('../clean_data/mem-typical_cases.csv', index=False)
+    dfcorredor_cases.to_csv('../clean_data/%smem-typical_cases.csv' % out_pref, index=False)
     module_logger.info('MEM calculation outcome:\n - SUCCESS: %(SUCCESS)s\n - FAILED: %(FAILED)s' % mem_calc)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generate MEM analysis from cleaned SINAN-SRAG data,\n" +

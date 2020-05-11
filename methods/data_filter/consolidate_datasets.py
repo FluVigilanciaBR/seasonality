@@ -66,9 +66,9 @@ def convert_estimates(df, dfpop):
     return df
 
 
-def convert_report(pref):
+def convert_report(pref, suff):
     # Files mem-report
-    df = pd.read_csv(basedir + '%s_mem-report.csv' % pref, encoding='utf-8', low_memory=False)
+    df = pd.read_csv(basedir + '%s_mem-report.csv' % (pref + suff), encoding='utf-8', low_memory=False)
     df['dado'] = pref
     df_cases = df.copy()
     tgt_cols = ['Média geométrica do pico de infecção das temporadas regulares',
@@ -82,9 +82,9 @@ def convert_report(pref):
     return df
 
 
-def convert_typical(pref):
+def convert_typical(pref, suff):
     # Files mem-typical
-    df = pd.read_csv(basedir + '%s_mem-typical.csv' % pref, encoding='utf-8', low_memory=False)
+    df = pd.read_csv(basedir + '%s_mem-typical.csv' % (pref + suff), encoding='utf-8', low_memory=False)
     df['dado'] = pref
     df_cases = df.copy()
     tgt_cols = ['corredor baixo', 'corredor mediano', 'corredor alto']
@@ -95,11 +95,12 @@ def convert_typical(pref):
     return df
 
 
-def clean_data_merge(pref):
-    df = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly-incidence_w_situation.csv' % pref, encoding='utf-8',
+def clean_data_merge(pref, suff):
+    df = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly-incidence_w_situation.csv' % (pref + suff),
+                     encoding='utf-8',
                      low_memory=False)
     df['dado'] = pref
-    df_cases = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly_w_situation.csv' % pref,
+    df_cases = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly_w_situation.csv' % (pref + suff),
                            encoding='utf-8', low_memory=False)
     df_cases['dado'] = pref
     df = mergedata_scale(df, df_cases)
@@ -107,7 +108,14 @@ def clean_data_merge(pref):
     return df
 
 
-def main(update_db=False):
+def main(update_db=False, filtertype='srag'):
+    if filtertype not in ['srag', 'sragnofever', 'hospdeath']:
+        exit('Invalid filter type: %s' % filtertype)
+
+    suff = ''
+    if filtertype != 'srag':
+        suff = '_%s' % filtertype
+
     dfpop = pd.read_csv('../data/PROJECOES_2013_POPULACAO-simples_v3_agebracket.csv', encoding='utf-8',
                         low_memory=False)
     dfpop.rename(columns={'UF': 'Unidade da Federação'}, inplace=True)
@@ -122,70 +130,71 @@ def main(update_db=False):
     for estimate_file in ['current_estimated', 'historical_estimated']:
         # Files current_estimated_values
         pref = preflist[0]
-        df = pd.read_csv(basedir + '%s_%s_incidence.csv' % (pref, estimate_file), encoding='utf-8', low_memory=False)
+        df = pd.read_csv(basedir + '%s%s_%s_incidence.csv' % (pref, suff, estimate_file), encoding='utf-8',
+                         low_memory=False)
         df['dado'] = pref
         df_new = convert_estimates(df, dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
         for pref in preflist[1:]:
-            df = pd.read_csv(basedir + '%s_%s_incidence.csv' % (pref, estimate_file), encoding='utf-8',
+            df = pd.read_csv(basedir + '%s%s_%s_incidence.csv' % (pref, suff, estimate_file), encoding='utf-8',
                              low_memory=False)
             df['dado'] = pref
             df = convert_estimates(df, dfpop_tot)
             df_new = df_new.append(df, ignore_index=True, sort=True)
-        fname = '%s_values' % estimate_file
+        fname = '%s_values' % estimate_file + suff
         df_new.to_csv(outdir + fname + '.csv', index=False)
         if update_db:
             dfdict[fname] = df_new
 
-    df_new = convert_report(preflist[0])
+    df_new = convert_report(preflist[0], suff)
     for pref in preflist[1:]:
-        df = convert_report(pref)
+        df = convert_report(pref, suff)
         df_new = df_new.append(df, ignore_index=True, sort=True)
-    fname = 'mem-report'
+    fname = 'mem-report' + suff
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
         dfdict[fname] = df_new
 
-    df_new = convert_typical(preflist[0])
+    df_new = convert_typical(preflist[0], suff)
     for pref in preflist[1:]:
-        df = convert_typical(pref)
+        df = convert_typical(pref, suff)
         df_new = df_new.append(df, ignore_index=True, sort=True)
-    fname = 'mem-typical'
+    fname = 'mem-typical' + suff
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
         dfdict[fname] = df_new
 
-    df_new = clean_data_merge(preflist[0])
+    df_new = clean_data_merge(preflist[0], suff)
     for pref in preflist[1:]:
-        df = clean_data_merge(pref)
+        df = clean_data_merge(pref, suff)
         df_new = df_new.append(df, ignore_index=True, sort=True)
-    fname = 'clean_data_epiweek-weekly-incidence_w_situation'
+    fname = 'clean_data_epiweek-weekly-incidence_w_situation' + suff
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
         dfdict[fname] = df_new
-        migrate_from_csv_to_psql(dfs=dfdict)
+        migrate_from_csv_to_psql(dfs=dfdict, suff=suff)
         dfdict = {}
 
-    fname = 'contingency_level'
+    fname = 'contingency_level' + suff
     df = get_all_territories_and_years()
     df_new = calc_season_contingency()
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
         dfdict[fname] = df_new
 
-    fname = 'weekly_alert'
+    fname = 'weekly_alert' + suff
     df_new = weekly_alert_table_all(df)
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
         dfdict[fname] = df_new
 
-    fname = 'season_level'
-    df_new = calc_season_alert(dfdict['weekly_alert'])
+    fname = 'season_level' + suff
+    df_new = calc_season_alert(dfdict['weekly_alert' + suff])
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
         dfdict[fname] = df_new
-        fname = 'delay_table'
+        fname = 'delay_table' + suff
         dfdict[fname] = pd.read_csv(outdir + fname + '.csv')
-        migrate_from_csv_to_psql(dfs=dfdict, basic_tables=False)
+        migrate_from_csv_to_psql(dfs=dfdict, basic_tables=False, suff=suff)
 
     return
 

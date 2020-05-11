@@ -74,7 +74,7 @@ def main(fname, sep=','):
 
     df = pd.read_csv(fname, low_memory=False, encoding='utf-8')
     df = insert_epiweek(df)
-    fout = '../clean_data/%s_epiweek.csv' % fname.split('/')[-1][:-4]
+    fout = '../clean_data/%s_epiweek.csv' % fname.split('/')[-1].rstrip('.csv')
     df.to_csv(fout, index=False, encoding='utf-8')
 
 
