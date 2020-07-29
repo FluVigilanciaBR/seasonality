@@ -56,6 +56,9 @@ mail_success = {
 home_path = os.path.expanduser("~")
 logfile_path = os.path.join(os.getcwd(), logger_fname)
 data_folder = os.path.join(os.getcwd(), '..', 'data', 'data')
+public_figs_folder = os.path.join(home_path, 'codes', 'mave', 'repo', 'Boletins\ do\ InfoGripe', 'Imagens')
+public_report_folder = os.path.join(home_path, 'codes', 'mave', 'repo', 'Boletins\ do\ InfoGripe')
+public_data_folder = os.path.join(home_path, 'codes', 'mave', 'repo', 'Dados', 'InfoGripe')
 time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 timesmpl = datetime.datetime.now().strftime('%Y%m%d')
 modules_list = ['all',
@@ -115,7 +118,7 @@ def send_email(mail_dict):
     return
 
 
-def send_report_email(epiyear: int, epiweek: int):
+def send_report_email(epiyear: int, epiweek: int, filtertype: str='srag', extra: str=None):
     module_name = 'send_report_email.settings'
     logger.info(module_name)
 
@@ -127,13 +130,23 @@ Caro(a),
 Segue o boletim semanal gerado automaticamente pelo InfoGripe, com base nos dados do Sivep-gripe até a SE %s %02d.
 Esta é uma mensagem automática, não é necessário responder o e-mail.
 
+***NOVIDADE***
+A partir desta edição do boletim, passamos a reportar também as estimativas de casos recentes para a capital de cada 
+uma das Unidades Federativas do território nacional. Esperamos que seja de utilidade para as avaliações de situação 
+de cada estado. Em breve pretendemos disponibilizar esta análise no nível das macrorregionais de saúde.
+
+Assim que possível, trataremos de disponibilizar esses gráficos também no site do InfoGripe.
+
 Acesse o site para mais informações:
 http://info.gripe.fiocruz.br
 
 Atenciosamente,
 Equipe InfoGripe
 InfoGripe - http://info.gripe.fiocruz.br
-FluDashboard - https://github.com/FluVigilanciaBR/fludashboard
+Dados abertos - http://bit.ly/mave-infogripe-dados
+Boletins do InfoGripe - http://bit.ly/mave-infogripe
+MAVE: Grupo de Métodos Analíticos em Vigilância Epidemiológica (PROCC/Fiocruz e EMAp/FGV), em parceria com o 
+GT-Influenza da Secretaria de Vigilância em Saúde do Ministério da Saúde.
 """ % (epiyear, epiweek),
         **REPORT
     }
@@ -143,11 +156,29 @@ FluDashboard - https://github.com/FluVigilanciaBR/fludashboard
     email_msg['Subject'] = mail_report['subject']
     body = MIMEText(mail_report['email_body'], 'plain')
     email_msg.attach(body)
-    report_fname = 'Boletim_InfoGripe_SE%s%02d.pdf' % (epiyear, epiweek)
+
+    if filtertype == 'srag':
+        # Base report
+        report_fname = 'Boletim_InfoGripe_SE%s%02d.pdf' % (epiyear, epiweek)
+    elif filtertype == 'sragnofever':
+        # Report without fever filter
+        report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_febre.pdf' % (epiyear, epiweek)
+    elif filtertype == 'hospdeath':
+        # Report without any symptoms filter
+        report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_sintomas.pdf' % (epiyear, epiweek)
+
     fp = open(report_fname, 'rb')
     attachment = MIMEApplication(fp.read(), _subtype='pdf', _encoder=encode_base64)
     attachment.add_header("Content-Disposition", "attachment", filename=report_fname)
     email_msg.attach(attachment)
+
+    if extra:
+        # Extra report
+        report_fname = extra
+        fp = open(report_fname, 'rb')
+        attachment = MIMEApplication(fp.read(), _subtype='pdf', _encoder=encode_base64)
+        attachment.add_header("Content-Disposition", "attachment", filename=report_fname)
+        email_msg.attach(attachment)
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server.ehlo()
@@ -479,9 +510,25 @@ def generate_public_datasets(filtertype='srag'):
             'incomplete': 'Dados incompletos. Sujeito a grandes alterações.'
         }
 
+        dataset_id_map = {
+            1: 'srag',
+            2: 'sragflu',
+            3: 'obitoflu',
+            4: 'sragcovid',
+            5: 'obitocovid',
+            6: 'obito'
+        }
+
+        alert_dict = {
+            1: 'valor baixo',
+            2: 'valor epidêmico',
+            3: 'valor alto',
+            4: 'valor muito alto'
+        }
+
         rename_cols = {
             'Situation': 'Situação do dado',
-            'SRAG': 'Total reportado até a última atualização',
+            'SRAG': 'Casos semanais reportados até a última atualização',
             'POSITIVE_CASES': "Testes positivos",
             'FLU_A': "Influenza A",
             'FLU_B': "Influenza B",
@@ -502,6 +549,8 @@ def generate_public_datasets(filtertype='srag'):
             'bounded_97.5%': 'limite superior da estimativa',
             '2.5%': 'limite inferior da estimativa',
             '50%': 'casos estimados',
+            'rolling_average': 'média móvel',
+            'alert': 'nível semanal',
             'Run date': 'data de publicação',
             'População': 'População de referência para cálculo de incidência',
             'temporadas utilizadas para os corredores endêmicos':
@@ -540,26 +589,93 @@ def generate_public_datasets(filtertype='srag'):
                     'intensidade muito alta', 'temporadas consideradas regulares',
                     'População de referência para cálculo de incidência']
         dftypical[tgt_cols].rename(columns=rename_cols).to_csv(fname, sep=';', index=False, decimal=',')
+        fname = os.path.join(public_data_folder, 'valores_esperados_por_localidade%s.csv' % suff_out[filtertype])
+        dftypical[tgt_cols].rename(columns=rename_cols).to_csv(fname, sep=';', index=False, decimal=',')
 
         #time series
         fname = os.path.join(data_folder, 'current_estimated_values%s.csv' % suff)
         df = pd.read_csv(fname)
         run_date = df['Run date'].unique()[0]
         tgt_cols = ['Run date', 'UF', 'dado', 'escala', 'epiyear', 'epiweek', 'Situation', 'SRAG', '2.5%', '50%',
-                    'bounded_97.5%', 'cntry_percentage', 'population']
+                    'bounded_97.5%', 'cntry_percentage', 'rolling_average', 'population']
         df = df[tgt_cols].copy()
-        df = df.merge(dfreport[['UF', 'Unidade da Federação', 'Tipo']].drop_duplicates())
-        df = df[['Run date', 'UF', 'Unidade da Federação', 'Tipo', 'dado', 'escala', 'epiyear', 'epiweek', 'Situation',
-                 'SRAG', '2.5%', '50%', 'bounded_97.5%', 'cntry_percentage', 'population']]
+        df = df.merge(dfreport[['UF',
+                                'Unidade da Federação',
+                                'Tipo',
+                                'dado',
+                                'escala',
+                                'limiar pré-epidêmico',
+                                'intensidade alta',
+                                'intensidade muito alta']], how='left')
+        df = df[['Run date',
+                 'UF',
+                 'Unidade da Federação',
+                 'Tipo',
+                 'dado',
+                 'escala',
+                 'epiyear',
+                 'epiweek',
+                 'Situation',
+                 'SRAG',
+                 '2.5%',
+                 '50%',
+                 'rolling_average',
+                 'bounded_97.5%',
+                 'cntry_percentage',
+                 'population',
+                 'limiar pré-epidêmico',
+                 'intensidade alta',
+                 'intensidade muito alta']]
         df.loc[df.Situation != 'estimated', ['2.5%', '50%', 'bounded_97.5%']] = None
         epiweekmax = df.loc[df.Situation == 'estimated', ['epiyear', 'epiweek']].max()
         df.loc[(df.epiyear == epiweekmax.epiyear) & (df.epiweek >= epiweekmax.epiweek-1), 'SRAG'] = None
 
         df.Situation = df.Situation.map(situation_dict)
         df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
-        df = df.rename(columns=rename_cols)
+        df.UF = df.UF.astype(int)
 
+        ## Add alert levels
+        fname = os.path.join(data_folder, 'weekly_alert%s.csv' % suff)
+        dfalert = pd.read_csv(fname)[['dataset_id', 'territory_id', 'epiyear', 'epiweek', 'alert']]
+        dfalert.dataset_id = dfalert.dataset_id.map(dataset_id_map)
+        dfalert.alert = dfalert.alert.map(alert_dict)
+        df = df.merge(dfalert,
+                      left_on=['UF', 'dado', 'epiyear', 'epiweek'],
+                      right_on=['territory_id', 'dataset_id', 'epiyear', 'epiweek'], how='left')
+        df = df.drop(columns={'territory_id', 'dataset_id'})
+
+        def alert_level_rolling(x):
+            if pd.isnull(x[0]):
+                return None
+            if x[0] >= x[2]:
+                return 'Vermelho'
+            if x[0] >= x[1]:
+                return 'Amarelo'
+            return 'Verde'
+
+        df['nível por média móvel'] = df[['rolling_average',
+                                          'limiar pré-epidêmico',
+                                          'intensidade alta']].apply(axis=1, func=alert_level_rolling)
+        df = df.rename(columns=rename_cols)
+        df.dado = pd.Categorical(df.dado, ['srag', 'sragflu', 'sragcovid', 'obito', 'obitoflu', 'obitocovid'])
+        df = df.sort_values(by=['Ano epidemiológico', 'escala', 'dado', 'UF', 'Semana epidemiológica']).reset_index(
+            drop=True)
         fname = os.path.join(data_folder, 'serie_temporal_com_estimativas_recentes%s.csv' % suff_out[filtertype])
+        df.to_csv(fname, sep=';', index=False, decimal=',')
+        fname = os.path.join(public_data_folder, 'serie_temporal_com_estimativas_recentes%s.csv' % suff_out[filtertype])
+        df.to_csv(fname, sep=';', index=False, decimal=',')
+
+        # tabela:
+        df = df.loc[(df['Ano epidemiológico'] == 2020) &
+                    (df['Semana epidemiológica'].isin([epiweekmax.epiweek-1, epiweekmax.epiweek])) &
+                    (df.dado == 'srag') &
+                    (df.escala == 'incidência'),
+                    ['UF', 'Unidade da Federação', 'dado', 'escala', 'Ano epidemiológico', 'Semana epidemiológica',
+                     'casos estimados', 'média móvel', 'nível semanal', 'nível por média móvel']].copy()
+
+        fname = os.path.join(data_folder, 'tabela_de_alerta%s.csv' % suff_out[filtertype])
+        df.to_csv(fname, sep=';', index=False, decimal=',')
+        fname = os.path.join(public_data_folder, 'tabela_de_alerta%s.csv' % suff_out[filtertype])
         df.to_csv(fname, sep=';', index=False, decimal=',')
 
         # Data by age, gender, and virus:
@@ -583,7 +699,7 @@ def generate_public_datasets(filtertype='srag'):
                     'Semana epidemiológica',
                     'Ano e semana epidemiológica',
                     'Situação do dado',
-                    'Total reportado até a última atualização',
+                    'Casos semanais reportados até a última atualização',
                     'Idade desconhecida',
                     '< 2 anos', '0-4 anos', '10-19 anos', '2-4 anos', '20-29 anos', '30-39 anos', '40-49 anos',
                     '5-9 anos', '50-59 anos', '60+ anos',
@@ -594,6 +710,21 @@ def generate_public_datasets(filtertype='srag'):
                     ]
         fname = os.path.join(data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv' % suff_out[filtertype])
         df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
+        fname = os.path.join(public_data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv' % suff_out[filtertype])
+        df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
+
+        run(['cp --force ./report/Figs/Territory_*_dataset_1_timeseries%s.pdf %s/.' % (suff, public_figs_folder)],
+            check=True, shell=True)
+        run(['rename "s/Territory/Territorio/" %s/Territory_*pdf' % public_figs_folder], check=True, shell=True)
+        run(['rename -f "s/dataset_1/SRAG/" %s/Territorio_*pdf' % public_figs_folder], check=True, shell=True)
+        run(['rename -f "s/timeseries/serietemporal/" %s/Territorio_*pdf' % public_figs_folder], check=True, shell=True)
+        run(['rename -f "s/%s/%s/" %s/Territorio_*pdf' % (suff, suff_out[filtertype], public_figs_folder)], check=True,
+            shell=True)
+        run(['rm --force %s/Territory_*pdf' % public_figs_folder],
+            check=True, shell=True)
+
+        run(['cp --force ./report/Boletim_InfoGripe_atual%s.pdf %s/.' % (suff_out[filtertype], public_report_folder)],
+            check=True, shell=True)
 
     except Exception as err:
         logger.exception(module_name)
@@ -608,7 +739,7 @@ def generate_public_datasets(filtertype='srag'):
 
 
 def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, years=None, date='max',
-         dbdump=None, plot=None, filtertype='srag'):
+         dbdump=None, plot=None, filtertype='srag', extra: str=None):
     """
     Run all scripts to update the system with new database.
 
@@ -622,6 +753,7 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     :param dbdump:
     :param plot:
     :param filtertype:
+    :param extra:
     """
 
     logger.info('System update: START')
@@ -722,14 +854,6 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
         consolidate(dbdump, filtertype)
 
     os.chdir('../')
-    if 'public_dataset' in module_list:
-        logger.info('Generate public dataset')
-        generate_public_datasets(filtertype)
-
-    if 'export' in module_list:
-        logger.info('Export DB')
-        exportdb(dbdump)
-
     os.chdir('./report')
     epiyear, epiweek = episem(date).split('W')
     if epiweek == 1:
@@ -745,9 +869,17 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
 
     if 'sendreport' in module_list:
         logger.info('Send report over email')
-        send_report_email(epiyear=epiyear, epiweek=epiweek)
+        send_report_email(epiyear=epiyear, epiweek=epiweek, filtertype=filtertype, extra=extra)
 
     os.chdir('../')
+
+    if 'public_dataset' in module_list:
+        logger.info('Generate public dataset')
+        generate_public_datasets(filtertype)
+
+    if 'export' in module_list:
+        logger.info('Export DB')
+        exportdb(dbdump)
 
     logger.info('System update: DONE')
     mail_success['email_body'] = mail_success['email_body'] % {'time': time}
@@ -779,6 +911,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot', action='store_true', help='Should the module updat report plots?')
     parser.add_argument('--filtertype', help='Default=srag. Which filter should be used? [srag, sragnofever, '
                                              'hospdeath]', default='srag')
+    parser.add_argument('--extra', help='Default=None. Path to additional pdf for mailing list (if any)', default=None)
 
     args = parser.parse_args()
     if args.path:
@@ -791,4 +924,5 @@ if __name__ == '__main__':
         args.years = args.years[0]
 
     main(flist=args.path, update_mem=args.mem, module_list=args.modules, history_files=args.history, dir=args.dir,
-         years=args.years, date=args.date, dbdump=args.dbdump, plot=args.plot, filtertype=args.filtertype)
+         years=args.years, date=args.date, dbdump=args.dbdump, plot=args.plot, filtertype=args.filtertype,
+         extra=args.extra)

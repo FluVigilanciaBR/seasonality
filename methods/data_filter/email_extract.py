@@ -63,7 +63,7 @@ def extract_csv(dir, year=None):
 
     for file in flist:
         module_logger.info('Processing file: %s' % file)
-        y = file.split('.')[0][-4:]
+        y = file.split('.')[-2][-4:]
         module_logger.info('Epidemiological year: %s' % y)
         if year and y != year:
             pass

@@ -182,9 +182,14 @@ def migrate_current_estimates(df):
         'SRAG': 'value',
         'Tipo': 'territory_type',  # Not needed in the table
         'Situation': 'situation_id',
+        'rolling_average': 'rolling_average',
         '50%': 'median',
         '2.5%': 'ci_lower',
         '97.5%': 'ci_upper',
+        '5%': 'ci_lower_90',
+        '95%': 'ci_upper_90',
+        '25%': 'ci_lower_q1',
+        '75%': 'ci_upper_q3',
         'bounded_97.5%': 'ci_upper_bounded',
         'cntry_percentage': 'country_percentage',
         'L0': 'low_level',
@@ -215,7 +220,7 @@ def migrate_current_estimates(df):
     df.territory_id = df.territory_id.astype(int)
 
     # remove unnecessary fields
-    df.drop(['territory_type', '25%', '75%', '5%', '95%'], axis=1, inplace=True)
+    df.drop(['territory_type'], axis=1, inplace=True)
 
     # primary_keys
     pks = ['dataset_id', 'scale_id', 'territory_id', 'epiyear',
@@ -236,6 +241,10 @@ def migrate_historical_estimates(df):
         '50%': 'median',
         '2.5%': 'ci_lower',
         '97.5%': 'ci_upper',
+        '5%': 'ci_lower_90',
+        '95%': 'ci_upper_90',
+        '25%': 'ci_lower_q1',
+        '75%': 'ci_upper_q3',
         'bounded_97.5%': 'ci_upper_bounded',
         'cntry_percentage': 'country_percentage',
         'L0': 'low_level',
@@ -264,7 +273,7 @@ def migrate_historical_estimates(df):
     df.territory_id = df.territory_id.astype(int)
 
     # remove unnecessary fields
-    df.drop(['territory_type', '25%', '75%', '5%', '95%'], axis=1, inplace=True)
+    df.drop(['territory_type'], axis=1, inplace=True)
 
     # primary_keys
     pks = [

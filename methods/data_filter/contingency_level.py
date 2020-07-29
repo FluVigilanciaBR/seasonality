@@ -8,9 +8,16 @@ from fludashboard.libs.flu_data import FluDB
 db = FluDB()
 
 
-def get_all_territories_and_years():
+def get_all_territories_and_years(filtertype: str='srag'):
+
+    table_suffix = {
+        'srag': '',
+        'sragnofever': '_sragnofever',
+        'hospdeath': '_hospdeath'
+    }
+
     df = db.read_data(
-        table_name='current_estimated_values',
+        table_name='current_estimated_values%s' % table_suffix[filtertype],
         dataset_id=1, scale_id=1, territory_id=0
     )
     list_of_years = list(set(df.epiyear))
@@ -30,17 +37,18 @@ def get_all_territories_and_years():
     return df
 
 
-def contingency_trigger(dataset_id: int, year: int, territory_id: int):
+def contingency_trigger(dataset_id: int, year: int, territory_id: int, filtertype: str='srag'):
     """
 
     :param dataset_id:
     :param year:
     :param territory_id:
+    :param filtertype:
     :return:
     """
     df = db.get_data(
         dataset_id=dataset_id, scale_id=1, year=year,
-        territory_id=territory_id
+        territory_id=territory_id, filter_type=filtertype
     )[['estimated_cases', 'typical_median', 'typical_low', 'typical_high']]
 
     # get_data stores the difference between typical levels in each column:
@@ -71,11 +79,11 @@ def contingency_trigger(dataset_id: int, year: int, territory_id: int):
     return alert_zone & data_increase, 1
 
 
-def check_contingency_decrease(year: int, territory_id: int, cont_level: int, week: int):
+def check_contingency_decrease(year: int, territory_id: int, cont_level: int, week: int, filtertype: str='srag'):
     dataset_id = cont_level - 1
     df = db.get_data(
         dataset_id=dataset_id, scale_id=1, year=year,
-        territory_id=territory_id
+        territory_id=territory_id, filter_type=filtertype
     ).loc[lambda dftmp: (dftmp['situation_id'] == 2) | (dftmp['situation_id'] == 3),
           ['estimated_cases', 'typical_median', 'typical_low']]
     # get_data stores the difference between typical levels in each column:
@@ -87,19 +95,21 @@ def check_contingency_decrease(year: int, territory_id: int, cont_level: int, we
             cont_level -= 1
             week = i+1
             if cont_level > 1:
-                check_contingency_decrease(year=year, territory_id=territory_id, cont_level=cont_level, week=week)
+                check_contingency_decrease(year=year, territory_id=territory_id, cont_level=cont_level, week=week,
+                                           filtertype=filtertype)
             else:
                 break
 
     return cont_level
 
 
-def contingency_level(year: int, territory_id: int, maximum=False):
+def contingency_level(year: int, territory_id: int, maximum=False, filtertype: str='srag'):
     for dataset_id in range(3, 0, -1):
-        alert, week = contingency_trigger(dataset_id=dataset_id, year=year, territory_id=territory_id)
+        alert, week = contingency_trigger(dataset_id=dataset_id, year=year, territory_id=territory_id,
+                                          filtertype=filtertype)
         if alert & (not maximum):
             return check_contingency_decrease(year=year, territory_id=territory_id,
-                                              cont_level=(dataset_id+1), week=week)
+                                              cont_level=(dataset_id+1), week=week, filtertype=filtertype)
         elif alert:
             return(dataset_id+1)
 
@@ -121,13 +131,13 @@ def calc_weekly_alert_level(se: pd.Series):
     )
 
 
-def apply_filter_alert_by_epiweek(year: int, territory_id: int):
+def apply_filter_alert_by_epiweek(year: int, territory_id: int, filtertype: str='srag'):
 
     df = pd.DataFrame()
     for dataset_id in range(1, 7):
         df = df.append(
             db.get_data(
-                dataset_id=dataset_id, scale_id=1, year=year, territory_id=territory_id
+                dataset_id=dataset_id, scale_id=1, year=year, territory_id=territory_id, filter_type=filtertype
             )[['dataset_id', 'territory_id', 'epiyear', 'epiweek', 'low_level', 'epidemic_level', 'high_level',
                'very_high_level', 'situation_id']],
             ignore_index=True
@@ -135,7 +145,7 @@ def apply_filter_alert_by_epiweek(year: int, territory_id: int):
         if year > 2009:
             df = df.append(
                 db.get_data(
-                    dataset_id=dataset_id, scale_id=1, year=year-1, territory_id=territory_id
+                    dataset_id=dataset_id, scale_id=1, year=year-1, territory_id=territory_id, filter_type=filtertype
                 ).loc[lambda df: df.epiweek == max(df.epiweek[~df.situation_id.isin([1, 4])]),
                       ['dataset_id', 'territory_id', 'epiyear', 'epiweek',
                        'low_level', 'epidemic_level', 'high_level',
@@ -156,12 +166,13 @@ def apply_filter_alert_by_epiweek(year: int, territory_id: int):
                'high_level', 'very_high_level']]
 
 
-def weekly_alert_table_all(df):
+def weekly_alert_table_all(df, filtertype: str='srag'):
     df_alert = pd.DataFrame()
 
     for territory_id in sorted(df.territory_id.unique()):
         for epiyear in sorted(df.epiyear.unique()):
-            df_alert = df_alert.append(apply_filter_alert_by_epiweek(year=epiyear, territory_id=territory_id),
+            df_alert = df_alert.append(apply_filter_alert_by_epiweek(year=epiyear, territory_id=territory_id,
+                                                                     filtertype=filtertype),
                                        ignore_index=True)
 
     return df_alert
@@ -170,11 +181,12 @@ def weekly_alert_table_all(df):
 def season_alert_level(se):
 
     alert_counts = se.value_counts()
-    if max(alert_counts.index) in [3, 4]:
+    ix_max = max(alert_counts.index)
+    if ix_max in [3, 4]:
         try:
             high_threshold = alert_counts[3] + alert_counts[4]
         except:
-            high_threshold = alert_counts[alert_counts.index[-1]]
+            high_threshold = alert_counts[max(alert_counts.index)]
     else:
         high_threshold = 0
 
@@ -186,15 +198,18 @@ def season_alert_level(se):
     )
 
 
-def calc_season_contingency():
+def calc_season_contingency(filtertype: str='srag'):
 
     df_contingency = get_all_territories_and_years()
     df_contingency['contingency'] = df_contingency.apply(lambda x: contingency_level(year=x.epiyear,
-                                                                                     territory_id=x.territory_id),
+                                                                                     territory_id=x.territory_id,
+                                                                                     filtertype=filtertype),
                                                          axis=1)
     df_contingency['contingency_max'] = df_contingency.apply(lambda x: contingency_level(year=x.epiyear,
                                                                                          territory_id=x.territory_id,
-                                                                                         maximum=True), axis=1)
+                                                                                         maximum=True,
+                                                                                         filtertype=filtertype),
+                                                             axis=1)
 
     return df_contingency
 

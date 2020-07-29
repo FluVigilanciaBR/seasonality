@@ -41,8 +41,24 @@ tabela_siglauf = {'RO': 11,
                  'DF': 53,
                  'NI': 99}
 
-sars_cov_2_regex = 'novo coronavírus|novo coronavirus|novo corona vírus|novo corona virus|covid|coovid|sars-cov-2|' \
-                   'sars-cov2|sarscov2|sars cov2|sars- cov|sars cov|covi-19|civid 19|cobid-19'
+
+def clean_open_field(s: pd.Series):
+
+    specialchar = '\@|\$|\%|\&|\*'
+    s = s.where(~s.str.contains(specialchar, regex=True, na=False), 'CENSURADO')
+
+    return s
+
+
+def check_covid19_regex(df: pd.DataFrame, column: str):
+
+    sars_cov_2_regex = 'novo corona|covid|coovid|cov-2|covd-19|' \
+                       'cov2|cov 2|cov- 2|cov -2|cov - 2|c0v-2|cav-2|cav 2|arvs-cov|ars- cov|ars cov|ars - ' \
+                       'cov|ars-cov|ars2cov|covi-19|civid 19|cobid-19|covis|cov-2|civid-19'
+    sars_cov_2_regex_discard = 'nao detectado para covid19'
+    row_filter = (df[column].str.contains(sars_cov_2_regex.upper(), regex=True, na=False)) & \
+                 (~df[column].str.contains(sars_cov_2_regex_discard.upper(), regex=True, na=False))
+    return row_filter
 
 
 def readtable(fname, sep):
@@ -70,32 +86,59 @@ def date_cleanup(df, dt_cols):
     df.dropna(subset=["DT_SIN_PRI", "DT_NOTIFIC"], inplace=True)
 
     # Convert all date related columns to datetime format
-    cols = df.columns
-    # Check date input format
-    sample = df.DT_NOTIFIC.iloc[0]
-    dtformat = '%Y%m%d'
-    if isinstance(sample, str):
-        dtsep = '-'
-        if '/' in sample:
-            dtsep = '/'
-        dttest = pd.DataFrame(list(df.DT_NOTIFIC.str.split(dtsep)))
-        maxvals = [int(dttest[i].max()) for i in range(3)]
-        del dttest
-        yearpos = maxvals.index(max(maxvals))
-        if yearpos == 2:
-            dtformat = '%d' + dtsep + '%m' + dtsep + '%Y'
-        else:
-            dtformat = '%Y' + dtsep + '%m' + dtsep + '%d'
-
-    for col in cols:
-        if 'DT' in col:
-            # Convert all date columns to datetime format. Output will have the format YYYY-MM-DD
-            df[col] = pd.to_datetime(df[col], errors='coerce', format=dtformat)
+    for col in dt_cols:
+        # Convert all date columns to datetime format. Output will have the format YYYY-MM-DD
+        dtformat = '%Y%m%d'
+        if sum(~pd.isnull(df[col])) > 0:
+            sample = df.loc[~pd.isnull(df[col]), col].values[0]
+            if isinstance(sample, str):
+                dtsep = '-'
+                if '/' in sample:
+                    dtsep = '/'
+                dttest = pd.DataFrame(list(
+                    df.loc[~pd.isnull(df[col]), col].str.split(dtsep)
+                ))
+                maxvals = [int(dttest[i].max()) for i in range(3)]
+                del dttest
+                yearpos = maxvals.index(max(maxvals))
+                if yearpos == 2:
+                    dtformat = '%d' + dtsep + '%m' + dtsep + '%Y'
+                else:
+                    dtformat = '%Y' + dtsep + '%m' + dtsep + '%d'
+        df[col] = pd.to_datetime(df[col], errors='coerce', format=dtformat)
 
     # Discard those neither hospitalized nor deceased. For cases from 2009, keep all:
     df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) == 2009) | (df.HOSPITAL == 1) | (df.EVOLUCAO == 2)]
 
     return df
+
+
+def table_compatibility(df):
+    '''
+    Create column conversion to make old and new data compatible
+    :param df: input data frame
+    :return:
+    '''
+
+    # Create equivalence between 2020-07-27 new variables and old ones:
+    df[['DT_IF', 'IF_RESUL']] = df[['DT_RES_AN', 'RES_AN']].copy()
+
+    l_new = ['CO_LAB_AN',
+             'POS_AN_FLU',
+             'TP_FLU_AN',
+             'POS_AN_OUT',
+             'AN_VSR',
+             'AN_PARA1',
+             'AN_PARA2',
+             'AN_PARA3',
+             'AN_ADENO',
+             'AN_OUTRO',
+             'DS_AN_OUT']
+    l_old = [li.replace('AN', 'IF') for li in l_new]
+
+    df[l_old] = df[l_new].copy()
+
+    return
 
 
 def symptoms_filter(df, filtertype='srag'):
@@ -124,15 +167,33 @@ def symptoms_filter(df, filtertype='srag'):
 def filter_db2019(df, tag=None, filtertype='srag'):
     tgtcols = ['AMOSTRA', 'ANTIVIRAL', 'AVE_SUINO', 'CLASSI_FIN', 'CLASSI_OUT', 'CO_LAB_IF', 'CO_LAB_PCR', 'CO_MU_INTE',
                'CO_MUN_NOT', 'CO_MUN_RES', 'CO_PAIS', 'CO_REGIONA', 'CO_RG_RESI', 'CO_UNI_NOT', 'CRITERIO', 'CS_ETNIA',
-               'CS_RACA', 'CS_SEXO', 'DESC_RESP', 'DISPNEIA', 'DIARREIA', 'DS_IF_OUT', 'DS_PCR_OUT', 'DT_ANTIVIR',
+               'CS_RACA', 'CS_SEXO', 'DS_IF_OUT', 'DS_PCR_OUT', 'DT_ANTIVIR',
                'DT_COLETA', 'DT_DIGITA', 'DT_ENCERRA', 'DT_EVOLUCA', 'DT_IF', 'DT_INTERNA', 'DT_NOTIFIC', 'DT_PCR',
-               'DT_SIN_PRI', 'DT_UT_DOSE', 'EVOLUCAO', 'FEBRE', 'FLUASU_OUT', 'FLUBLI_OUT', 'GARGANTA', 'HOSPITAL',
+               'DT_IFI',
+               'DT_SIN_PRI', 'DT_UT_DOSE', 'EVOLUCAO', 'FLUASU_OUT', 'FLUBLI_OUT', 'HOSPITAL',
                'ID_MN_RESI', 'ID_MUNICIP', 'ID_REGIONA', 'ID_RG_RESI', 'IF_ADENO', 'IF_OUTRO', 'IF_PARA1',
-               'IF_PARA2', 'IF_PARA3', 'IF_RESUL', 'IF_VSR', 'NU_CEP', 'NU_IDADE_N', 'NU_NOTIFIC', 'OUT_ANTIVIR',
-               'PCR_ADENO', 'PCR_BOCA', 'PCR_FLUASU', 'PCR_FLUBLI', 'PCR_METAP', 'PCR_OUTRO', 'PCR_PARA1',
+               'IF_PARA2', 'IF_PARA3', 'IF_RESUL', 'IF_VSR', 'NU_CEP', 'NU_IDADE_N', 'NU_NOTIFIC', 'NM_BAIRRO',
+               'NM_LOGRADO', 'OUT_ANTIVIR', 'PCR_ADENO', 'PCR_BOCA', 'PCR_FLUASU', 'PCR_FLUBLI', 'PCR_METAP',
+               'PCR_OUTRO', 'PCR_PARA1',
                'PCR_PARA2', 'PCR_PARA3', 'PCR_PARA4', 'PCR_RESUL', 'PCR_RINO', 'PCR_SARS2', 'PCR_VSR', 'POS_IF_FLU',
-               'POS_IF_OUT', 'POS_PCRFLU', 'POS_PCROUT', 'SATURACAO', 'SEM_NOT', 'SEM_PRI', 'SG_UF', 'SG_UF_NOT',
-               'TOSSE', 'TP_ANTIVIR', 'TP_FLU_IF', 'TP_FLU_PCR', 'TP_IDADE', 'VACINA']
+               'POS_IF_OUT', 'POS_PCRFLU', 'POS_PCROUT', 'SEM_NOT', 'SEM_PRI', 'SG_UF', 'SG_UF_NOT',
+               'TP_ANTIVIR', 'TP_FLU_IF', 'TP_FLU_PCR', 'TP_IDADE', 'VACINA']
+
+    tgt_cols_sintomas = ['DESC_RESP',
+                         'DISPNEIA',
+                         'DIARREIA',
+                         'FEBRE',
+                         'GARGANTA',
+                         'TOSSE',
+                         'SATURACAO',
+                         'DIARREIA',
+                         'VOMITO',
+                         'DOR_ABD',
+                         'FADIGA',
+                         'PERD_OLFT',
+                         'PERD_PALA',
+                         'OUTRO_SIN',
+                         'OUTRO_DES']
 
     tgtcols_uti = ['UTI',
                    'DT_ENTUTI',
@@ -155,7 +216,36 @@ def filter_db2019(df, tag=None, filtertype='srag'):
                       'OUT_MORBI',
                       'MORB_DESC']
 
-    tgtcols = list(set(tgtcols).union(tgtcols_uti).union(tgtcols_comorb))
+    tgtcols_2020_07_27 = ['TP_TES_AN',
+                          'DT_RES_AN',
+                          'RES_AN',
+                          'LAB_AN',
+                          'CO_LAB_AN',
+                          'POS_AN_FLU',
+                          'TP_FLU_AN',
+                          'POS_AN_OUT',
+                          'AN_SARS2',
+                          'AN_VSR',
+                          'AN_PARA1',
+                          'AN_PARA2',
+                          'AN_PARA3',
+                          'AN_ADENO',
+                          'AN_OUTRO',
+                          'DS_AN_OUT',
+                          'SIPORT_VEN',
+                          'RAIOX_RES',
+                          'RAIOX_OUT',
+                          'DT_RAIOX',
+                          'TOMO_RES',
+                          'TOMO_OUT',
+                          'DT_TOMO']
+
+    if 'DT_RES_AN' in df.columns:
+        table_compatibility(df)
+
+    tgtcols = list(set(tgtcols).union(tgt_cols_sintomas).union(tgtcols_uti).union(tgtcols_comorb).union(tgtcols_2020_07_27))
+    if 'DT_IF' in df.columns:
+        df['DT_IFI'] = df.DT_IF
 
     cols = df.columns
     for col in set(tgtcols).difference(cols):
@@ -244,11 +334,20 @@ def filter_db2019(df, tag=None, filtertype='srag'):
     df.loc[(df.PCR_RINO == 1), 'RINO'] = 1
     df.loc[(df.PCR_METAP == 1), 'METAP'] = 1
     df.loc[(df.IF_OUTRO == 1) | (df.PCR_OUTRO == 1), 'OTHERS'] = 1
-    df.loc[(df.PCR_SARS2 == 1) | (df.DS_PCR_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)) |
-           (df.DS_IF_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)) |
-           ((df.CLASSI_FIN == 5) & (df.CRITERIO == 1)), 'SARS2'] = 1
-    df.loc[(df.PCR_SARS2 == 1) | (df.DS_PCR_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)) |
-           (df.DS_IF_OUT.str.contains(sars_cov_2_regex.upper(), regex=True, na=False)), 'OTHERS'] = None
+
+    mask_covid19_ds_pcr = check_covid19_regex(df, 'DS_PCR_OUT')
+    mask_covid19_ds_if = check_covid19_regex(df, 'DS_IF_OUT')
+
+    df.loc[(df.PCR_SARS2 == 1) |
+           (df.AN_SARS2 == 1) |
+           mask_covid19_ds_pcr |
+           mask_covid19_ds_if |
+           ((df.CLASSI_FIN == 5) & (df.CRITERIO == 1)),
+           'SARS2'] = 1
+    df.loc[(df.PCR_SARS2 == 1) |
+           mask_covid19_ds_pcr |
+           mask_covid19_ds_if,
+           'OTHERS'] = None
 
     # Positive cases:
     df.loc[(df.POS_PCRFLU == 1) | (df.POS_PCROUT == 1), 'PCR_RESUL'] = 1
@@ -339,7 +438,8 @@ def applysinanfilter(df, tag=None, filtertype='srag'):
                'PCR_ETIOL', 'PCR_TIPO_H', 'PCR_TIPO_N', 'DT_CULTURA', 'CULT_RES', 'DT_HEMAGLU', 'HEMA_RES',
                'HEMA_ETIOL', 'HEM_TIPO_H', 'HEM_TIPO_N', 'VACINA', 'DT_UT_DOSE', 'ANT_PNEUMO', 'DT_PNEUM',
                'CO_UF_INTE', 'CO_MU_INTE', 'CO_UN_INTE', 'DT_ENCERRA', 'NU_NOTIFIC', 'ID_AGRAVO', 'ID_MUNICIP',
-               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'CS_SEXO', 'CS_RACA', 'DT_ANTIVIR', 'DT_EVOLUCA']
+               'ID_REGIONA', 'ID_UNIDADE', 'NU_IDADE_N', 'NM_BAIRRO', 'NM_LOGRADO', 'CS_SEXO', 'CS_RACA',
+               'DT_ANTIVIR', 'DT_EVOLUCA']
 
     tgtcols_uti = ['UTI',
                    'DT_ENTUTI',
@@ -514,7 +614,7 @@ def applysinanfilter(df, tag=None, filtertype='srag'):
     if tag:
         df['tag'] = tag
 
-    return (df)
+    return df
 
 
 def delays_dist(df_in=pd.DataFrame(), filtertype='srag'):
@@ -715,6 +815,15 @@ def main(flist, sep=',', yearmax=None, filtertype='srag'):
     if (yearmax):
         df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) <= yearmax)]
 
+    df.NM_LOGRADO = clean_open_field(df.NM_LOGRADO)
+    df.DS_PCR_OUT = clean_open_field(df.DS_PCR_OUT)
+    df.DS_IF_OUT = clean_open_field(df.DS_IF_OUT)
+    df.DS_AN_OUT = clean_open_field(df.DS_AN_OUT)
+    df.OUTRO_DES = clean_open_field(df.OUTRO_DES)
+    df.MORB_DESC = clean_open_field(df.MORB_DESC)
+    df.RAIOX_OUT = clean_open_field(df.RAIOX_OUT)
+    df.TOMO_OUT = clean_open_field(df.TOMO_OUT)
+
     # Convert date fields to text and leave NaT as empty cell
     target_cols = ['DT_NOTIFIC', 'DT_DIGITA', 'DT_SIN_PRI', 'DT_ANTIVIR', 'DT_COLETA', 'DT_IFI', 'DT_PCR',
                    'DT_ENCERRA', 'DT_INTERNA', 'DT_EVOLUCA']
@@ -722,9 +831,20 @@ def main(flist, sep=',', yearmax=None, filtertype='srag'):
     df = insert_epiweek(df)
     df.CO_UNI_NOT.update(df.ID_UNIDADE)
 
+    mask_sanity_check = (
+            (df.SARS2 == 1) &
+            (
+                    (df.DT_SIN_PRI_epiyear.astype(int) < 2020) |
+                    (df.DT_SIN_PRI_epiweek.astype(int) < 8)
+            )
+    )
+    if sum((df.SARS2[mask_sanity_check])) > 1:
+        print('ATENÇÃO: Caso de COVID-19 anterior a 2020 08. Entrar em contato com GT-Influenza')
+        df.loc[mask_sanity_check, 'SARS2'] = 0
+
     mask_flu = ((pd.notnull(df.FLU_A) & (df.FLU_A == 1)) |
-               (pd.notnull(df.FLU_B) & (df.FLU_B == 1)) |
-               (df.FLU_CLINIC == 1))
+                (pd.notnull(df.FLU_B) & (df.FLU_B == 1)) |
+                (df.FLU_CLINIC == 1))
     mask_covid = (df.SARS2 == 1)
     mask_obito = (df.EVOLUCAO == 2)
     mask_obitoflu = mask_flu & mask_obito

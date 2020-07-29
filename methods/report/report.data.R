@@ -1,11 +1,13 @@
 library(tidyverse)
 library(ggplot2)
 library(lemon)
+library(grid)
 library(gridExtra)
 library(tools)
 library(reticulate)
 library(stringi)
 library(sf)
+library(magick)
 source('theme.publication.R')
 use_python('~/miniconda/env/fludashboard-development/bin/python')
 source_python('../data_filter/episem.py')
@@ -22,6 +24,8 @@ parser$add_argument("-p", "--plot", action='store_true',
                     help="Update plots?")
 parser$add_argument("-f", "--filtertype", type="character", default='srag',
                     help="Type of filter [srag, sragnofever, hospdeath]. Default %(default)s")
+
+logo <- image_read('Figs/infogripe.png')
 
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults,
@@ -56,6 +60,7 @@ region.id <- list('NI'=99,
                   'S'= 4,
                   'CO'= 5,
                   'RNI'= 9)
+df.territories <- read.csv('territorios.csv', stringsAsFactors = FALSE)
 
 if (args$plot){
   # Load shapefiles
@@ -102,6 +107,7 @@ if (args$plot){
     
     pdf(paste0('Figs/', file.name), width = 12, height = 4)
     grid.arrange(p1, p2, p3, nrow=1, top=plot.title)
+    grid::grid.raster(logo, x = 0.99, y = 0.01, just = c('right', 'bottom'), width = unit(1, 'inches'))
     dev.off()
     
     
@@ -172,12 +178,23 @@ if (args$plot){
     df <- df %>%
       filter(scale_id == scale_val)
     df.ts <- df %>%
-      select(dataset_id, epiweek, X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta) %>%
+      select(dataset_id, epiweek, rolling_average, X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta) %>%
       mutate(SRAG = case_when(
         epiweek >= args$epiweek[1] - 1 ~ NA_real_,
         TRUE ~ SRAG
+      ),
+      rolling_average = case_when(
+        epiweek >= args$epiweek[1] - 2 & dataset_id != 1 ~ NA_real_,
+        TRUE ~ rolling_average
       )) %>%
-      gather(ts.name, measure, c(X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta))
+      mutate_at(c('X2.5.', 'X97.5.', 'X50.'), function(x) {
+        case_when(.$epiweek >= args$epiweek[1] - 1 & .$dataset_id != 1 ~ NA_real_,
+                  TRUE ~ x)
+      }) %>%
+        gather(ts.name, measure, c(rolling_average, X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta))
+
+    df.ts$ts.name <- df.ts$ts.name %>%
+      factor(levels = c('SRAG', 'X2.5.', 'X97.5.', 'X50.', 'rolling_average', 'limiar.pré.epidêmico', 'intensidade.alta', 'intensidade.muito.alta'))
     
     plot.dataset <- function(d){
       # Internal function plot based on dataset_id
@@ -256,13 +273,13 @@ if (args$plot){
                             breaks = c('Zona de êxito', 'Zona de segurança', 'Zona de alerta', 'Zona de risco')) +
           scale_x_continuous(expand = c(0,0), breaks = c(1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52)) +
           scale_y_continuous(expand = c(0,0), limits = c(0, as.double(y.upper))) +
-          scale_linetype_manual(name = NULL, values = c('SRAG' = 1, 'X50.' = 1, 'X2.5.' = 2, 'X97.5.' = 2, 'limiar.pré.epidêmico' = 2, 'intensidade.alta' = 2, 'intensidade.muito.alta' = 2),
-                                breaks = c('SRAG', 'X50.', 'X2.5.', 'limiar.pré.epidêmico', 'intensidade.alta', 'intensidade.muito.alta'),
-                                labels = c('Casos notificados', 'Casos estimados', 'Intervalo de confiança', 'Limiar pré-epidêmico', 'Intensidade alta', 'Intensidade muito alta')) +
-          scale_color_manual(name = NULL, values = c('SRAG' = 'black', 'X50.' = 'red', 'X2.5.' = 'black', 'X97.5.' = 'black', 'limiar.pré.epidêmico' = 'green', 'intensidade.alta' = 'blue', 'intensidade.muito.alta' = 'red'),
-                             breaks = c('SRAG', 'X50.', 'X2.5.', 'limiar.pré.epidêmico', 'intensidade.alta', 'intensidade.muito.alta'),
-                             labels = c('Casos notificados', 'Casos estimados', 'Intervalo de confiança', 'Limiar pré-epidêmico', 'Intensidade alta', 'Intensidade muito alta')) +
-          labs(x = 'Semana epidemiológica', y = ylabs[scale_val], title=title[d], subtitle = total.titl) +
+        scale_linetype_manual(name = NULL, values = c('SRAG' = 1, 'X50.' = 1, 'rolling_average' = 1, 'X2.5.' = 2, 'X97.5.' = 2, 'limiar.pré.epidêmico' = 2, 'intensidade.alta' = 2, 'intensidade.muito.alta' = 2),
+                              breaks = c('SRAG', 'X50.', 'rolling_average', 'X2.5.', 'limiar.pré.epidêmico', 'intensidade.alta', 'intensidade.muito.alta'),
+                              labels = c('Casos notificados', 'Casos estimados', 'Média móvel', 'Intervalo de confiança', 'Limiar pré-epidêmico', 'Intensidade alta', 'Intensidade muito alta')) +
+        scale_color_manual(name = NULL, values = c('SRAG' = 'black', 'X50.' = 'red', 'rolling_average' = 'blue', 'X2.5.' = 'black', 'X97.5.' = 'black', 'limiar.pré.epidêmico' = 'green', 'intensidade.alta' = 'blue', 'intensidade.muito.alta' = 'red'),
+                           breaks = c('SRAG', 'X50.', 'rolling_average', 'X2.5.', 'limiar.pré.epidêmico', 'intensidade.alta', 'intensidade.muito.alta'),
+                           labels = c('Casos notificados', 'Casos estimados', 'Média móvel', 'Intervalo de confiança', 'Limiar pré-epidêmico', 'Intensidade alta', 'Intensidade muito alta')) +
+        labs(x = 'Semana epidemiológica', y = ylabs[scale_val], title=title[d], subtitle = total.titl) +
           theme_Publication() + theme(legend.key.size = unit(15, 'pt'), legend.text=element_text(size = rel(leg.pt)), legend.position = leg.pos, plot.margin=unit(c(2, 10, 5, 5), 'pt'),
                                       plot.title = element_text(size = rel(.8)), plot.subtitle = element_text(size = rel(.8), hjust=0.5))
         if (territory_id == 0){
@@ -271,6 +288,10 @@ if (args$plot){
         }
         return(p)
     }
+    
+    plot.title <- df.territories$Unidade.da.Federação[df.territories$territory_id == territory_id]
+    grid.title <- plot.title %>%
+      textGrob(gp=gpar(fontsize=15))
     
     if (territory_id == 0){
       p.grid <- lapply(c(1, 2, 3, 4, 5, 6), plot.dataset)
@@ -285,6 +306,7 @@ if (args$plot){
       p.grid[[4]] <- p.grid[[4]] + xlab(" ")
 
       grid_arrange_shared_legend(p.grid[[1]], p.grid[[2]], p.grid[[4]], p.grid[[6]], p.grid[[3]], p.grid[[5]], ncol = 3, nrow = 2, position = 'bottom')
+      grid::grid.raster(logo, x = 0.999, y = 0.001, just = c('right', 'bottom'), width = unit(.8, 'inches'))
       dev.off()
     } else {
       p.grid <- lapply(c(1, 6), plot.dataset)
@@ -292,7 +314,14 @@ if (args$plot){
       p.grid[[2]] <- p.grid[[2]] + ylab(" ")
 
       grid_arrange_shared_legend(p.grid[[1]], p.grid[[2]], ncol = 2, nrow = 1, position = 'right')
+      grid::grid.raster(logo, x = 0.999, y = 0.001, just = c('right', 'bottom'), width = unit(.6, 'inches'))
       dev.off()
+      
+      pdf(paste0('Figs/', 'Territory_', territory_id, '_dataset_1_timeseries', suff_out, '.pdf'), width = 6, height = 3, onefile = FALSE)
+      print(p.grid[[1]] + ggtitle(paste0('SRAG - UF ', territory_id, ': ', plot.title)))
+      grid::grid.raster(logo, x = 0.999, y = 0.001, just = c('right', 'bottom'), width = unit(.65, 'inches'))
+      dev.off()
+      
       # for (d in c(1, 6)){
       #   p <- plot.dataset(d=d)
       #   pdf(paste0('Figs/', 'Territory_', territory_id, '_dataset_', d, '_timeseries.pdf'), width = 6, height = 3)
@@ -380,7 +409,7 @@ if (last.epiyear.flag){
     dplyr::filter(epiyear == args$epiyear - 1) %>%
     select(epiweek) %>%
     max()
-  current.minus.4.epiweek <- last.year.maxweek - (2 - args$epiwee)
+  current.minus.4.epiweek <- last.year.maxweek - (2 - args$epiweek)
   current.minus.4.epiyear <- args$epiyear - 1  
 } else {
   current.minus.4.epiweek <- args$epiweek - 2
@@ -598,9 +627,13 @@ df.lab <- df.lab.orig %>%
 
 Sweave(paste0('Boletim_InfoGripe_template', suff_out, '.Rnw'))
 texi2dvi(file = paste0('Boletim_InfoGripe_template', suff_out, '.tex'), pdf = TRUE, quiet=TRUE, clean=TRUE)
+suff_out_ptbr <- ''
 if (args$filtertype == 'sragnofever'){
   suff_out_ptbr <- '_sem_filtro_febre'
 } else if (args$filtertype == 'hospdeath'){
   suff_out_ptbr <- '_sem_filtro_sintomas'
 }
-system(paste("mv", paste0('Boletim_InfoGripe_template', suff_out, '.pdf'), paste0('Boletim_InfoGripe_SE', args$epiyear, sprintf('%02d', args$epiweek), suff_out_ptbr, '.pdf')))
+system(paste("cp", paste0('Boletim_InfoGripe_template', suff_out, '.pdf'), paste0('Boletim_InfoGripe_SE',
+args$epiyear, sprintf('%02d', args$epiweek), suff_out_ptbr, '.pdf')))
+system(paste("mv", '--force', paste0('Boletim_InfoGripe_template', suff_out, '.pdf'), paste0('Boletim_InfoGripe_atual',
+suff_out_ptbr, '.pdf')))

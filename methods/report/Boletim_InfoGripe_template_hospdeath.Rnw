@@ -49,6 +49,7 @@
 \item \hyperlink{Mapas contingencia}{Mapas de situação para o plano de contingência}
 \item \hyperlink{Mapas atividade}{Mapas de alerta de atividade semanal}
 \item \hyperlink{Tabelas de alerta}{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}
+\item \hyperlink{Série temporal por UF}{Anexo: série temporal de SRAG para cada UF}
 \end{itemize}
 \centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
 
@@ -242,6 +243,7 @@ As tabelas \ref{tab:canal} e \ref{tab:alerta} apresentam a lista detalhada de on
 \newpage
 
 \begin{table}[!h]
+\footnotesize
 \centering
 \settowidth\tymin{Zona de risco}
 	\begin{tabulary}{1.0\textwidth}{l|C|C|C|C|C}
@@ -307,6 +309,7 @@ As tabelas \ref{tab:canal} e \ref{tab:alerta} apresentam a lista detalhada de on
 \newpage
 
 \begin{table}[!h]
+\footnotesize
 \centering
 \settowidth\tymin{Zona de risco}
 \begin{tabulary}{1.0\textwidth}{l|C|C|C|C|C}
@@ -372,6 +375,7 @@ Dado & Nível territorial & \cellcolor{green!80}Zona de êxito & \cellcolor{yell
 \newpage
 
 \begin{table}[h!]
+\footnotesize
 \centering
 \settowidth\tymin{Zona de risco}
 \begin{tabulary}{1.0\textwidth}{l|C|C|C|C|C}
@@ -545,6 +549,7 @@ cat(df.table$lista[df.table$dado == 4 & df.table$territorio == 'UF' & df.table$i
 
 %%%%%% Tabela com nível de alerta para óbitos de SRAG
 \begin{table}[h!]
+\footnotesize
 \centering
 \settowidth\tymin{Zona de risco}
 \begin{tabulary}{1.0\textwidth}{l|C|C|C|C|C}
@@ -742,4 +747,147 @@ cat(df.table$lista[df.table$dado == 5 & df.table$territorio == 'UF' & df.table$i
   
   \textbf{Contato}: \href{fluvigilanciabr@gmail.com}{\nolinkurl{fluvigilanciabr@gmail.com} }
   
+  \newpage
+
+	\hypertarget{Série temporal por UF}{\heading{Anexo: série temporal de SRAG para cada UF}{6pt}}
+	Séries temporais de síndrome respiratória aguda grave (SRAG) em cada UF do país independente de sintomas apresentados, por semana de primeiros sintomas. 
+	
+	A estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_11_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_12_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_13_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_14_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_15_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_16_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_17_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_21_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_22_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_23_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_24_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_25_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_26_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_27_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_28_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_29_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_31_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_32_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_33_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_35_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_41_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_42_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_43_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_50_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_51_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_52_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=\textwidth]{Figs/Territory_53_dataset_1_timeseries_hospdeath.pdf}
+	\end{figure}
+	
+
   \end{document} 

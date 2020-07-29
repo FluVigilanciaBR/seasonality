@@ -10,18 +10,16 @@ module_logger = logging.getLogger('update_system.insert_epiweek')
 
 
 def opportunity_calc_epiweeks(df, colA, colB, colnew):
-    mask = (df.DT_NOTIFIC_epiyear != 2013)
-    mask = (mask & pd.notnull(df[[colA, colB]]).all(axis=1))
+    mask = (pd.notnull(df[[colA, colB]]).all(axis=1))
     df.loc[mask, colnew] = df.loc[mask, '%s_epiweek' % colB].astype(int) - df.loc[mask, '%s_epiweek' % colA].astype(
         int) + (df.loc[mask, '%s_epiyear' % colB].astype(int) - df.loc[mask, '%s_epiyear' % colA].astype(int)) * \
-                                  (df.loc[mask, '%s_epiyear' % colA].apply(lastepiweek)).astype(int)
+                           (df.loc[mask, '%s_epiyear' % colA].apply(lastepiweek)).astype(int)
     df.loc[df[colnew] < 0, colnew] = None
     return(df)
 
 
 def opportunity_calc_days(df, colA, colB, colnew):
-    mask = (df.DT_NOTIFIC_epiyear != 2013)
-    mask = (mask & pd.notnull(df[[colA, colB]]).all(axis=1))
+    mask = (pd.notnull(df[[colA, colB]]).all(axis=1))
     df.loc[mask, colnew] = (pd.to_datetime(df.loc[mask, colB]) - pd.to_datetime(df.loc[mask, colA])).dt.days
     df.loc[df[colnew] < 0, colnew] = None
 

@@ -26,7 +26,7 @@ def mergedata_scale(df, df_cases):
 
 def convert_estimates(df, dfpop):
 
-    tgt_cols = ['SRAG', 'mean', '50%', '2.5%', '97.5%']
+    tgt_cols = ['SRAG', 'mean', '50%', '2.5%', '5%', '25%', '75%', '95%', '97.5%']
     df[tgt_cols] = df[tgt_cols].transform({col: lambda x: min(x, 100000) for col in tgt_cols})
     df = df.merge(dfpop, how='left', left_on=['UF', 'epiyear'], right_on=['UF', 'Ano']).rename(columns={
         'Total': 'population'
@@ -34,6 +34,7 @@ def convert_estimates(df, dfpop):
 
     df_cases = df.copy()
     df_cases[tgt_cols] = df_cases[tgt_cols].multiply(df_cases.population / 100000, axis='index')
+    df_cases[tgt_cols] = df_cases[tgt_cols].applymap(lambda x: round(x, 0))
 
     # Apply upper bound to CI:
     df_cases['bounded_97.5%'] = df_cases[['50%', '97.5%']].apply(lambda x: min(x['97.5%'], 3 * x['50%']), axis=1)
@@ -108,6 +109,17 @@ def clean_data_merge(pref, suff):
     return df
 
 
+def rolling_average(df, win: int=3):
+    df = df.sort_values(by=['dado', 'escala', 'UF', 'epiyear', 'epiweek']).reset_index(drop=True)
+    df['rolling_average'] = df.groupby(by=['dado', 'escala', 'UF'])['50%'].rolling(win, center=True).mean().reset_index(
+        drop=True)
+
+    mask = (df.escala == 'casos')
+    df.loc[mask, 'rolling_average'] = df.loc[mask, 'rolling_average'].round(0)
+
+    return df
+
+
 def main(update_db=False, filtertype='srag'):
     if filtertype not in ['srag', 'sragnofever', 'hospdeath']:
         exit('Invalid filter type: %s' % filtertype)
@@ -140,6 +152,10 @@ def main(update_db=False, filtertype='srag'):
             df['dado'] = pref
             df = convert_estimates(df, dfpop_tot)
             df_new = df_new.append(df, ignore_index=True, sort=True)
+
+        if estimate_file == 'current_estimated':
+            df_new = rolling_average(df_new)
+
         fname = '%s_values' % estimate_file + suff
         df_new.to_csv(outdir + fname + '.csv', index=False)
         if update_db:
@@ -175,14 +191,14 @@ def main(update_db=False, filtertype='srag'):
         dfdict = {}
 
     fname = 'contingency_level' + suff
-    df = get_all_territories_and_years()
-    df_new = calc_season_contingency()
+    df = get_all_territories_and_years(filtertype=filtertype)
+    df_new = calc_season_contingency(filtertype=filtertype)
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
         dfdict[fname] = df_new
 
     fname = 'weekly_alert' + suff
-    df_new = weekly_alert_table_all(df)
+    df_new = weekly_alert_table_all(df, filtertype=filtertype)
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
         dfdict[fname] = df_new
