@@ -12,13 +12,17 @@
 %\usepackage[brazilian]{babel}
 \usepackage{wallpaper}
 \usepackage{subfig}
-
+\usepackage{multicol}
 \SweaveOpts{keep.source=TRUE}
 \input{structure_infogripe.tex} 
 
 \fancyfoot[C]{Boletim semanal - InfoGripe - sem filtro de FEBRE}
 \fancyfoot[L]{\href{http://info.gripe.fiocruz.br}{InfoGripe}}
 
+\newenvironment{Figure}
+  {\par\medskip\noindent\minipage{\linewidth}}
+  {\endminipage\par\medskip}
+  
 \begin{document}
 \SweaveOpts{concordance=TRUE}
 
@@ -48,9 +52,12 @@
 \item \hyperlink{Casos e obitos}{Casos e óbitos por região}
 \item \hyperlink{Mapas contingencia}{Mapas de situação para o plano de contingência}
 \item \hyperlink{Mapas atividade}{Mapas de alerta de atividade semanal}
-\item \hyperlink{Tabelas de alerta}{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}
-\item \hyperlink{Série temporal por UF}{Anexo I: série temporal de SRAG para cada UF}
-\item \hyperlink{Série temporal das capitais}{Anexo II: série temporal de SRAG para as capitais}
+\item \hyperlink{Tabelas}{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}
+\item \hyperlink{notas}{Notas}
+\item \hyperlink{creditos}{Créditos}
+\item \hyperlink{UF}{Anexo I: série temporal de SRAG para cada UF}
+\item \hyperlink{capitais}{Anexo II: série temporal de SRAG para as capitais}
+\item \hyperlink{macrorregionais}{Anexo III: série temporal de SRAG para as macrorregionais de saúde}
 % \item \hyperlink{Série temporal das macrorregionais de saúde, por UF}{Anexo III: série temporal de SRAG para as macrorregionais de saúde}
 \end{itemize}
 \centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
@@ -91,7 +98,7 @@ E que tenham necessitado \textbf{hospitalização} ou que vieram a \textbf{óbit
 Análises dos dados notificados no sistema Sivep-gripe que utilizem outros critérios de filtro apresentarão resultados distintos para o mesmo período.
 \end{minipage}
 
-\newpage
+\clearpage
 
 \hypertarget{Serie nacional}{\heading{Situação nacional}{6pt}}
 A nível nacional, o cenário atual sugere que a situação de cada indicador se encontra nos seguintes níveis:
@@ -125,11 +132,11 @@ A Fig.\ref{fig:st} apresenta a estimativa da incidência no país para cada um d
 
 \begin{figure}[hb]
 	\centering
-	\includegraphics[width=1\columnwidth]{Figs/Brazil_timeseries_sragnofever.pdf}
+	\includegraphics[width=1\columnwidth]{Figs/Brazil_timeseries_sragnofever.png}
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de apresentar febre, por semana de primeiros sintomas. Painel superior: casos de SRAG (esquerda), SRAG por influenza (centro), e SRAG por COVID-19 (direita). Painel inferior: óbitos de SRAG (esquerda), óbitos de SRAG por influenza (centro), e óbitos de SRAG por COVID-19 (direita). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st}}
 \end{figure}
 
-\newpage
+\clearpage
 
 \hypertarget{Casos e obitos}{\heading{Casos e óbitos de SRAG por região}{6pt}}
 
@@ -138,32 +145,32 @@ A série temporal de óbitos tem maior efeito de atraso de digitação, afetando
 A Fig.~\ref{fig:st_reg1} apresenta a incidência de casos e óbitos de SRAG nas regiões Norte e Nordeste do país, bem como os canais endêmicos e limiares de atividade correspondentes.
 \begin{figure}[h]
 	\centering
-	\subfloat[Região Norte.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_1_dataset_1_6_timeseries_sragnofever.pdf}}\\
+	\subfloat[Região Norte.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_1_dataset_1_6_timeseries_sragnofever.png}}\\
 	
-	\subfloat[Região Nordeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_2_dataset_1_6_timeseries_sragnofever.pdf}}%
+	\subfloat[Região Nordeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_2_dataset_1_6_timeseries_sragnofever.png}}%
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de apresentar febre, por semana de primeiros sintomas. Casos (esquerda) e óbitos de SRAG (esquerda). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st_reg1}}
 \end{figure}
 
-\newpage
+\clearpage
 
 A Fig.~\ref{fig:st_reg2} apresenta a incidência de casos e óbitos de SRAG nas regiões Centro-oeste, Sudeste e Sul do país, bem como os canais endêmicos e limiares de atividade correspondentes.
 \begin{figure}[h]
 	\centering
-	\subfloat[Região Centro-oeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_5_dataset_1_6_timeseries_sragnofever.pdf}}\\
+	\subfloat[Região Centro-oeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_5_dataset_1_6_timeseries_sragnofever.png}}\\
 	
-	\subfloat[Região Sudeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_3_dataset_1_6_timeseries_sragnofever.pdf}}\\
+	\subfloat[Região Sudeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_3_dataset_1_6_timeseries_sragnofever.png}}\\
 	
-	\subfloat[Região Sul.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_4_dataset_1_6_timeseries_sragnofever.pdf}}%
+	\subfloat[Região Sul.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_4_dataset_1_6_timeseries_sragnofever.png}}%
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de apresentar febre, por semana de primeiros sintomas. Casos (esquerda) e óbitos de SRAG (esquerda). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st_reg2}}
 \end{figure}
 
-\newpage
+\clearpage
 
 \hypertarget{Mapas contingencia}{\heading{Mapas de situação para o plano de contingência}{6pt}}
 Além das análises por Unidade da Federação, o sistema InfoGripe reporta análise por agregados regionais, utilizando tanto a divisão geopolítica quanto por perfil de atividade de SRAG. A Fig.\ref{fig:regioes} apresenta essas duas divisões para referência.
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
-	\includegraphics[width=0.25\textwidth]{Figs/regioes_pq.pdf} \includegraphics[width=0.25\textwidth]{Figs/regionais_pq.pdf}
+	\includegraphics[width=0.25\textwidth]{Figs/regioes_pq.png} \includegraphics[width=0.25\textwidth]{Figs/regionais_pq.png}
 	\caption{Estados agregados por regiões geopolíticas (esquerda) e com base na similaridade do perfil de aividade de SRAG (direita)}\label{fig:regioes}
 \end{figure}
 
@@ -185,13 +192,13 @@ A desativação de cada nível se dará de forma progressiva, atendendo os segui
 
 Os mapas na Figura~\ref{fig:contingencia} apresentam o nível em relação ao plano de contingência para território.
 
-\begin{figure}[h!]
+\begin{figure}[!h]
 	\centering
-	\includegraphics[width=\textwidth]{Figs/contingency_sragnofever.pdf}
+	\includegraphics[width=\textwidth]{Figs/contingency_sragnofever.png}
 	\caption{Nível do plano de contingência para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita).}\label{fig:contingencia}
 \end{figure}
 
-\newpage
+\clearpage
 
 \hypertarget{Mapas atividade}{\heading{Mapas de alerta de atividade semanal}{6pt}}
 Em paralelo aos níveis de ativação do plano de contingência, o limiares de atividade semanal (linhas horizontais apresentadas na Fig\ref{fig:st}), calculados para cada nível de agregação espacial e para cada um dos três conjuntos de dados (SRAG, SRAG por influenza, e óbitos por influenza), definem alertas de situação com base na incidência semanal correspondente.
@@ -206,35 +213,35 @@ Com base neles, cada região é classificada em quatro níveis de atividade:
 \end{description}
 
 Os mapas nas Figuras \ref{fig:srag} e \ref{fig:obito} apresentam os níveis de atividade de casos e óbitos para cada território.
-\newpage
+\clearpage
 
-\begin{figure}[h!]
+\begin{figure}[!h]
 	\centering
-	\subfloat{\includegraphics[width=\textwidth]{Figs/srag-activity_sragnofever.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/srag-activity_sragnofever.png}}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/sragflu-activity_sragnofever.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/sragflu-activity_sragnofever.png}}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/sragcovid-activity_sragnofever.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/sragcovid-activity_sragnofever.png}}
 	
 	\caption{Nível de atividade de SRAG, independente de apresentar febre, para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita). Mapas para casos de SRAG (superior), casos de SRAG por influenza (centro), e SRAG por COVID-19 (inferior).}\label{fig:srag}
 \end{figure}
 
-\newpage
+\clearpage
 
-\begin{figure}[h!]
+\begin{figure}[!h]
 	\centering
-	\subfloat{\includegraphics[width=\textwidth]{Figs/obito-activity_sragnofever.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/obito-activity_sragnofever.png}}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/obitoflu-activity_sragnofever.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/obitoflu-activity_sragnofever.png}}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/obitocovid-activity_sragnofever.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/obitocovid-activity_sragnofever.png}}
 	
 	\caption{Nível de atividade de óbitos SRAG, independente de apresentar febre, para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita). Mapas para óbitos de SRAG (superior), óbitos de SRAG por influenza (centro), e óbitos de SRAG por COVID-19 (inferior).}\label{fig:obito}
 \end{figure}
 
-\newpage
+\clearpage
 
-\hypertarget{Tabelas de alerta}{\heading{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}{6pt}}
+\hypertarget{Tabelas}{\heading{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}{6pt}}
 A análise com base nos canais endêmicos permite avaliar a situação atual de cada território em comparação com o esperado para a mesma semana epidemiológica com base em seu padrão histórico. Os canais endêmicos do InfoGripe são gerados utilizando apenas as temporadas consideradas típicas, de forma a evitar que temporadas com atividade desproporcionalmente altas ou baixas afetem a sensibilidade do sistema. Os canais são indicados por áreas coloridas no pano de fundo do painel das séries temporais na página do InfoGripe (Fig.\ref{fig:st}).
 
 Os canais endêmicos definem as seguintes zonas de atividade semanal:
@@ -247,7 +254,7 @@ Os canais endêmicos definem as seguintes zonas de atividade semanal:
 \end{itemize}
 
 As tabelas \ref{tab:canal} e \ref{tab:alerta} apresentam a lista detalhada de onde se situam os dados atuais em termos dos canais endêmicos de cada território e o nível de alerta de atividade semanal mais provável, respectivamente.
-\newpage
+\clearpage
 
 \begin{table}[!h]
 \footnotesize
@@ -313,7 +320,7 @@ As tabelas \ref{tab:canal} e \ref{tab:alerta} apresentam a lista detalhada de on
 	\caption{Níveis relativos aos canais endêmicos e limiares de atividade. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador. Casos de SRAG independente de apresentar febre}\label{tab:canal}
 \end{table}
 
-\newpage
+\clearpage
 
 \begin{table}[!h]
 \footnotesize
@@ -379,9 +386,9 @@ Dado & Nível territorial & \cellcolor{green!80}Zona de êxito & \cellcolor{yell
 \caption{Níveis relativos aos canais endêmicos e limiares de atividade. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador. Casos de SRAG independente de apresentar febre}\label{tab:canal}
 \end{table}
 
-\newpage
+\clearpage
 
-\begin{table}[h!]
+\begin{table}[!h]
 \footnotesize
 \centering
 \settowidth\tymin{Zona de risco}
@@ -552,10 +559,10 @@ cat(df.table$lista[df.table$dado == 4 & df.table$territorio == 'UF' & df.table$i
 \caption{Níveis de atividade semanal de SRAG, independente de apresentar febre, com maior probabilidade para cada território. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador.}\label{tab:alerta}
 \end{table}
 
-\newpage
+\clearpage
 
 %%%%%% Tabela com nível de alerta para óbitos de SRAG
-\begin{table}[h!]
+\begin{table}[!h]
 \footnotesize
 \centering
 \settowidth\tymin{Zona de risco}
@@ -726,12 +733,12 @@ cat(df.table$lista[df.table$dado == 5 & df.table$territorio == 'UF' & df.table$i
 \caption{Níveis de atividade semanal de óbitos de SRAG, independente de apresentar febre, com maior probabilidade para cada território. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador.}\label{tab:alerta_obito}
 \end{table}
 
-\newpage
+\clearpage
 
   \hypertarget{notas}{\heading{Notas}{6pt}}  
   \begin{itemize}
   \item Os dados do Sivep-gripe mais recentes ainda não foram totalmente digitados. Estimamos o número esperado de casos notificados considerando o tempo até os casos serem digitados em cada agregado espacial.
-  \item Algumas vezes, o conjunto de dados de um determinado território não possui volume suficiente para significância estatística do modelo de estimativa de casos recentes. Nesses casos, a estimativa não é apresentada e os indicadores utilizam as notificações da SE referente à última semana considerada consolidada.
+  \item Eventualmente, o conjunto de dados de um determinado território não possui volume suficiente para significância estatística do modelo de estimativa de casos recentes. Nesses casos, a estimativa deve ser avaliada com cautela.
   \item As análises e o boletim do sistema InfoGripe são gerados automaticamente a partir dos dados recebidos do Sivep-gripe.
   \item O sistema InfoGripe possui documentação no site, com descrição dos painéis e modos de visualização. Você pode acessar clicando no link "Ajuda" na página principal ou clicando \href{http://info.gripe.fiocruz.br/help}{aqui}.
   \end{itemize}
@@ -754,186 +761,332 @@ cat(df.table$lista[df.table$dado == 5 & df.table$territorio == 'UF' & df.table$i
   
   \textbf{Contato}: \href{fluvigilanciabr@gmail.com}{\nolinkurl{fluvigilanciabr@gmail.com} }
   
-    \newpage
+    \clearpage
   
-  \hypertarget{Série temporal por UF}{\heading{Anexo I: série temporal de SRAG para cada UF}{6pt}}
+  \hypertarget{UF}{\heading{Anexo I: série temporal de SRAG para cada UF}{6pt}}
   Séries temporais de síndrome respiratória aguda grave (SRAG) em cada UF do país independente de apresentar febre, por semana de primeiros sintomas. 
   
   A estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.
   
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
   	\centering
-  	\includegraphics[width=.8\textwidth]{Figs/Territory_11_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+  	\includegraphics[width=.8\textwidth]{Figs/Territory_11_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
   
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_12_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_12_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_13_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_13_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_14_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_14_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_15_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_15_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_16_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_16_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_17_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_17_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_21_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_21_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_22_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_22_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_23_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_23_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_24_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_24_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_25_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_25_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_26_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_26_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_27_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_27_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_28_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_28_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_29_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_29_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_31_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_31_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_32_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_32_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_33_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_33_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_35_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_35_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_41_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_41_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_42_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_42_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_43_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_43_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_50_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_50_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_51_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_51_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_52_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_52_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \begin{figure}[ht]
+  \begin{figure*}[!ht]
 	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_53_dataset_1_timeseries_sragnofever.pdf}
-  \end{figure}
+	\includegraphics[width=.8\textwidth]{Figs/Territory_53_dataset_1_timeseries_sragnofever.png}
+  \end{figure*}
 
-  \newpage
+  \clearpage
   
-    \hypertarget{Série temporal por Capitais}{\heading{Anexo II: série temporal de SRAG para as capitais}{6pt}}
-  Séries temporais de síndrome respiratória aguda grave (SRAG) para a capital de cada UF do país independente de apresentar febre, por semana de primeiros sintomas, com base no município de residencia dos casos notificados.
+    \hypertarget{capitais}{\heading{Anexo II: série temporal de SRAG para as capitais}{6pt}}
+  Séries temporais de síndrome respiratória aguda grave (SRAG) para a capital de cada UF do país independente de apresentar febre, por semana de primeiros sintomas, \textbf{com base no município de residência} dos casos notificados.
   
   A estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.
+  
+  Para o Distrito Federal, utilizamos os registros associados a casos cujo código de município de residência corresponde às regiões admistriativas (RAs) pertencentes à região de saúde central, porém a população utilizada para cálculo de incidência é de todo o DF.
+  
+  As tendências de curto e longo prazo são estimativas obtidas através da análise do perfil de variação no número de novos casos semanais durante um período de 3 (três) semanas para o curto prazo e de 6 (seis) semanas para o longo prazo. Isto é, se houve, em média, crescimento no número de novos casos nas últimas 3 (três) semanas, o indicador de curto prazo apresentará tendência de crescimento. Da mesma forma, se foi observado, em média, crescimento durante as últimas 6 (seis) semanas, o indicador de longo prazo apresentará tendência de crescimento. Por se tratar de uma avaliação estatística, a tendência é apresentada em termos de probabilidade de estar ocorrendo queda ou crescimento. Quando essas probabilidades forem menores de que $75\%$ para ambos sentidos, temos indicação de estabilização ou oscilação sem aumento ou redução significativa ao longo do período em questão.
+  
+  O indicador de longo prazo permite avaliação de tendência suavizando o efeito de eventuais oscilações entre semanas consecutivas, algo natural em dados de notificação. Já o indicador de curto prazo permite identificar, de forma oportuna, possíveis alterações no comportamento de longo prazo, mas que necessitam interpretação cautelosa à luz de eventuais oscilações. Por exemplo, uma tendência de queda no longo prazo acompanhada de um sinal de estabilidade ou crescimento na tendência de curto prazo pode indicar o início de um processo de inversão de tendência, que a análise de longo prazo levaria mais tempo para indicar, podendo levar a ações inadequadas frente à possível mudança de comportamento. Em situações como essa, o recomendável é que eventuais novas medidas que estejam em planejamento à luz da tendência de queda sejam suspensas para reavaliação da tendência nas semanas seguintes. Na situação inversa, isto é, tendência de crescimento no longo prazo e sinal de estabilidade ou queda no curto prazo, o princípio da cautela e minimização de risco recomenda que eventuais medidas associadas à tendências de queda sejam tomadas apenas quando a tendência de longo prazo também indicar queda, evitando assim ações de flexibilização com base em quedas esporádicas (não sustentadas).
+
+Para auxiliar na interpretação dessas tendências, apresentamos mapa nacional com o indicador relativo aos dados até a semana mais recente, levando em conta a estimativa de casos recentes, e evolução desses indicadores nos gráficos das séries temporais de cada localidade.
+
+\begin{itemize}
+\item \hyperlink{mapa_tendencia_capitais}{InfoGráfico da tendência atual}
+\item \hyperlink{reg1}{Região Norte}
+\item \hyperlink{reg2}{Região Nordeste}
+\item \hyperlink{reg3}{Região Sudeste}
+\item \hyperlink{reg4}{Região Sul}
+\item \hyperlink{reg5}{Região Centro-Oeste}
+\end{itemize}
+
+\clearpage
+\hypertarget{mapa_tendencia_capitais}{\heading{Tendência até a semana atual}{4pt}}
+\begin{figure*}[!hb]
+	\centering
+	\includegraphics[width=1\textwidth]{../nowcasting_capitais/Figs/Capitais/Mapa_capitais_tendencia.png}
+\end{figure*}
 
 <<results=tex, echo=FALSE>>=
 tblCADMUN <- read.csv("../data/municip_macsaud_regmetr.csv", stringsAsFactors = F)
 
 tblCADMUN.capital <- tblCADMUN %>% filter(IN_CAPITAL %in% c('E', 'F'))
+reg <- tblCADMUN.capital$CO_REGIAO[1]
+reg.label <- c('Região Norte',
+               'Região Nordeste',
+               'Região Sudeste',
+               'Região Sul',
+               'Região Centro-Oeste')
+cat("\\hypertarget{reg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
+
+cat('\\begin{multicols}{2}\n')
+reg.old <- reg
 for(k in 1:nrow(tblCADMUN.capital)){
-  file <- paste0("../nowcasting_capitais/Figs/Capitais/fig_", tblCADMUN.capital$CO_UF[k], '_', str_replace(tblCADMUN.capital$DS_NOMEPAD_municip[k], ' ', '_'),".png")
-  cat("\\begin{figure}[ht]\n")
+  reg <- tblCADMUN.capital$CO_REGIAO[k]
+  if (reg != reg.old){
+    cat('\\end{multicols}\n')
+    cat('\\clearpage\n')
+    cat("\\hypertarget{reg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
+    cat('\\begin{multicols}{2}\n')
+    reg.old <- reg
+  }
+  
+  file <- paste0("../nowcasting_capitais/Figs/Capitais/fig_", tblCADMUN.capital$DS_UF_SIGLA[k], '_', str_replace_all(tblCADMUN.capital$DS_NOMEPAD_municip[k], ' ', '_'),".png")
+  cat("\\begin{Figure}\n")
   cat("\\centering\n")
-  cat("\\includegraphics[width=.8\\textwidth]{", file, "}\n", sep="")
-  cat("\\end{figure}\n")
+  cat("\\includegraphics[width=\\linewidth]{", file, "}\n", sep="")
+  cat("\\end{Figure}\n\n")
 }
 @
+  \end{multicols}
 
-%   \newpage
-%   
-%   \hypertarget{Série temporal por Capitais}{\heading{Anexo III: série temporal de SRAG para as macrorregionais de saúde}{6pt}}
-%   Séries temporais de síndrome respiratória aguda grave (SRAG) para cada uma das macrorregionais de saúde de cada UF do país independente de apresentar febre, por semana de primeiros sintomas, com base no município de notificação dos casos, e restrito àquelas que registraram ao menos 10 notificações ao londo do ano até o presente relatório. Macrorregionais com registros significativamente baixos ao longo de toda a série temporal apresentam menor qualidade nas estimativas.
-%   
-%   A estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.
-% 
-% <<results=tex, echo=FALSE>>=
-% tblCADMUN <- read.csv("../data/municip_macsaud_regmetr.csv", stringsAsFactors = F)
-% 
-% tblCADMUN.capital <- tblCADMUN %>% filter(IN_CAPITAL %in% c('E', 'F'))
-% for(k in 1:nrow(tblCADMUN.capital)){
-%   file <- paste0("../nowcasting_capitais/Figs/Capitais/fig_", tblCADMUN.capital$CO_UF[k], '_', str_replace(tblCADMUN.capital$DS_NOMEPAD_municip[k], ' ', '_'),".png")
-%   cat("\\begin{figure}[ht]\n")
-%   cat("\\centering\n")
-%   cat("\\includegraphics[width=.8\\textwidth]{", file, "}\n", sep="")
-%   cat("\\end{figure}\n")
-% }
-% @
+  \clearpage
+
+  \hypertarget{macrorregionais}{\heading{Anexo III: série temporal de SRAG para as macrorregionais de saúde de cada UF}{6pt}}
+  Séries temporais de síndrome respiratória aguda grave (SRAG) para cada uma das macrorregionais de saúde de cada UF do país independente de apresentar febre, por semana de primeiros sintomas, \textbf{com base no município de notificação} dos casos, e restrito àquelas que registraram ao menos 10 notificações ao londo do ano até o presente relatório. Macrorregionais com registros significativamente baixos ao longo de toda a série temporal apresentam menor qualidade nas estimativas e, portanto, devem ser avaliadas com cautela.
+
+  A estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.
+
+  As tendências de curto e longo prazo são estimativas obtidas através da análise do perfil de variação no número de novos casos semanais durante um período de 3 (três) semanas para o curto prazo e de 6 (seis) semanas para o longo prazo. Isto é, se houve, em média, crescimento no número de novos casos nas últimas 3 (três) semanas, o indicador de curto prazo apresentará tendência de crescimento. Da mesma forma, se foi observado, em média, crescimento durante as últimas 6 (seis) semanas, o indicador de longo prazo apresentará tendência de crescimento. Por se tratar de uma avaliação estatística, a tendência é apresentada em termos de probabilidade de estar ocorrendo queda ou crescimento. Quando essas probabilidades forem menores de que $75\%$ para ambos sentidos, temos indicação de estabilização ou oscilação sem aumento ou redução significativa ao longo do período em questão.
+  
+  O indicador de longo prazo permite avaliação de tendência suavizando o efeito de eventuais oscilações entre semanas consecutivas, algo natural em dados de notificação. Já o indicador de curto prazo permite identificar, de forma oportuna, possíveis alterações no comportamento de longo prazo, mas que necessitam interpretação cautelosa à luz de eventuais oscilações. Por exemplo, uma tendência de queda no longo prazo acompanhada de um sinal de estabilidade ou crescimento na tendência de curto prazo pode indicar o início de um processo de inversão de tendência, que a análise de longo prazo levaria mais tempo para indicar, podendo levar a ações inadequadas frente à possível mudança de comportamento. Em situações como essa, o recomendável é que eventuais novas medidas que estejam em planejamento à luz da tendência de queda sejam suspensas para reavaliação da tendência nas semanas seguintes. Na situação inversa, isto é, tendência de crescimento no longo prazo e sinal de estabilidade ou queda no curto prazo, o princípio da cautela e minimização de risco recomenda que eventuais medidas associadas à tendências de queda sejam tomadas apenas quando a tendência de longo prazo também indicar queda, evitando assim ações de flexibilização com base em quedas esporádicas (não sustentadas).
+
+Para auxiliar na interpretação dessas tendências, apresentamos mapa nacional com o indicador relativo aos dados até a semana mais recente, levando em conta a estimativa de casos recentes, e evolução desses indicadores nos gráficos das séries temporais de cada localidade.
+
+\begin{itemize}
+\item \hyperlink{mapa_tendencia_macros}{InfoGráfico da tendência atual}
+\item \hyperlink{11}{RO}
+\item \hyperlink{12}{AC}
+\item \hyperlink{13}{AM}
+\item \hyperlink{14}{RR}
+\item \hyperlink{15}{PA}
+\item \hyperlink{16}{AP}
+\item \hyperlink{17}{TO}
+\item \hyperlink{21}{MA}
+\item \hyperlink{22}{PI}
+\item \hyperlink{23}{CE}
+\item \hyperlink{24}{RN}
+\item \hyperlink{25}{PB}
+\item \hyperlink{26}{PE}
+\item \hyperlink{27}{AL}
+\item \hyperlink{28}{SE}
+\item \hyperlink{29}{BA}
+\item \hyperlink{31}{MG}
+\item \hyperlink{32}{ES}
+\item \hyperlink{33}{RJ}
+\item \hyperlink{35}{SP}
+\item \hyperlink{41}{PR}
+\item \hyperlink{42}{SC}
+\item \hyperlink{43}{RS}
+\item \hyperlink{50}{MS}
+\item \hyperlink{51}{MT}
+\item \hyperlink{52}{GO}
+\item \hyperlink{53}{DF}
+\end{itemize}
+
+\newpage
+
+\hypertarget{mapa_tendencia_macros}{\heading{Tendência até a semana atual}{4pt}}
+\begin{figure*}[!hb]
+	\centering
+	\includegraphics[width=1\textwidth]{../nowcasting_capitais/Figs/MACSAUD/Mapa_macrorregioes_saude_BR_tendencia.png}
+\end{figure*}
+\clearpage
+
+<<results=tex, echo=FALSE>>=
+tblCADMUN <- read.csv("../data/municip_macsaud_regmetr.csv", stringsAsFactors = F)
+
+tblMACSAUD <- tblCADMUN %>%
+  filter(!is.na(CO_MACSAUD) & CO_STATUS_macsaud == 'ATIVO') %>%
+  select(CO_MACSAUD, DS_NOMEPAD_macsaud, CO_UF, DS_UF_SIGLA) %>%
+  arrange(CO_UF, DS_NOMEPAD_macsaud) %>%
+  unique()
+rownames(tblMACSAUD) <- NULL
+
+k = 1
+ufold <- tblMACSAUD$DS_UF_SIGLA[1]
+ufid <- tblMACSAUD$CO_UF[1]
+cat("\\hypertarget{", ufid, "}{\\heading{Macrorregionais de saúde - ", ufold, "}{4pt}}\n", sep='')
+    file <- paste0("../nowcasting_capitais/Figs/MACSAUD/Mapa_macrorregioes_saude_", tblMACSAUD$DS_UF_SIGLA[k], ".png")
+    if (file.exists(file)){
+      cat("\\begin{figure*}[!ht]\n")
+      cat("\\centering\n")
+      cat("\\includegraphics[width=.5\\textwidth]{", file, "}\n", sep="")
+      cat("\\end{figure*}\n\n")
+    }
+    file <- paste0("../nowcasting_capitais/Figs/MACSAUD/Mapa_macrorregioes_saude_", tblMACSAUD$DS_UF_SIGLA[k], "_tendencia.png")
+    if (file.exists(file)){
+      cat('\\heading{Tendência até a semana atual}{4pt}\n')
+      cat("\\begin{figure*}[!hb]\n")
+      cat("\\centering\n")
+      cat("\\includegraphics[width=1\\textwidth]{", file, "}\n", sep="")
+      cat("\\end{figure*}\n\n")
+    }
+cat("\\clearpage\n")
+cat("\\begin{multicols}{2}\n")
+for(k in 1:nrow(tblMACSAUD)){
+  uf <- tblMACSAUD$DS_UF_SIGLA[k]
+  if (uf != ufold){
+    cat("\\end{multicols}\n")
+    cat("\\clearpage\n")
+    ufid <- tblMACSAUD$CO_UF[k]
+    cat("\\hypertarget{", ufid, "}{\\heading{Macrorregiões de saúde - ", uf, "}{4pt}}\n", sep='')
+    file <- paste0("../nowcasting_capitais/Figs/MACSAUD/Mapa_macrorregioes_saude_", tblMACSAUD$DS_UF_SIGLA[k], ".png")
+    if (file.exists(file)){
+      cat("\\begin{figure*}[!ht]\n")
+      cat("\\centering\n")
+      cat("\\includegraphics[width=.6\\columnwidth]{", file, "}\n", sep="")
+      cat("\\end{figure*}\n\n")
+    }
+    file <- paste0("../nowcasting_capitais/Figs/MACSAUD/Mapa_macrorregioes_saude_", tblMACSAUD$DS_UF_SIGLA[k], "_tendencia.png")
+    if (file.exists(file)){
+      cat('\\heading{Tendência até a semana atual}{4pt}\n')
+      cat("\\begin{figure*}[!hb]\n")
+      cat("\\centering\n")
+      cat("\\includegraphics[width=1\\textwidth]{", file, "}\n", sep="")
+      cat("\\end{figure*}\n\n")
+    }
+    cat("\\clearpage\n")
+    cat("\\begin{multicols}{2}\n")
+    ufold <- uf
+  }
+  file <- paste0("../nowcasting_capitais/Figs/MACSAUD/fig_", tblMACSAUD$DS_UF_SIGLA[k], '_', tblMACSAUD$CO_MACSAUD[k],".png")
+  if (file.exists(file)){
+    cat("\\begin{Figure}\n")
+    cat("\\centering\n")
+    cat("\\includegraphics[width=1\\columnwidth]{", file, "}\n", sep="")
+    cat("\\end{Figure}\n\n")
+  }
+}
+cat("\\end{multicols}\n")
+
+@
 
   \end{document} 

@@ -21,6 +21,7 @@ logger.setLevel(logging.DEBUG)
 logger_fname = 'InfoGripe_system_update.log'
 fh = logging.FileHandler(logger_fname)
 ch = logging.StreamHandler('InfoGripe_system_update.error.log')
+rscript_path = '/usr/bin/Rscript'
 ch.setLevel(logging.ERROR)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -58,6 +59,7 @@ logfile_path = os.path.join(os.getcwd(), logger_fname)
 data_folder = os.path.join(os.getcwd(), '..', 'data', 'data')
 public_figs_folder = os.path.join(home_path, 'codes', 'mave', 'repo', 'Boletins\ do\ InfoGripe', 'Imagens')
 public_report_folder = os.path.join(home_path, 'codes', 'mave', 'repo', 'Boletins\ do\ InfoGripe')
+public_report_folder_email = os.path.join(home_path, 'codes', 'mave', 'repo', 'Boletins do InfoGripe')
 public_data_folder = os.path.join(home_path, 'codes', 'mave', 'repo', 'Dados', 'InfoGripe')
 time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 timesmpl = datetime.datetime.now().strftime('%Y%m%d')
@@ -127,15 +129,26 @@ def send_report_email(epiyear: int, epiweek: int, filtertype: str='srag', extra:
         'email_body': """
 Caro(a),
       
-Segue o boletim semanal gerado automaticamente pelo InfoGripe, com base nos dados do Sivep-gripe até a SE %s %02d.
+Segue o resumo do boletim semanal gerado pelo InfoGripe, com base nos dados do Sivep-gripe até a SE %s 
+%02d.
 Esta é uma mensagem automática, não é necessário responder o e-mail.
 
-***NOVIDADE***
-A partir desta edição do boletim, passamos a reportar também as estimativas de casos recentes para a capital de cada 
-uma das Unidades Federativas do território nacional. Esperamos que seja de utilidade para as avaliações de situação 
-de cada estado. Em breve pretendemos disponibilizar esta análise no nível das macrorregionais de saúde.
+Em função do tamanho do documento completo, o mesmo não será enviado por e-mail, mas pode ser feito o download do 
+arquivo através do endereço usual: https://bit.ly/mave-infogripe-boletim-atual .
 
-Assim que possível, trataremos de disponibilizar esses gráficos também no site do InfoGripe.
+*** ATENÇÃO ***
+Para o estado do Mato Grosso continuam sendo observadas grandes inconsistências entre os dados de SRAG 
+notificados no SIVEP-gripe e aqueles reportados no portal da SES-MT, com grande subnotificação no SIVEP-gripe em 
+relação ao painel local.
+Em função disso, as análises e indicadores gerados pelo InfoGripe como estimativa de casos recentes para correção da 
+oportundiade de digitação, e tendências de curto e longo prazo para capital e macrorregiões de saúde para o estado 
+devem ser desconsiderados até que seja reestabelecida a alimentação adequada do sistema nacional, pois potencialmente 
+não refletem a realidade local.
+Contamos com a colaboração das autoriadades locais para o reestabelecimento oportuno dos registros das SRAG no 
+SIVEP-gripe.
+
+Sugestões de melhorias podem ser encaminhadas para o endereço eletrônico de contato,
+disponível no documento.
 
 Acesse o site para mais informações:
 http://info.gripe.fiocruz.br
@@ -157,19 +170,22 @@ GT-Influenza da Secretaria de Vigilância em Saúde do Ministério da Saúde.
     body = MIMEText(mail_report['email_body'], 'plain')
     email_msg.attach(body)
 
-    if filtertype == 'srag':
-        # Base report
-        report_fname = 'Boletim_InfoGripe_SE%s%02d.pdf' % (epiyear, epiweek)
-    elif filtertype == 'sragnofever':
-        # Report without fever filter
-        report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_febre.pdf' % (epiyear, epiweek)
-    elif filtertype == 'hospdeath':
-        # Report without any symptoms filter
-        report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_sintomas.pdf' % (epiyear, epiweek)
+    # if filtertype == 'srag':
+    #     # Base report
+    #     report_fname = 'Boletim_InfoGripe_SE%s%02d.pdf' % (epiyear, epiweek)
+    # elif filtertype == 'sragnofever':
+    #     # Report without fever filter
+    #     report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_febre.pdf' % (epiyear, epiweek)
+    # elif filtertype == 'hospdeath':
+    #     # Report without any symptoms filter
+    #     report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_sintomas.pdf' % (epiyear, epiweek)
+
+    short_version = 'Resumo_InfoGripe_%s_%02d.pdf' % (epiyear, epiweek)
+    report_fname = os.path.join(public_report_folder_email, 'boletins_anteriores', short_version)
 
     fp = open(report_fname, 'rb')
     attachment = MIMEApplication(fp.read(), _subtype='pdf', _encoder=encode_base64)
-    attachment.add_header("Content-Disposition", "attachment", filename=report_fname)
+    attachment.add_header("Content-Disposition", "attachment", filename=short_version)
     email_msg.attach(attachment)
 
     if extra:
@@ -210,7 +226,7 @@ def convert_dbf(flist):
     return
 
 
-def email_update(dir, years):
+def email_update(dir, years, sep=','):
     from data_filter import email_extract
 
     module_name = email_extract.__name__
@@ -219,10 +235,10 @@ def email_update(dir, years):
         if years:
             for year in years:
                 logger.info('Updating over e-mail. Base year: %s' % year)
-                email_extract.main(dir, year)
+                email_extract.main(dir, sep=sep, year=years)
         else:
             logger.info('Updating over e-mail.')
-            email_extract.main(dir)
+            email_extract.main(dir, sep=sep, year=years)
 
     except Exception as err:
         logger.exception(module_name)
@@ -386,7 +402,7 @@ def apply_estimator(date='max', filtertype='srag'):
         logger.info('Calculating estimates for dataset: %s' % data)
         module_name = 'opportunity_estimator.opportunity.estimator.R'
         try:
-            run(['Rscript', '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype], check=True)
+            run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype], check=True)
         except Exception as err:
             logger.exception(module_name)
             logger.exception(err)
@@ -404,6 +420,24 @@ def apply_estimator(date='max', filtertype='srag'):
             send_email(mail_error)
             raise
 
+        logger.info('... DONE')
+
+    if filtertype == 'sragnofever':
+        data = 'srag'
+        logger.info('Calculating estimates for capitals and macroregions of health: %s' % data)
+        module_name = 'opportunity_estimator.nowcastingCapitaisMacrosaude.R'
+        try:
+            cwd = os.getcwd()
+            os.chdir('../nowcasting_capitais')
+            Rscript = 'nowcastingCapitaisMacrosaude.R'
+            run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype, '--graphs'], check=True)
+            os.chdir(cwd)
+        except Exception as err:
+            logger.exception(module_name)
+            logger.exception(err)
+            mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+            send_email(mail_error)
+            raise
         logger.info('... DONE')
 
     logger.info('opportunity_estimator : DONE')
@@ -477,10 +511,10 @@ def generate_report(epiyear=None, epiweek=None, plot=None, filtertype='srag'):
     module_name = 'report.report.data.R'
     try:
         if plot:
-            run(['Rscript', '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek), '-p', '-f', filtertype],
+            run([rscript_path, '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek), '-p', '-f', filtertype],
                 check=True)
         else:
-            run(['Rscript', '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek), '-f', filtertype], check=True)
+            run([rscript_path, '--vanilla', Rscript, '-y', str(epiyear), '-w', str(epiweek), '-f', filtertype], check=True)
     except Exception as err:
         logger.exception(module_name)
         logger.exception(err)
@@ -542,6 +576,7 @@ def generate_public_datasets(filtertype='srag'):
             'NOTTESTED': "Casos sem teste laboratorial",
             'DELAYED': "Casos aguardando resultado",
             'TESTING_IGNORED': "Casos sem informação laboratorial",
+            'INCONCLUSIVE': 'Resultado inconclusivo',
             'epiyear': 'Ano epidemiológico',
             'epiweek': 'Semana epidemiológica',
             'epiyearweek': 'Ano e semana epidemiológica',
@@ -686,7 +721,7 @@ def generate_public_datasets(filtertype='srag'):
         df = df.rename(columns=rename_cols)
         df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
 
-        drop_cols = ['INCONCLUSIVE', 'OTHERS']
+        drop_cols = ['OTHERS']
         df = df.drop(columns=drop_cols)
         tgt_cols = ['data de publicação',
                     'UF',
@@ -705,6 +740,7 @@ def generate_public_datasets(filtertype='srag'):
                     '5-9 anos', '50-59 anos', '60+ anos',
                     'Testes positivos', 'Testes negativos', 'Casos aguardando resultado',
                     'Casos sem informação laboratorial', 'Casos sem teste laboratorial',
+                    'Resultado inconclusivo',
                     'Influenza A', 'Influenza B', 'SARS-CoV-2', 'Vírus sincicial respiratório (VSR)',
                     'Parainfluenza 1', 'Parainfluenza 2', 'Parainfluenza 3', 'Adenovirus'
                     ]
@@ -713,18 +749,29 @@ def generate_public_datasets(filtertype='srag'):
         fname = os.path.join(public_data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv' % suff_out[filtertype])
         df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
 
-        run(['cp --force ./report/Figs/Territory_*_dataset_1_timeseries%s.pdf %s/.' % (suff, public_figs_folder)],
+        run(['cp --force ./report/Figs/Territory_*_dataset_1_timeseries%s.png %s/.' % (suff, public_figs_folder)],
             check=True, shell=True)
-        run(['rename "s/Territory/Territorio/" %s/Territory_*pdf' % public_figs_folder], check=True, shell=True)
-        run(['rename -f "s/dataset_1/SRAG/" %s/Territorio_*pdf' % public_figs_folder], check=True, shell=True)
-        run(['rename -f "s/timeseries/serietemporal/" %s/Territorio_*pdf' % public_figs_folder], check=True, shell=True)
-        run(['rename -f "s/%s/%s/" %s/Territorio_*pdf' % (suff, suff_out[filtertype], public_figs_folder)], check=True,
+        run(['rename "s/Territory/Territorio/" %s/Territory_*png' % public_figs_folder], check=True, shell=True)
+        run(['rename -f "s/dataset_1/SRAG/" %s/Territorio_*png' % public_figs_folder], check=True, shell=True)
+        run(['rename -f "s/timeseries/serietemporal/" %s/Territorio_*png' % public_figs_folder], check=True, shell=True)
+        run(['rename -f "s/%s/%s/" %s/Territorio_*png' % (suff, suff_out[filtertype], public_figs_folder)], check=True,
             shell=True)
-        run(['rm --force %s/Territory_*pdf' % public_figs_folder],
+        run(['rm --force %s/Territory_*png' % public_figs_folder],
             check=True, shell=True)
-
         run(['cp --force ./report/Boletim_InfoGripe_atual%s.pdf %s/.' % (suff_out[filtertype], public_report_folder)],
             check=True, shell=True)
+
+        if filtertype == 'sragnofever':
+            run(['cp --force ./nowcasting_capitais/Figs/Capitais/fig*.png %s/Capitais/.' % public_figs_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/Figs/Capitais/Mapa_capitais_tendencia.png %s/Capitais/.' %
+                 public_figs_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/fig*.png %s/Macrorregioes_de_saude/.' % public_figs_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa*tendencia.png %s/Macrorregioes_de_saude/.' %
+                 public_figs_folder],
+                check=True, shell=True)
 
     except Exception as err:
         logger.exception(module_name)
@@ -738,7 +785,7 @@ def generate_public_datasets(filtertype='srag'):
     return
 
 
-def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, years=None, date='max',
+def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, sep=',', years=None, date='max',
          dbdump=None, plot=None, filtertype='srag', extra: str=None):
     """
     Run all scripts to update the system with new database.
@@ -748,6 +795,7 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     :param module_list:
     :param history_files:
     :param dir:
+    :param sep:
     :param years:
     :param date:
     :param dbdump:
@@ -820,7 +868,7 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
 
     if 'email' in module_list:
         logger.info('Emails update years: %s', years)
-        email_update(dir, years)
+        email_update(dir, years, sep=sep)
 
     if 'filter' in module_list:
         logger.info('Aggregate and filter data')
@@ -903,6 +951,8 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--dir', help='Base folder for e-mail update module. Optional',
                         default=None)
+    parser.add_argument('--sep', help='Column separator for csv files. Optional',
+                        default=',')
     parser.add_argument('--years', nargs='*', action='append', help='Base years for e-mail update module. Optional',
                         default=None)
     parser.add_argument('--date', help='Base date for estimator in the format YYYY-MM-DD or max. Optional.',
@@ -924,5 +974,5 @@ if __name__ == '__main__':
         args.years = args.years[0]
 
     main(flist=args.path, update_mem=args.mem, module_list=args.modules, history_files=args.history, dir=args.dir,
-         years=args.years, date=args.date, dbdump=args.dbdump, plot=args.plot, filtertype=args.filtertype,
+         sep=args.sep, years=args.years, date=args.date, dbdump=args.dbdump, plot=args.plot, filtertype=args.filtertype,
          extra=args.extra)

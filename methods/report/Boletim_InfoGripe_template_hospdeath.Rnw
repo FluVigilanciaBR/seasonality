@@ -118,7 +118,7 @@ A Fig.\ref{fig:st} apresenta a estimativa da incidência no país para cada um d
 
 \begin{figure}[hb]
 	\centering
-	\includegraphics[width=1\columnwidth]{Figs/Brazil_timeseries_hospdeath.pdf}
+	\includegraphics[width=1\columnwidth]{Figs/Brazil_timeseries_hospdeath.png}
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de sintomas notificados, por semana de primeiros sintomas. Painel superior: casos de SRAG (esquerda), SRAG por influenza (centro), e SRAG por COVID-19 (direita). Painel inferior: óbitos de SRAG (esquerda), óbitos de SRAG por influenza (centro), e óbitos de SRAG por COVID-19 (direita). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st}}
 \end{figure}
 
@@ -131,9 +131,9 @@ A série temporal de óbitos tem maior efeito de atraso de digitação, afetando
 A Fig.~\ref{fig:st_reg1} apresenta a incidência de casos e óbitos de SRAG nas regiões Norte e Nordeste do país, bem como os canais endêmicos e limiares de atividade correspondentes.
 \begin{figure}[h]
 	\centering
-	\subfloat[Região Norte.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_1_dataset_1_6_timeseries_hospdeath.pdf}}\\
+	\subfloat[Região Norte.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_1_dataset_1_6_timeseries_hospdeath.png}}\\
 	
-	\subfloat[Região Nordeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_2_dataset_1_6_timeseries_hospdeath.pdf}}%
+	\subfloat[Região Nordeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_2_dataset_1_6_timeseries_hospdeath.png}}%
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de sintomas notificados, por semana de primeiros sintomas. Casos (esquerda) e óbitos de SRAG (esquerda). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st_reg1}}
 \end{figure}
 
@@ -142,11 +142,11 @@ A Fig.~\ref{fig:st_reg1} apresenta a incidência de casos e óbitos de SRAG nas 
 A Fig.~\ref{fig:st_reg2} apresenta a incidência de casos e óbitos de SRAG nas regiões Centro-oeste, Sudeste e Sul do país, bem como os canais endêmicos e limiares de atividade correspondentes.
 \begin{figure}[h]
 	\centering
-	\subfloat[Região Centro-oeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_5_dataset_1_6_timeseries_hospdeath.pdf}}\\
+	\subfloat[Região Centro-oeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_5_dataset_1_6_timeseries_hospdeath.png}}\\
 	
-	\subfloat[Região Sudeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_3_dataset_1_6_timeseries_hospdeath.pdf}}\\
+	\subfloat[Região Sudeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_3_dataset_1_6_timeseries_hospdeath.png}}\\
 	
-	\subfloat[Região Sul.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_4_dataset_1_6_timeseries_hospdeath.pdf}}%
+	\subfloat[Região Sul.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_4_dataset_1_6_timeseries_hospdeath.png}}%
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de sintomas notificados, por semana de primeiros sintomas. Casos (esquerda) e óbitos de SRAG (esquerda). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st_reg2}}
 \end{figure}
 
@@ -156,7 +156,7 @@ A Fig.~\ref{fig:st_reg2} apresenta a incidência de casos e óbitos de SRAG nas 
 Além das análises por Unidade da Federação, o sistema InfoGripe reporta análise por agregados regionais, utilizando tanto a divisão geopolítica quanto por perfil de atividade de SRAG. A Fig.\ref{fig:regioes} apresenta essas duas divisões para referência.
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.25\textwidth]{Figs/regioes_pq.pdf} \includegraphics[width=0.25\textwidth]{Figs/regionais_pq.pdf}
+	\includegraphics[width=0.25\textwidth]{Figs/regioes_pq.png} \includegraphics[width=0.25\textwidth]{Figs/regionais_pq.png}
 	\caption{Estados agregados por regiões geopolíticas (esquerda) e com base na similaridade do perfil de aividade de SRAG (direita)}\label{fig:regioes}
 \end{figure}
 
@@ -180,7 +180,7 @@ Os mapas na Figura~\ref{fig:contingencia} apresentam o nível em relação ao pl
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=\textwidth]{Figs/contingency_hospdeath.pdf}
+	\includegraphics[width=\textwidth]{Figs/contingency_hospdeath.png}
 	\caption{Nível do plano de contingência para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita).}\label{fig:contingencia}
 \end{figure}
 
@@ -203,11 +203,11 @@ Os mapas nas Figuras \ref{fig:srag} e \ref{fig:obito} apresentam os níveis de a
 
 \begin{figure}[h!]
 	\centering
-	\subfloat{\includegraphics[width=\textwidth]{Figs/srag-activity_hospdeath.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/srag-activity_hospdeath.png}}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/sragflu-activity_hospdeath.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/sragflu-activity_hospdeath.png}}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/sragcovid-activity_hospdeath.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/sragcovid-activity_hospdeath.png}}
 	
 	\caption{Nível de atividade de SRAG, independente de sintomas notificados, para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita). Mapas para casos de SRAG (superior), casos de SRAG por influenza (centro), e SRAG por COVID-19 (inferior).}\label{fig:srag}
 \end{figure}
@@ -216,11 +216,11 @@ Os mapas nas Figuras \ref{fig:srag} e \ref{fig:obito} apresentam os níveis de a
 
 \begin{figure}[h!]
 	\centering
-	\subfloat{\includegraphics[width=\textwidth]{Figs/obito-activity_hospdeath.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/obito-activity_hospdeath.png}}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/obitoflu-activity_hospdeath.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/obitoflu-activity_hospdeath.png}}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/obitocovid-activity_hospdeath.pdf}}
+	\subfloat{\includegraphics[width=\textwidth]{Figs/obitocovid-activity_hospdeath.png}}
 	
 	\caption{Nível de atividade de óbitos SRAG, independente de sintomas notificados, para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita). Mapas para óbitos de SRAG (superior), óbitos de SRAG por influenza (centro), e óbitos de SRAG por COVID-19 (inferior).}\label{fig:obito}
 \end{figure}
@@ -756,137 +756,137 @@ cat(df.table$lista[df.table$dado == 5 & df.table$territorio == 'UF' & df.table$i
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_11_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_11_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_12_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_12_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_13_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_13_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_14_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_14_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_15_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_15_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_16_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_16_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_17_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_17_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_21_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_21_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_22_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_22_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_23_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_23_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_24_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_24_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_25_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_25_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_26_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_26_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_27_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_27_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_28_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_28_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_29_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_29_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_31_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_31_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_32_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_32_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_33_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_33_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_35_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_35_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_41_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_41_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_42_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_42_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_43_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_43_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_50_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_50_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_51_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_51_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_52_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_52_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=\textwidth]{Figs/Territory_53_dataset_1_timeseries_hospdeath.pdf}
+		\includegraphics[width=\textwidth]{Figs/Territory_53_dataset_1_timeseries_hospdeath.png}
 	\end{figure}
 	
 

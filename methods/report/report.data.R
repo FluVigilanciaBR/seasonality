@@ -1,17 +1,17 @@
-library(tidyverse)
-library(ggplot2)
-library(lemon)
-library(grid)
-library(gridExtra)
-library(tools)
-library(reticulate)
-library(stringi)
-library(sf)
-library(magick)
+suppressWarnings(suppressPackageStartupMessages(library(tidyverse)))
+suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))
+suppressWarnings(suppressPackageStartupMessages(library(lemon)))
+suppressWarnings(suppressPackageStartupMessages(library(grid)))
+suppressWarnings(suppressPackageStartupMessages(library(gridExtra)))
+suppressWarnings(suppressPackageStartupMessages(library(tools)))
+suppressWarnings(suppressPackageStartupMessages(library(reticulate)))
+suppressWarnings(suppressPackageStartupMessages(library(stringi)))
+suppressWarnings(suppressPackageStartupMessages(library(sf)))
+suppressWarnings(suppressPackageStartupMessages(library(magick)))
 source('theme.publication.R')
 use_python('~/miniconda/env/fludashboard-development/bin/python')
 source_python('../data_filter/episem.py')
-suppressPackageStartupMessages(library("argparse"))
+suppressWarnings(suppressPackageStartupMessages(library("argparse")))
 # create parser object
 parser <- ArgumentParser()
 # specify our desired options
@@ -105,7 +105,7 @@ if (args$plot){
     # grid.arrange(p1, p2, p3, nrow=1, top=plot.title)
     # dev.off()
     
-    pdf(paste0('Figs/', file.name), width = 12, height = 4)
+    png(paste0('Figs/', file.name), width = 12, height = 4, units='in', res=72)
     grid.arrange(p1, p2, p3, nrow=1, top=plot.title)
     grid::grid.raster(logo, x = 0.99, y = 0.01, just = c('right', 'bottom'), width = unit(1, 'inches'))
     dev.off()
@@ -134,7 +134,7 @@ if (args$plot){
     plot.colors <- c('#ffffcc', '#a1dab4', '#41b6c4', '#225ea8')
     plot.breaks <- c(1, 2, 3, 4)
     plot.labels <- c('Nível Basal', 'Nível 0', 'Nível 1', 'Nível 2')
-    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, plot.title = 'Níveis do plano de contingência', paste0('contingency', suff_out, '.pdf'))
+    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, plot.title = 'Níveis do plano de contingência', paste0('contingency', suff_out, '.png'))
     return()
   }
   
@@ -166,7 +166,7 @@ if (args$plot){
       'sragcovid' = 'Nível de atividade de SRAG por COVID-19',
       'obitocovid' = 'Nível de atividade de óbitos de SRAG por COVID-19'
     )
-    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, as.character(plot.title[dataset]), paste0(dataset, '-activity', suff_out, '.pdf'))
+    plot.map(brazil.shp, brazil.reggeo.shp, brazil.regperf.shp, plot.colors, plot.breaks, plot.labels, as.character(plot.title[dataset]), paste0(dataset, '-activity', suff_out, '.png'))
     return()
   }
   
@@ -295,7 +295,7 @@ if (args$plot){
     
     if (territory_id == 0){
       p.grid <- lapply(c(1, 2, 3, 4, 5, 6), plot.dataset)
-      pdf(paste0('Figs/', 'Brazil_timeseries', suff_out, '.pdf'), width = 12, height = 8, onefile = FALSE)
+      png(paste0('Figs/', 'Brazil_timeseries', suff_out, '.png'), width = 12, height = 8, units='in', res=72)
       p.grid[[2]] <- p.grid[[2]] + ylab(" ")
       p.grid[[4]] <- p.grid[[4]] + ylab(" ")
       p.grid[[3]] <- p.grid[[3]] + ylab(" ")
@@ -310,21 +310,21 @@ if (args$plot){
       dev.off()
     } else {
       p.grid <- lapply(c(1, 6), plot.dataset)
-      pdf(paste0('Figs/', 'Territory_', territory_id, '_dataset_1_6_timeseries', suff_out, '.pdf'), width = 10, height = 3, onefile = FALSE)
+      png(paste0('Figs/', 'Territory_', territory_id, '_dataset_1_6_timeseries', suff_out, '.png'), width = 10, height = 3, units='in', res=72)
       p.grid[[2]] <- p.grid[[2]] + ylab(" ")
 
       grid_arrange_shared_legend(p.grid[[1]], p.grid[[2]], ncol = 2, nrow = 1, position = 'right')
       grid::grid.raster(logo, x = 0.999, y = 0.001, just = c('right', 'bottom'), width = unit(.6, 'inches'))
       dev.off()
       
-      pdf(paste0('Figs/', 'Territory_', territory_id, '_dataset_1_timeseries', suff_out, '.pdf'), width = 6, height = 3, onefile = FALSE)
+      png(paste0('Figs/', 'Territory_', territory_id, '_dataset_1_timeseries', suff_out, '.png'), width = 6, height = 3, units='in', res=72)
       print(p.grid[[1]] + ggtitle(paste0('SRAG - UF ', territory_id, ': ', plot.title)))
       grid::grid.raster(logo, x = 0.999, y = 0.001, just = c('right', 'bottom'), width = unit(.65, 'inches'))
       dev.off()
       
       # for (d in c(1, 6)){
       #   p <- plot.dataset(d=d)
-      #   pdf(paste0('Figs/', 'Territory_', territory_id, '_dataset_', d, '_timeseries.pdf'), width = 6, height = 3)
+      #   png(paste0('Figs/', 'Territory_', territory_id, '_dataset_', d, '_timeseries.png'), width = 6, height = 3)
       #   print(p)
       #   dev.off()
       # }

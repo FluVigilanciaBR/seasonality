@@ -92,21 +92,30 @@ def date_cleanup(df, dt_cols):
         if sum(~pd.isnull(df[col])) > 0:
             sample = df.loc[~pd.isnull(df[col]), col].values[0]
             if isinstance(sample, str):
-                dtsep = '-'
-                if '/' in sample:
-                    dtsep = '/'
-                dttest = pd.DataFrame(list(
-                    df.loc[~pd.isnull(df[col]), col].str.split(dtsep)
-                ))
-                maxvals = [int(dttest[i].max()) for i in range(3)]
-                del dttest
-                yearpos = maxvals.index(max(maxvals))
-                if yearpos == 2:
-                    dtformat = '%d' + dtsep + '%m' + dtsep + '%Y'
+                if 'T' in sample:
+                    df[col] = pd.to_datetime(df[col].str[:10], errors='coerce', format='%Y-%m-%d')
                 else:
-                    dtformat = '%Y' + dtsep + '%m' + dtsep + '%d'
-        df[col] = pd.to_datetime(df[col], errors='coerce', format=dtformat)
-
+                    dtsep = '-'
+                    if '/' in sample:
+                        dtsep = '/'
+                    dttest = pd.DataFrame(list(
+                        df.loc[~pd.isnull(df[col]), col].str.split(dtsep)
+                    ))
+                    maxvals = [int(dttest[i].max()) for i in range(3)]
+                    del dttest
+                    yearpos = maxvals.index(max(maxvals))
+                    if yearpos == 2:
+                        if maxvals[1] > 12:
+                            dtformat = '%m' + dtsep + '%d' + dtsep + '%Y'
+                        else:
+                            dtformat = '%d' + dtsep + '%m' + dtsep + '%Y'
+                    else:
+                        dtformat = '%Y' + dtsep + '%m' + dtsep + '%d'
+                    df[col] = pd.to_datetime(df[col], errors='coerce', format=dtformat)
+            else:
+                df[col] = pd.to_datetime(df[col], errors='coerce', format=dtformat)
+        else:
+            df[col] = pd.to_datetime(df[col])
     # Discard those neither hospitalized nor deceased. For cases from 2009, keep all:
     df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) == 2009) | (df.HOSPITAL == 1) | (df.EVOLUCAO == 2)]
 
@@ -134,9 +143,16 @@ def table_compatibility(df):
              'AN_ADENO',
              'AN_OUTRO',
              'DS_AN_OUT']
-    l_old = [li.replace('AN', 'IF') for li in l_new]
+    cols = df.columns
+    col_new = []
+    col_old = []
+    l_intersec = set(l_new).intersection(cols)
+    for li in l_intersec:
+        col_new.append(li.replace('AN', 'IF'))
+        col_old.append(li)
 
-    df[l_old] = df[l_new].copy()
+    if len(l_intersec) > 0:
+        df[col_new] = df[col_old].copy()
 
     return
 
@@ -167,6 +183,7 @@ def symptoms_filter(df, filtertype='srag'):
 def filter_db2019(df, tag=None, filtertype='srag'):
     tgtcols = ['AMOSTRA', 'ANTIVIRAL', 'AVE_SUINO', 'CLASSI_FIN', 'CLASSI_OUT', 'CO_LAB_IF', 'CO_LAB_PCR', 'CO_MU_INTE',
                'CO_MUN_NOT', 'CO_MUN_RES', 'CO_PAIS', 'CO_REGIONA', 'CO_RG_RESI', 'CO_UNI_NOT', 'CRITERIO', 'CS_ETNIA',
+               'CO_UN_INTE',
                'CS_RACA', 'CS_SEXO', 'DS_IF_OUT', 'DS_PCR_OUT', 'DT_ANTIVIR',
                'DT_COLETA', 'DT_DIGITA', 'DT_ENCERRA', 'DT_EVOLUCA', 'DT_IF', 'DT_INTERNA', 'DT_NOTIFIC', 'DT_PCR',
                'DT_IFI',
@@ -618,6 +635,7 @@ def applysinanfilter(df, tag=None, filtertype='srag'):
 
 
 def delays_dist(df_in=pd.DataFrame(), filtertype='srag'):
+    module_logger.info('Entered function: delay_dist')
     
     if filtertype not in ['srag', 'sragnofever', 'hospdeath']:
         exit('Invalid filter type: %s' % filtertype)

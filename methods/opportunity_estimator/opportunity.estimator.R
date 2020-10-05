@@ -22,12 +22,12 @@ source('./generate.estimates.R')
 source('./post.thresholds.R')
 source('./post.sum.R')
 source('./insert.na.triangle.R')
-suppressPackageStartupMessages(library("tidyverse"))
+suppressWarnings(suppressPackageStartupMessages(library("tidyverse")))
 
 # TODO: update to new data structure
 
 ## Read command line arguments
-suppressPackageStartupMessages(library("argparse"))
+suppressWarnings(suppressPackageStartupMessages(library("argparse")))
 # create parser object
 parser <- ArgumentParser()
 # specify our desired options
@@ -49,7 +49,7 @@ if (args$graphs %in% c('F', 'False', 'f', 'false')){
     args$graphs <- FALSE
 } else {
     args$graphs <- TRUE
-    require(ggplot2)
+    suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))
     source('theme.publication.R')
 }
 
@@ -181,12 +181,12 @@ for (today in epiweek.list){
   
   if (args$graphs){
     # Check if plot folder exists
-    require(scales)
+    suppressWarnings(suppressPackageStartupMessages(require(scales)))
     if (!dir.exists('./plots')) {
       dir.create(file.path('./plots'), showWarnings = FALSE)
     }
     # Load palette
-    require(RColorBrewer)
+    suppressWarnings(suppressPackageStartupMessages(require(RColorBrewer)))
     cores <- colorRampPalette((brewer.pal(9, 'Oranges')))(27)
     
     if (!dir.exists(file.path('./plots',args$type))) {

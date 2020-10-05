@@ -27,6 +27,7 @@ def opportunity_calc_days(df, colA, colB, colnew):
 
 
 def insert_epiweek(df):
+    module_logger.info('Entering function: inser_epiweek')
     target_cols = ['DT_NOTIFIC', 'DT_DIGITA', 'DT_SIN_PRI', 'DT_ANTIVIR', 'DT_COLETA', 'DT_IFI', 'DT_PCR',
                    'DT_ENCERRA', 'DT_INTERNA', 'DT_EVOLUCA']
     yearweek_cols = ['%s_epiyearweek' % k for k in target_cols]
