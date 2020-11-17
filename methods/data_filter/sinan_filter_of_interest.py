@@ -214,12 +214,15 @@ def filter_db2019(df, tag=None, filtertype='srag'):
 
     tgtcols_uti = ['UTI',
                    'DT_ENTUTI',
-                   'DT_SAIDUTI']
+                   'DT_SAIDUTI',
+                   'SUPORT_VEN']
 
     tgtcols_comorb = ['CS_GESTANT',
+                      'FATOR_RISC',
                       'PUERPERA',
                       'CARDIOPATI',
                       'HEMATOLOGI',
+                      'HEPATICA',
                       'SIND_DOWN',
                       'HEPATICA',
                       'ASMA',
@@ -235,7 +238,9 @@ def filter_db2019(df, tag=None, filtertype='srag'):
 
     tgtcols_2020_07_27 = ['TP_TES_AN',
                           'DT_RES_AN',
-                          'RES_AN',
+                          'RES_IGA',
+                          'RES_IGG',
+                          'RES_IGM',
                           'LAB_AN',
                           'CO_LAB_AN',
                           'POS_AN_FLU',
@@ -249,7 +254,7 @@ def filter_db2019(df, tag=None, filtertype='srag'):
                           'AN_ADENO',
                           'AN_OUTRO',
                           'DS_AN_OUT',
-                          'SIPORT_VEN',
+                          'SUPORT_VEN',
                           'RAIOX_RES',
                           'RAIOX_OUT',
                           'DT_RAIOX',

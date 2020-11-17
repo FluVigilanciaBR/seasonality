@@ -5,16 +5,13 @@ suppressWarnings(suppressPackageStartupMessages(library("tidyverse")))
 suppressWarnings(suppressPackageStartupMessages(library(magick)))
 suppressWarnings(suppressPackageStartupMessages(library(grid)))
 suppressWarnings(suppressPackageStartupMessages(library(cowplot)))
-options(dplyr.summarise.inform=F) 
+options(dplyr.summarise.inform=F)
 source("../data_filter/episem.R")
 source("nowcasting_v2.R")
 source("slope.estimate.quant.R")
 source("mapas_macsaud.R")
-
 int_breaks_rounded <- function(x, n = 5)  pretty(x, n)[round(pretty(x, n),1) %% 1 == 0]
-
 logo <- image_read('../report/Figs/infogripe.png')
-
 # Codes for DF's central health region
 bsb_ras <- c(
   530005,
@@ -25,7 +22,6 @@ bsb_ras <- c(
   530015,
   530090
 )
-
 ## Read command line arguments
 suppressPackageStartupMessages(library("argparse"))
 # create parser object
@@ -76,11 +72,16 @@ tblmumpop[,4:ncol(tblmumpop)] <- tblmumpop %>%
   mutate_all(~ as.character(.)) %>%
   mutate_all(~ gsub('\\.', '', .)) %>%
   mutate_all(~ as.numeric(.))
-
 tblCADMUN <- tblmumpop %>%
   filter(ano == 2019) %>%
   transmute(CO_MUNICIP = codmun, Populacao = Total) %>%
   right_join(tblCADMUN)
+tblamazonas <- read.csv('../misc/Amazonas/Tab_munregsaud_manaus.csv', stringsAsFactors = FALSE)
+tblCADMUN <- tblCADMUN %>%
+  left_join(tblamazonas %>%
+              transmute(codmun = co_municipio_ibge,
+                        co_regsaud_am = co_regiao,
+                        no_regiao_am = no_regiao), by=c('CO_MUNICIP'='codmun'))
 
 # Suffix filter based on filtertype
 suff_list <- list('srag' = '', 'sragnofever' = '_sragnofever', 'hospdeath' = '_hospdeath')
@@ -88,16 +89,9 @@ suff <- suff_list[args$filtertype]
 
 # Read dataset
 path_file <- paste0("../clean_data/clean_data_", args$type, suff, "_epiweek.csv")
-
-
-# RegionalSaude <- st_read("~/Git/PROCC /covid-19/malha/regional_saude_2019.gpkg" )
-
 dados_full <- read.csv( path_file, stringsAsFactors = F) %>%
   filter(DT_SIN_PRI_epiyear == lyear) %>%
-  left_join(tblCADMUN %>% select(CO_MUNICIP, CO_MACSAUD), by=c('CO_MUN_NOT' = 'CO_MUNICIP')) 
-# dados_full <- read.csv2("~/Downloads/INFLUD_09-06-2020.csv", stringsAsFactors = F)
-# dados_full2 <- read.csv2("~/Downloads/INFLUD-07-07-2020.csv", stringsAsFactors = F)
-
+  left_join(tblCADMUN %>% select(CO_MUNICIP, CO_MACSAUD), by=c('CO_MUN_NOT' = 'CO_MUNICIP'))
 
 # Função para gerar as estimativas:
 generate.estimate <- function(dadosBR, Inicio=Inicio, today.week=today.week){
@@ -216,160 +210,53 @@ generate.estimate <- function(dadosBR, Inicio=Inicio, today.week=today.week){
   return(pred.srag.summy)
 }
 
-# Capitais:
-tblCADMUN.capital <- tblCADMUN %>% filter(IN_CAPITAL %in% c('E', 'F'))
-pred.capitais <- c()
-for(k in 1:nrow(tblCADMUN.capital)){
-
-  co_mun <- tblCADMUN.capital$CO_MUNICIP[k]
-  co_uf <- tblCADMUN.capital$CO_UF[k]
-  co_uf.name <- tblCADMUN.capital$DS_UF_SIGLA[k]
-  if (co_mun != 530010){
-    dadosBR <- dados_full %>% 
-      mutate(
-        DT_SIN_PRI = ymd(DT_SIN_PRI),
-        DT_DIGITA = ymd(DT_DIGITA),
-      ) %>% 
-      filter(
-        DT_SIN_PRI_epiyear == 2020,
-        CO_MUN_RES == as.character(tblCADMUN.capital$CO_MUNICIP[k])
-      )
-    title <- tblCADMUN.capital$DS_NOMEPAD_municip[k]
-  } else {
-    dadosBR <- dados_full %>% 
-      mutate(
-        DT_SIN_PRI = ymd(DT_SIN_PRI),
-        DT_DIGITA = ymd(DT_DIGITA),
-      ) %>% 
-      filter(
-        DT_SIN_PRI_epiyear == 2020,
-        CO_MUN_RES %in% as.character(bsb_ras)
-      )
-    title <- 'REGIAO DE SAUDE CENTRAL'
-  }
-  
-  Inicio <- min(dadosBR$DT_SIN_PRI)
-  pop <- tblCADMUN.capital$Populacao[k]
-  mun.id <- co_mun
-
-  
-  # Semana epidemiologica termina no Sabado, entao vou excluir os dados mais recentes caso a semana nao comece no sábado.
-  Fim.sat <- today.week
-
-  pred.srag.summy <- generate.estimate(dadosBR, Inicio, today.week)
-  pred.srag.summy <- pred.srag.summy %>%
-    mutate_at(vars(-("Date"), -starts_with("tendencia")), ~ .*100000/pop) %>%
-    mutate(CO_MUN_RES = as.integer(mun.id), CO_MUN_RES_nome = title, CO_UF = co_uf, DS_UF_SIGLA = co_uf.name, populacao = pop)
-  
-  pred.capitais <- pred.capitais %>%
-    bind_rows(pred.srag.summy)
-  
-  xbreaks <- c(1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52)
-  xlimits <- c(1, 52)
-  p.now.srag <- plot.nowcast(pred.srag.summy, Fim=today.week ) +
-    ylab("Incidência de SRAG (por 100mil hab.)") +
-    xlab("Semana de primeiros sintomas") +
-    scale_x_continuous(breaks = xbreaks, limits = xlimits) +
-    theme_Publication(base_size = 16, base_family = 'Roboto') +
-    ggtitle(paste0(tblCADMUN.capital$DS_UF_SIGLA[k], ": ", title)) +
-    theme(plot.margin=unit(c(1,0,5,5), units='pt'),
-          axis.text = element_text(size = rel(1)),
-          legend.margin = margin(0,0,0,0, unit='pt'),
-          legend.justification=c(0,1), 
-          legend.position=c(0.015, 1.05),
-          legend.background = element_blank(),
-          legend.key = element_blank(),
-          legend.key.size = unit(14, 'pt'),
-          legend.text = element_text(family = 'Roboto', size = rel(1))
-          )
-  p.nivel <- pred.srag.summy %>%
-    select(Date, tendencia.3s, tendencia.6s) %>%
-    mutate(tendencia.3s = case_when(
-      Date < today.week - 1 ~ NA_real_,
-      TRUE ~ tendencia.3s
-    )) %>%
-    rename('curto prazo'=tendencia.3s, 'longo prazo'=tendencia.6s) %>%
-    pivot_longer(-Date, names_to = 'janela', values_to = 'tendencia') %>%
-    arrange(desc(janela)) %>%
-    ggplot(aes(x=Date, y=tendencia, color=janela)) +
-    geom_hline(yintercept = 0, color='grey', size=1.5, linetype=2) +
-    geom_line() +
-    geom_point() +
-    scale_y_continuous(breaks = seq(-1,1,.5),
-                       labels=c('Prob. queda\n> 95%', 'Prob. queda\n> 75%', 'Estabilidade./\noscilação', 'Prob. cresc.\n> 75%', 'Prob. cresc.\n> 95%'),
-                       limits = c(-1,1),
-                       name=NULL) +
-    scale_x_continuous(breaks = xbreaks, limits = xlimits, name=NULL) +
-    scale_color_discrete(name=NULL) +
-    theme_Publication() +
-    theme(plot.margin=unit(c(1,0,5,5), units='pt'),
-          axis.text.y = element_text(size = rel(.8), angle=30),
-          legend.margin = margin(0,0,0,0, unit='pt'),
-          legend.justification=c(0,1), 
-          legend.position=c(0.015, 1.05),
-          legend.background = element_blank(),
-          legend.key = element_blank(),
-          legend.key.size = unit(14, 'pt'),
-          legend.text = element_text(family = 'Roboto', size = rel(.8))
-    )
-  
-  png(filename = paste0("./Figs/Capitais/fig_", tblCADMUN.capital$DS_UF_SIGLA[k], '_', str_replace_all(tblCADMUN.capital$DS_NOMEPAD_municip[k], ' ', '_'),".png"),
-      width=8, height=6, units='in', res=200)
-  print(plot_grid(p.now.srag, p.nivel, align='v', axis='l', nrow=2, ncol=1, rel_heights=c(2.5, 1)))
-  grid::grid.raster(logo, x = 0.999, y = 0.95, just = c('right', 'top'), width = unit(1, 'inches'))
-  dev.off()
-}
-saveRDS(pred.capitais, paste0('capitais_', lyear, '_', today.week, '.rds'))
-saveRDS(pred.capitais, paste0('capitais_current.rds'))
-
-plot.ufs.tendencia(pred.capitais %>% filter(Date == today.week))
-
-# Macrorregionais de saúde:
 tblMACSAUD <- tblCADMUN %>%
-  filter(!is.na(CO_MACSAUD)) %>%
-  select(CO_MACSAUD, DS_NOMEPAD_macsaud, CO_UF, DS_UF_SIGLA, Populacao) %>%
-  group_by(CO_MACSAUD, DS_NOMEPAD_macsaud, CO_UF, DS_UF_SIGLA) %>%
+  filter(!is.na(co_regsaud_am)) %>%
+  select(co_regsaud_am, no_regiao_am, CO_UF, DS_UF_SIGLA, Populacao) %>%
+  group_by(co_regsaud_am, no_regiao_am, CO_UF, DS_UF_SIGLA) %>%
   summarise(Populacao = sum(Populacao)) %>%
-  mutate(DS_NOMEPAD_macsaud_clean = str_replace_all(DS_NOMEPAD_macsaud, ' ', '_')) %>%
+  mutate(DS_NOMEPAD_macsaud_clean = str_replace_all(no_regiao_am, ' ', '_')) %>%
   mutate(DS_NOMEPAD_macsaud_clean = str_replace_all(DS_NOMEPAD_macsaud_clean, '/', '-')) %>%
   ungroup()
 rownames(tblMACSAUD) <- NULL
-pred.macros <- c()
+dados_full <- read.csv( path_file, stringsAsFactors = F) %>%
+  filter(DT_SIN_PRI_epiyear == lyear) %>%
+  left_join(tblCADMUN %>% select(CO_MUNICIP, co_regsaud_am, CO_MACSAUD), by=c('CO_MUN_NOT' = 'CO_MUNICIP'))
+
+dados_full$co_regsaud_am[dados_full$co_regsaud_am == 13000] <- 13001
+dados_full$co_regsaud_am[dados_full$CO_MUN_RES == 130260] <- 13000
+
+pred.regsaud.am <- c()
+
 for(k in 1:nrow(tblMACSAUD)){
-  
-  dadosBR <- dados_full %>% 
+  dadosBR <- dados_full %>%
     mutate(
       DT_SIN_PRI = ymd(DT_SIN_PRI),
       DT_DIGITA = ymd(DT_DIGITA),
-    ) %>% 
+    ) %>%
     filter(
       DT_SIN_PRI_epiyear == 2020,
-      CO_MACSAUD == tblMACSAUD$CO_MACSAUD[k]
+      co_regsaud_am == tblMACSAUD$co_regsaud_am[k]
     )
-  
-  
   if (nrow(dadosBR) > 10){
     Inicio <- min(dadosBR$DT_SIN_PRI)
-    
-    macsaud.id <- dadosBR$CO_MACSAUD %>% unique()
+    macsaud.id <- dadosBR$co_regsaud_am %>% unique()
     # Semana epidemiologica termina no Sabado, entao vou excluir os dados mais recentes caso a semana nao comece no sábado.
     Fim.sat <- today.week
-    
     pred.srag.summy <- generate.estimate(dadosBR, Inicio, today.week)
     pop <- tblMACSAUD$Populacao[k]
-    macsaud.name <- tblMACSAUD$DS_NOMEPAD_macsaud[k]
+    macsaud.name <- tblMACSAUD$DS_NOMEPAD_macsaud_clean[k]
     uf <- tblMACSAUD$CO_UF[k]
     uf.name <- tblMACSAUD$DS_UF_SIGLA[k]
     pred.srag.summy <- pred.srag.summy %>%
       mutate_at(vars(-("Date"), -starts_with("tendencia")), ~ .*100000/pop) %>%
-      mutate(CO_MACSAUD = as.integer(macsaud.id),
-             DS_NOMEPAD_macsaud = macsaud.name,
+      mutate(co_regsaud_am = as.integer(macsaud.id),
+             DS_NOMEPAD_regsaud = macsaud.name,
              CO_UF = uf,
              DS_UF_SIGLA = uf.name,
              populacao = pop)
-    pred.macros <- pred.macros %>%
+    pred.regsaud.am <- pred.regsaud.am %>%
       bind_rows(pred.srag.summy)
-    
     xbreaks <- c(1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52)
     xlimits <- c(1, 52)
     p.now.srag <- plot.nowcast(pred.srag.summy, Fim=today.week ) +
@@ -377,17 +264,16 @@ for(k in 1:nrow(tblMACSAUD)){
       xlab("Semana de primeiros sintomas") +
       scale_x_continuous(breaks = xbreaks, limits = xlimits) +
       theme_Publication(base_size = 16, base_family = 'Roboto') +
-      ggtitle(paste0(tblMACSAUD$DS_UF_SIGLA[k], ": ", tblMACSAUD$DS_NOMEPAD_macsaud[k])) +
+      ggtitle(paste0(tblMACSAUD$DS_UF_SIGLA[k], ": ", tblMACSAUD$no_regiao_am[k])) +
       theme(plot.margin=unit(c(1,0,5,5), units='pt'),
             axis.text = element_text(size = rel(1)),
             legend.margin = margin(0,0,0,0, unit='pt'),
-            legend.justification=c(0,1), 
+            legend.justification=c(0,1),
             legend.position=c(0.015, 1.05),
             legend.background = element_blank(),
             legend.key = element_blank(),
             legend.key.size = unit(14, 'pt'),
             legend.text = element_text(family = 'Roboto', size = rel(1)))
-    
     p.nivel <- pred.srag.summy %>%
       select(Date, tendencia.3s, tendencia.6s) %>%
       mutate(tendencia.3s = case_when(
@@ -411,93 +297,20 @@ for(k in 1:nrow(tblMACSAUD)){
       theme(plot.margin=unit(c(1,0,5,5), units='pt'),
             axis.text.y = element_text(size = rel(.8), angle=30),
             legend.margin = margin(0,0,0,0, unit='pt'),
-            legend.justification=c(0,1), 
+            legend.justification=c(0,1),
             legend.position=c(0.015, 1.05),
             legend.background = element_blank(),
             legend.key = element_blank(),
             legend.key.size = unit(14, 'pt'),
             legend.text = element_text(family = 'Roboto', size = rel(.8))
       )
-    png(filename = paste0("./Figs/MACSAUD/fig_", tblMACSAUD$DS_UF_SIGLA[k], '_', tblMACSAUD$CO_MACSAUD[k],".png"),
+    png(filename = paste0("./Figs/REGSAUD/fig_", tblMACSAUD$DS_UF_SIGLA[k], '_', tblMACSAUD$co_regsaud_am[k],".png"),
         width=8, height=6, units='in', res=200)
     print(plot_grid(p.now.srag, p.nivel, align='v', axis='l', nrow=2, ncol=1, rel_heights=c(2.5, 1)))
     grid::grid.raster(logo, x = 0.999, y = 0.95, just = c('right', 'top'), width = unit(1, 'inches'))
     dev.off()
   }
-  
 }
-saveRDS(pred.macros, paste0('macros_', lyear, '_', today.week, '.rds'))
-saveRDS(pred.macros, paste0('macros_current.rds'))
-
-pred.macros$CO_UF %>%
-  unique() %>%
-  map(plot.macsaude.tendencia, df=pred.macros %>% filter(Date == today.week))
-
-plot.macsaude.tendencia(uf='BR', df=pred.macros %>% filter(Date == today.week), orientation = 'portrait')
-plot.macsaude.tendencia(uf='BR', df=pred.macros %>% filter(Date == today.week), orientation = 'landscape')
-
-pred.macros <- pred.macros %>%
-  mutate(escala = 'incidência')
-pred.macros <- pred.macros %>%
-  mutate(escala = 'casos',
-         Median = round(populacao*Median/100000),
-         Q1 = round(Q1*populacao/100000),
-         Q3 = round(Q3*populacao/100000),
-         IC80I = round(IC80I*populacao/100000),
-         IC80S = round(IC80S*populacao/100000),
-         IC90I = round(IC90I*populacao/100000),
-         IC90S = round(IC90S*populacao/100000),
-         LI = round(LI*populacao/100000),
-         LS = round(LS*populacao/100000),
-         Casos = round(Casos*populacao/100000),
-         full_estimate = round(full_estimate*populacao/100000),
-         Casos.cut = round(Casos.cut*populacao/100000),
-         rolling_average = round(rolling_average*populacao/100000)
-  ) %>%
-  bind_rows(pred.macros)
-
-pred.macros %>%
-  rename('Semana epidemiológica' = Date,
-         'casos estimados' = full_estimate,
-         IC95I = LI,
-         IC95S = LS,
-         'Casos semanais reportados até a última atualização' = Casos.cut,
-         'média móvel' = rolling_average,
-         'tendência de curto prazo' = tendencia.3s,
-         'tendência de longo prazo' = tendencia.6s,
-         'População' = populacao) %>%
-  select(-Median, -Casos) %>%
-  write_csv2('macsaud_serie_estimativas_tendencia_sem_filtro_febre.csv', na = '')
-
-pred.capitais <- pred.capitais %>%
-  mutate(escala = 'incidência')
-pred.capitais <- pred.capitais %>%
-  mutate(escala = 'casos',
-         Median = round(populacao*Median/100000),
-         Q1 = round(Q1*populacao/100000),
-         Q3 = round(Q3*populacao/100000),
-         IC80I = round(IC80I*populacao/100000),
-         IC80S = round(IC80S*populacao/100000),
-         IC90I = round(IC90I*populacao/100000),
-         IC90S = round(IC90S*populacao/100000),
-         LI = round(LI*populacao/100000),
-         LS = round(LS*populacao/100000),
-         Casos = round(Casos*populacao/100000),
-         full_estimate = round(full_estimate*populacao/100000),
-         Casos.cut = round(Casos.cut*populacao/100000),
-         rolling_average = round(rolling_average*populacao/100000)
-  ) %>%
-  bind_rows(pred.capitais)
-
-pred.capitais %>%
-  rename('Semana epidemiológica' = Date,
-         'casos estimados' = full_estimate,
-         IC95I = LI,
-         IC95S = LS,
-         'Casos semanais reportados até a última atualização' = Casos.cut,
-         'média móvel' = rolling_average,
-         'tendência de curto prazo' = tendencia.3s,
-         'tendência de longo prazo' = tendencia.6s,
-         'População' = populacao) %>%
-  select(-Median, -Casos) %>%
-  write_csv2('capitais_serie_estimativas_tendencia_sem_filtro_febre.csv', na = '')
+pred.regsaud.am <- pred.regsaud.am %>%
+  left_join(tblMACSAUD %>% select(co_regsaud_am, no_regiao_am), by='co_regsaud_am')
+saveRDS(pred.regsaud.am, 'estimativas_regsaud_am.rds')

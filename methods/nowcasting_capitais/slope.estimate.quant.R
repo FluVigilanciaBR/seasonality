@@ -14,7 +14,10 @@ slope.estimate.quant <- function(end.week, pred.srag, w=3){
     right_join(pred.srag %>%
                  filter(Date >= base.week & Date <= end.week),
                by='sample') %>%
-    mutate(Casos = Casos/valorbase)
+    mutate(Casos = case_when(
+      valorbase > 0 ~ Casos/valorbase,
+      TRUE ~ Casos))
+    #mutate(Casos = Casos/valorbase)
   tmp <- lmList(Casos ~ Date | sample, data = norm.casos)
   slope <- coefficients(tmp) %>%
     select(Date) %>%

@@ -137,6 +137,11 @@ Em função do tamanho do documento completo, o mesmo não será enviado por e-m
 arquivo através do endereço usual: https://bit.ly/mave-infogripe-boletim-atual .
 
 *** ATENÇÃO ***
+Em decorrência da interrupção temporária da inserção de registros entre o fechamento da semana 45 e início da semana 
+46, afetando o perfil da oportunidade de digitação em cada localidade, a qualidade do estimador de casos recentes pode 
+ter sido afetada em alguns territórios. Como o sistema é recalibrado semanalmente, eventual perda de precisão deve ser 
+reduzida gradativamente nas próximas semanas.
+
 Para o estado do Mato Grosso continuam sendo observadas grandes inconsistências entre os dados de SRAG 
 notificados no SIVEP-gripe e aqueles reportados no portal da SES-MT, com grande subnotificação no SIVEP-gripe em 
 relação ao painel local.
@@ -767,10 +772,16 @@ def generate_public_datasets(filtertype='srag'):
             run(['cp --force ./nowcasting_capitais/Figs/Capitais/Mapa_capitais_tendencia.png %s/Capitais/.' %
                  public_figs_folder],
                 check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/capitais_serie_estimativas_tendencia_sem_filtro_febre.csv %s/.' %
+                 public_data_folder],
+                check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/fig*.png %s/Macrorregioes_de_saude/.' % public_figs_folder],
                 check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa*tendencia.png %s/Macrorregioes_de_saude/.' %
                  public_figs_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/macsaud_serie_estimativas_tendencia_sem_filtro_febre.csv %s/.' %
+                 public_data_folder],
                 check=True, shell=True)
 
     except Exception as err:
@@ -858,6 +869,18 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
 
     logger.info('Update MEM: %s', update_mem)
     logger.info('Update modules: %s', module_list)
+    logger.info('Parameters: %s' % {'flist': flist,
+                                    'update_mem': update_mem,
+                                    'module_list': module_list,
+                                    'history_files': history_files,
+                                    'dir': dir,
+                                    'sep': sep,
+                                    'years': years,
+                                    'date': date,
+                                    'dbdump': dbdump,
+                                    'plot': plot,
+                                    'filtertype': filtertype,
+                                    'extra': extra})
 
     if 'dbf2csv' in module_list:
         logger.info('Module dbf2csv file list: %s', flist)

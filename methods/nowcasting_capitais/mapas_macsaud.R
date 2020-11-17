@@ -107,20 +107,32 @@ plot.tendencia <- function(i, geom.tendencia){
 
 brazil.shp <- sf::st_read(dsn='../report/Figs', layer='Brasil', stringsAsFactors = F)
 brazil.shp$CD_GEOCODU <- as.integer(brazil.shp$CD_GEOCODU)
-plot.macsaude.tendencia <- function(uf, df){
+plot.macsaude.tendencia <- function(uf, df, orientation='landscape'){
   
   fill.var <- c('tendencia.3s', 'tendencia.6s')
   plot.title <- c('curto prazo\n(3 semanas)', 'longo prazo\n(6 semanas)')
+  if (orientation != 'landscape'){
+    plt.height = 10
+    plt.width = 8
+    nrow = 2
+    ncol = 1
+  } else {
+    plt.height = 4
+    plt.width = 10
+    nrow = 1
+    ncol = 2
+  }
   
+  suffix <- ''
   if (uf %in% c('BR', 0)){
     sigla <- 'BR'
     
     geomacsaud.tendencia <- geomacsaud %>%
       left_join(df %>% mutate(CO_MACSAUD = as.character(CO_MACSAUD), by='CO_MACSAUD'))
-    plt.height = 10
-    plt.width = 8
-    nrow = 2
-    ncol = 1
+    
+    if (orientation == 'landscape'){
+      suffix <- 'horizontal'
+    }
   } else {
     sigla <- geomacsaud %>%
       st_drop_geometry() %>%
@@ -131,10 +143,6 @@ plot.macsaude.tendencia <- function(uf, df){
     geomacsaud.tendencia <- geomacsaud %>%
       filter(!is.na(DS_ABREV_macsaud) & UFCOD == as.character(uf)) %>%
       left_join(df %>% mutate(CO_MACSAUD = as.character(CO_MACSAUD), by='CO_MACSAUD'))
-    plt.height = 4
-    plt.width = 10
-    nrow = 1
-    ncol = 2
   }
   
   p <- lapply(c(1,2), plot.tendencia, geom.tendencia = geomacsaud.tendencia)
@@ -145,7 +153,7 @@ plot.macsaude.tendencia <- function(uf, df){
     p[[2]] <- p[[2]] +
       geom_sf(data=brazil.shp, size=.4, aes(fill=NA))
   }
-  png(paste0('./Figs/MACSAUD/Mapa_macrorregioes_saude_', sigla, '_tendencia.png'),
+  png(paste0('./Figs/MACSAUD/Mapa_macrorregioes_saude_', sigla, '_tendencia_', suffix,'.png'),
       height = plt.height, width = plt.width, units = 'in', res = 100)
   grid_arrange_shared_legend(p[[1]], p[[2]], ncol = ncol, nrow = nrow, position = 'right')
   grid::grid.raster(info.logo, x = 0.001, y = 0.001, just = c('left', 'bottom'), width = unit(.8, 'inches'))
