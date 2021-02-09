@@ -1,4 +1,4 @@
-from settings import DATABASE, PATH
+from .settings import DATABASE, PATH
 
 import glob
 import os
@@ -11,6 +11,9 @@ dataset_id = {
     'srag': 1,
     'sragflu': 2,
     'obitoflu': 3,
+    'sragcovid': 4,
+    'obitocovid': 5,
+    'obito': 6
 }
 
 # ### 1.2 Scale
@@ -179,9 +182,15 @@ def migrate_current_estimates(df):
         'SRAG': 'value',
         'Tipo': 'territory_type',  # Not needed in the table
         'Situation': 'situation_id',
+        'rolling_average': 'rolling_average',
         '50%': 'median',
         '2.5%': 'ci_lower',
         '97.5%': 'ci_upper',
+        '5%': 'ci_lower_90',
+        '95%': 'ci_upper_90',
+        '25%': 'ci_lower_q1',
+        '75%': 'ci_upper_q3',
+        'bounded_97.5%': 'ci_upper_bounded',
         'cntry_percentage': 'country_percentage',
         'L0': 'low_level',
         'L1': 'epidemic_level',
@@ -232,6 +241,11 @@ def migrate_historical_estimates(df):
         '50%': 'median',
         '2.5%': 'ci_lower',
         '97.5%': 'ci_upper',
+        '5%': 'ci_lower_90',
+        '95%': 'ci_upper_90',
+        '25%': 'ci_lower_q1',
+        '75%': 'ci_upper_q3',
+        'bounded_97.5%': 'ci_upper_bounded',
         'cntry_percentage': 'country_percentage',
         'L0': 'low_level',
         'L1': 'epidemic_level',
@@ -444,6 +458,8 @@ def migrate_delay_table(df):
 
     migration_rules = {
         'UF': 'territory_id',
+        'SinPri2Interna_DelayDays': 'symptoms2hospitalization',
+        'Interna2Evoluca_DelayDays': 'hospitalization2evolution',
         'Notific2Digita_DelayDays': 'notification2digitalization',
         'SinPri2Digita_DelayDays': 'symptoms2digitalization',
         'SinPri2Antivir_DelayDays': 'symptoms2antiviral',
@@ -467,14 +483,28 @@ def migrate_delay_table(df):
 
     # remove unnecessary fields
     df.drop([
+        'DT_SIN_PRI_epiyearweek',
+        'DT_SIN_PRI_epiweek',
+        'DT_SIN_PRI_epiyear',
+        'DT_DIGITA_epiyearweek',
+        'DT_DIGITA_epiyear',
+        'DT_DIGITA_epiweek',
         'Notific2Digita_DelayWeeks',
         'SinPri2Digita_DelayWeeks',
         'SinPri2Antivir_DelayWeeks',
         'SinPri2Notific_DelayWeeks',
         'SinPri2Coleta_DelayWeeks',
+        'SinPri2Interna_DelayWeeks',
+        'Interna2Evoluca_DelayWeeks',
         'Notific2Encerra_DelayWeeks',
         'Coleta2IFI_DelayWeeks',
         'Coleta2PCR_DelayWeeks',
+        'Notific2Coleta_DelayWeeks',
+        'Notific2Antivir_DelayWeeks',
+        'Digita2Antivir_DelayWeeks',
+        'Notific2Coleta_DelayDays',
+        'Notific2Antivir_DelayDays',
+        'Digita2Antivir_DelayDays',
     ], axis=1, inplace=True)
 
     # add index
@@ -511,7 +541,7 @@ def migrate_season_level(df):
     return df
 
 
-def migrate_from_csv_to_psql(dfs=None, basic_tables=True):
+def migrate_from_csv_to_psql(dfs=None, suff='', basic_tables=True):
     """
 
     :return:
@@ -542,7 +572,7 @@ def migrate_from_csv_to_psql(dfs=None, basic_tables=True):
 
     for k, df in dfs.items():
         print('Polishing table: %s' % k)
-        dfs[k] = datasets_migration[k](dfs[k])
+        dfs[k] = datasets_migration[k.replace(suff, '')](dfs[k])
         print('Done!')
 
     # ## 1. Setting IDs

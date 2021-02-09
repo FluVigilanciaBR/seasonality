@@ -1,0 +1,493 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Boletim semanal do InfoDengue
+% Adapted by Marcelo F C Gomes (Feb 2020)
+%
+% Based on template from:
+% Boletim semanal municipal do InfoDengue
+% Adapted by Claudia Codeco (Jun 2016)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[10pt]{article} 
+\usepackage[utf8]{inputenc}
+\SweaveOpts{keep.source=TRUE}
+\input{structure_infodengue.tex} 
+
+<<options,echo=FALSE,results=hide>>=
+options(useFancyQuotes=FALSE)
+library('xtable')
+@
+  
+\fancyfoot[C]{Boletim semanal - InfoGripe}
+\fancyfoot[R]{SE \Sexpr{env$datarel} de \Sexpr{env$ano}}
+\fancyfoot[L]{\href{http://info.dengue.mat.br}{InfoDengue}}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+%--------------------------------------------------------------------------------
+%	HEADER IMAGE
+%--------------------------------------------------------------------------------
+  
+\begin{figure}[H]
+\centering\includegraphics[width=1\linewidth]{InfoDengue2.png}  
+\end{figure}
+
+\centerline {\color{altncolor}\rule{1\linewidth}{2.75pt}} % Horizontal line
+
+%--------------------------------------------------------------------------------
+%	CAIXA LATERAL - PRIMEIRA PAGINA
+%--------------------------------------------------------------------------------
+  
+\begin{minipage}[t]{.30\linewidth} % Mini page taking up 30% of the actual page
+\begin{mdframed}[style=sidebar,frametitle={}] % Sidebar box
+
+%-----------------------------------------------------------
+%\textbf{{\LARGE{cidade do Rio de Janeiro}}}
+
+\hypertarget{contents}{\textbf{{\LARGE Boletim Semanal}}} 
+
+\textbf{\large{Semana \Sexpr{(env$se)} de \Sexpr{env$ano}}} % se, ano
+
+\begin{itemize}
+\item \hyperlink{estado}{Dengue no Estado} 
+\item \hyperlink{regional}{Dengue na Regional Metropolitana I}
+\item \hyperlink{mun}{Dengue no Município}
+\item \hyperlink{munC}{Chikungunya no Município}
+\item \hyperlink{aps}{Áreas Programáticas da Saúde}
+\end{itemize}
+\centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
+
+%-----------------------------------------------------------
+  
+  \hyperlink{vartab}{Variáveis nas Tabelas}
+
+\hyperlink{notas}{Notas} % These link to their appropriate sections in the newsletter
+
+\hyperlink{creditos}{Créditos} % These link to their appropriate sections in the newsletter
+
+\centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
+
+\textbf{Contato}
+\begin{description}
+\item \href{mailto:alerta\_dengue@fiocruz.br}{alerta\_dengue@fiocruz.br}  
+\end{description}
+
+\end{mdframed}
+\end{minipage}\hfill % End the sidebar mini page 
+\begin{minipage}[t]{.66\linewidth} % Nao pode colocar espaco acima senao ela nao fica lado a lado
+
+%--------------------------------------------------------------------------------
+  %	TEXTO PRINCIPAL - PRIMEIRA PAGINA - ALERTA A NIVEL DO ESTADO
+%-------------------------------------------------------------------------------
+
+  \hypertarget{estado}{\heading{Situação da Dengue e Chikungunya na Cidade do Rio de Janeiro}{6pt}} % \hypertarget provides a label to reference using 
+
+Esse é o boletim de situação da Dengue e Chikungunya do Município do Rio de Janeiro. Para contextualização, também é apresentada a situação da dengue no Estado e na Região Metropolitana I. No Estado, desde o início do ano, \Sexpr{env$totanoUF} casos de dengue foram registrados, sendo \Sexpr{env$totultseUF} desses na última semana. O mapa mostra as condições de transmissão da dengue no estado.
+
+% Mapa estadual
+\includegraphics[width=0.8\textwidth]{\Sexpr{env$figmapaestado}}
+%-----------------------------------------------------------
+  
+  Dos \Sexpr{env$nmunicipios} municipios, \Sexpr{env$nverdeUF} encontram-se em nivel verde para dengue, \Sexpr{env$namareloUF} em nivel amarelo, \Sexpr{env$nlaranjaUF} em nivel laranja e \Sexpr{env$nvermelhoUF} em nivel vermelho referentes a semana epidemiológica \Sexpr{env$seUF}-\Sexpr{env$anoUF}. Para informações mais atualizadas
+e ter acesso ao mapa interativo do estado consultar em \href{http://info.dengue.mat.br}{\textit{Info Dengue}}.
+
+
+%--------------------------------------------------------------------------------
+  %	PRIMEIRA PAGINA : BOX - CODIGO DE CORES
+%--------------------------------------------------------------------------------
+  \vspace{1cm}
+\begin{mdframed}[style=intextbox,frametitle={}] % Sidebar box
+
+\hypertarget{descriptivebox}{\heading{O código de Cores}{1pt}} % \hypertarget provides a label to reference using \hyperlink{label}{link text}
+As cores indicam niveis de atenção
+\begin{description}
+\item[Verde:] temperaturas amenas, baixa incidência de casos.      
+\item[Amarelo:] temperatura propícia para a população do vetor e transmissão da dengue.
+\item[Laranja:] transmissão aumentada e sustentada de dengue. 
+\item[Vermelho:] incidência alta, acima dos 90\% históricos.
+\end{description}
+\end{mdframed}
+
+\textbf{Na semana passada:} \Sexpr{env$namarelo1UF} municípios do Estado do Rio de Janeiro estavam em nivel amarelo para dengue, \Sexpr{env$nlaranja1UF} em laranja e \Sexpr{env$nvermelho1UF} em vermelho.  
+
+\end{minipage} % End the main body - first page mini page
+
+
+%----------------------------------------------------------------------------------
+  %	SEGUNDA PAGINA: TEXTO PRINCIPAL - REGIONAL
+%----------------------------------------------------------------------------------
+
+
+\begin{minipage}[t]{.66\linewidth}
+
+\hypertarget{regional}{\heading{Situação da Dengue na Regional Metropolitana I}{6pt}} % titulo
+
+O Município do Rio de Janeiro está localizado na Regional de Saúde Metropolitana I. A tabela abaixo mostra os casos notificados nas últimas seis semanas e os casos preditos de acordo com o modelo Infodengue. O mapa mostra a situação atual de risco de transmissão da dengue na Regional. 
+% Mapa da regional
+\vspace{2cm}
+\captionof{figure}[tabregional]{Mapa de Alerta da Regional de Saúde}
+\begin{center}
+\includegraphics[width=0.7\textwidth]{\Sexpr{env$mapareg}} 
+\vspace{2cm}
+\end{center}
+
+% tabela da regional 
+\captionof{table}[tabregional]{Resumo das últimas seis semanas epidemiológicas na Regional de Saúde}
+\begin{center}
+\input{\Sexpr{env$tabreg}}
+\end{center}
+\small{\hyperlink{vartab}{ver descrição das variáveis}}
+\vspace{0.5cm}
+
+\end{minipage}
+\begin{minipage}[t]{.30\linewidth}
+
+
+% --------------------------------------------------------------------------
+%       SEGUNDA PAGINA: CAIXA LATERAL - INDICE MUNICIPIOS
+% -------------------------------------------------------------------------
+
+\begin{mdframed}[style=sidebar,frametitle={}] % Sidebar box 
+\textbf{\hyperlink{municips}{Municípios}} % titulo
+% Mini page taking up 30% of the actual page
+\begin{itemize} 
+
+<<bulletsmunicip,echo=FALSE,results=tex>>=
+coresbullets = c(verde='\\gsquare',amarelo='\\ysquare',
+                 laranja='\\osquare',vermelho='\\rsquare')
+
+for (j in 1:env$nmunicipiosRS) {
+  nivel = env$tabelaoRS$Nivel[j]
+  corbullet = '\\wsquare'
+  if(!is.na(nivel)) corbullet = coresbullets[nivel] 
+  cat(paste(corbullet,env$tabelaoRS$Municipio[j],'\n'))
+}
+@
+\end{itemize}
+
+\BackToContents
+% fim do box e minipage
+\end{mdframed}
+\hfill
+\end{minipage} % End of the sidebar mini page
+\newpage
+
+%-----------------------------------------------------------------------------------%	MAIN BODY - THIRD PAGE - PARTE PRINCIPAL - Municipio
+%-----------------------------------------------------------------------------------
+\begin{minipage}[t]{0.6\linewidth} % Mini page taking up 100% of the actual page
+\hypertarget{mun}{\heading{Situação atual da Dengue na Cidade do Rio de Janeiro}{6pt}} % \hypertarget 
+
+Em \Sexpr{env$ano}, até agora, foram notificados \Sexpr{env$totano} casos de dengue na cidade do Rio de Janeiro. Para comparação, em \Sexpr{env$anoprev}, no mesmo período, \Sexpr{env$totanoprevse} casos de dengue foram notificados. No total, em \Sexpr{env$anoprev}, ocorreram \Sexpr{env$totanoprev} casos. 
+
+O Município do Rio de Janeiro é dividido em 10 áreas programáticas da saúde (APS). O mapa mostra a situação atual de transmissão da dengue em cada APS. 
+
+\includegraphics[width=0.95\textwidth]{\Sexpr{env$nomemapario}}
+
+\small{Veja o mapa interativo em http://alerta.dengue.mat.br/rio}
+
+\vspace{1cm}
+
+Na tabela, tem-se o número de casos notificados no município e o número predito pelo Infodengue nas últimas seis semanas. Apresenta-se também a incidência por 100.000 habitantes. Temperatura mínima acima de 22C por mais de três semanas é um indicativo de condições propícias para transmissão da dengue. 
+
+\captionof{table}{Resumo da dengue nas últimas seis semanas epidemiológicas}
+\begin{center}
+\input{\Sexpr{env$tabelaRio}}
+\end{center}
+
+\BackToContents % Link back to the contents of the newsletter
+\end{minipage}
+\begin{minipage}[t]{.26\linewidth} 
+\begin{mdframed}[style=sidebar,frametitle={}] 
+
+%%--------------------------------------------------------------------------
+  %%      TERCEIRA PAGINA: CAIXA LATERAL - INDICE APS
+%%-------------------------------------------------------------------------
+  
+  \textbf{Dengue nas APS} 
+
+\begin{itemize}
+<<bulletsaps,echo=FALSE,results=tex>>=
+
+aps <- unique(env$tabaps$aps)
+coresbullets = c(verde='\\gsquare',amarelo='\\ysquare',
+                 laranja='\\osquare',vermelho='\\rsquare')
+for (j in 1:10) {
+  nivel = env$tabaps$nivel[env$tabaps$aps == aps[j] & env$tabaps$se==env$datarel]
+  corbullet = '\\wsquare'
+  corbullet = coresbullets[nivel] 
+  cat(paste(corbullet,"APS ",aps[j],'\n'))
+}
+@
+\end{itemize}
+
+\end{mdframed} 
+\end{minipage}
+\newpage
+
+%-----------------------------------------------------------------------------------%	
+  % MAIN BODY - FOURTH PAGE - Situação da dengue na cidade: SÉRIES HISTÓRICAS
+%-----------------------------------------------------------------------------------
+  
+\hypertarget{municipio}{\heading{Situação da Dengue na Cidade do Rio de Janeiro: Séries Históricas}{6pt}} % \hypertarget 
+
+O Infodengue utiliza em seus modelos,dados de menção de dengue nas redes sociais, além dos dados de notificação pelos médicos e dados de temperatura. Esses são os dados desde 2012.
+\vspace{1cm}
+\begin{center}
+\includegraphics[width=0.8\textwidth]{\Sexpr{env$figcidade}}
+\end{center}
+A linha tracejada azul indica o limiar pré-epidêmico; a linha tracejada vermelha indica o limiar de atividade alta (acima do qual é acionado o alerta vermelho). 
+
+\BackToContents % Link back to the contents of the newsletter
+
+
+\newpage
+
+
+%-----------------------------------------------------------------------------------%	
+  % MAIN BODY - FIFTH PAGE - Situação da chikungunya na cidade: SÉRIE HISTÓRICA e MAPA
+%-----------------------------------------------------------------------------------
+
+\begin{minipage}[t]{0.6\linewidth} % Mini page taking up 100% of the actual page
+\hypertarget{munC}{\heading{Situação da Chikungunya na Cidade do Rio de Janeiro}{6pt}} % \hypertarget 
+
+Em \Sexpr{env$ano}, até agora, foram notificados \Sexpr{env$totChikano} casos de chikungunya na cidade do Rio de Janeiro, sendo \Sexpr{env$totChikanoult} na última semana. Para comparação, em \Sexpr{env$anoprev}, no mesmo período, \Sexpr{env$totChikanoprevse} casos de chikungunya foram notificados na cidade do Rio de Janeiro. No total, em \Sexpr{env$anoprev}, ocorreram \Sexpr{env$totChikanoprev} casos. 
+
+Veja o mapa da situação atual de transmissão de chikungunya nas APS:
+
+\includegraphics[width=0.95\textwidth]{\Sexpr{env$nomemaparioChik}}
+
+
+Confira a série histórica de chikungunya na cidade do Rio de Janeiro.
+
+\begin{center}
+\includegraphics[width=0.95\textwidth]{\Sexpr{env$figcidadeChik}}
+\end{center}
+
+\BackToContents % Link back to the contents of the newsletter
+\end{minipage}
+\begin{minipage}[t]{.26\linewidth} 
+\begin{mdframed}[style=sidebar,frametitle={}] 
+
+%%--------------------------------------------------------------------------
+  %%      TERCEIRA PAGINA: CAIXA LATERAL - INDICE APS
+%%-------------------------------------------------------------------------
+  
+  \textbf{Chikungunya nas APS} 
+
+\begin{itemize}
+<<bulletsaps,echo=FALSE,results=tex>>=
+
+aps <- unique(env$tabapsChik$aps)
+coresbullets = c(verde='\\gsquare',amarelo='\\ysquare',
+                 laranja='\\osquare',vermelho='\\rsquare')
+for (j in 1:10) {
+  nivel = env$tabapsChik$nivel[env$tabapsChik$aps == aps[j] & env$tabapsChik$se==env$datarel]
+  corbullet = '\\wsquare'
+  corbullet = coresbullets[nivel] 
+  cat(paste(corbullet,"APS ",aps[j],'\n'))
+}
+@
+\end{itemize}
+
+\end{mdframed} 
+\end{minipage}
+\newpage
+
+
+%-----------------------------------------------------------------------------------%	
+  % MAIN BODY - FIFTH and SIXTH PAGE - Situação por APS - graficos 
+%-----------------------------------------------------------------------------------
+  
+  \hypertarget{aps}{\heading{Nas Áreas Programáticas de Saúde: Dengue}{6pt}} % \hypertarget 
+
+Confira a série histórica de alertas para dengue nas APS do Rio de Janeiro.
+
+\vspace{2cm}
+\includegraphics[width=0.8\textwidth]{\Sexpr{env$figaps1}}
+
+(cont.)
+
+\newpage
+
+\heading{Dengue (cont.)}{6pt} 
+
+\vspace{2cm}
+\includegraphics[width=0.8\textwidth]{\Sexpr{env$figaps2}}
+
+\newpage
+
+
+%-----------------------------------------------------------------------------------%	
+  % MAIN BODY - SEVENTH and EIGHTTH PAGE - Situação por APS chik - graficos 
+%-----------------------------------------------------------------------------------
+  
+\hypertarget{aps}{\heading{Nas Áreas Programáticas de Saúde: Chikungunya}{6pt}} % \hypertarget 
+
+\vspace{2cm}
+\includegraphics[width=0.8\textwidth]{\Sexpr{env$figaps1Chik}}
+
+(cont.)
+
+\newpage
+
+\heading{Chikungunya (cont.)}{6pt} 
+
+\vspace{2cm}
+\includegraphics[width=0.8\textwidth]{\Sexpr{env$figaps2Chik}}
+
+\newpage
+
+%-----------------------------------------------------------------------------------%	
+  % MAIN BODY - PAG NOVE E DEZ - Situação de dengue e chik por APS - tabelas
+%-----------------------------------------------------------------------------------
+  
+\heading{Tabelas: Resumo das últimas quatro semanas epidemiológicas da dengue e chikungunya nas APS.}{6pt}
+
+\begin{center}
+
+<<tabelas_saps,echo=FALSE,results=tex>>=
+
+  aps <- unique(env$tabaps$aps)
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[1],'\'}\n'))
+  cat(paste('\\input{',env$tabela1,'}\n',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[1],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC1,'}\n',sep=''))
+  
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[2],'\'}\n'))
+  cat(paste('\\input{',env$tabela2,'}\n',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[2],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC2,'}\n',sep=''))
+  
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[3],'\'}\n'))
+  cat(paste('\\input{',env$tabela3,'}\n',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[3],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC3,'}\n',sep=''))
+@
+\end{center}
+\small{\hyperlink{vartab}{ver descrição das variáveis}}
+
+(cont.)
+    
+\newpage
+  
+\heading{Tabelas (cont.)}{6pt}
+
+\begin{center}
+
+<<tabelas_saps,echo=FALSE,results=tex>>=
+
+  aps <- unique(env$tabaps$aps)
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[4],'\'}\n'))
+  cat(paste('\\input{',env$tabela4,'}\n',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[4],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC4,'}\n',sep=''))
+  
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[5],'\'}\n'))
+  cat(paste('\\input{',env$tabela5,'}',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[5],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC5,'}',sep=''))
+  
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[6],'\'}\n'))
+  cat(paste('\\input{',env$tabela6,'}\n',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[6],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC6,'}\n',sep=''))
+  
+@
+
+
+\end{center}
+\small{\hyperlink{vartab}{ver descrição das variáveis}}
+    
+    
+\newpage
+  
+\heading{Tabelas (cont.)}{6pt}
+
+\begin{center}
+
+<<tabelas_saps,echo=FALSE,results=tex>>=
+
+  aps <- unique(env$tabaps$aps)
+ 
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[7],'\'}\n'))
+  cat(paste('\\input{',env$tabela7,'}\n',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[7],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC7,'}\n',sep=''))
+  
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[8],'\'}\n'))
+  cat(paste('\\input{',env$tabela8,'}\n',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[8],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC8,'}\n',sep=''))
+
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[9],'\'}\n'))
+  cat(paste('\\input{',env$tabela9,'}\n',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[9],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC9,'}\n',sep=''))
+  
+  cat(paste('\\captionof{table}{Dengue na \'APS',aps[10],'\'}\n'))
+  cat(paste('\\input{',env$tabela10,'}',sep=''))
+  cat(paste('\\captionof{table}{Chikungunia na \'APS',aps[10],'\'}\n'))
+  cat(paste('\\input{',env$tabelaC10,'}',sep=''))
+  
+
+@
+
+
+\end{center}
+\small{\hyperlink{vartab}{ver descrição das variáveis}}
+
+
+    
+    %---------------------------------------------------------------------------------
+    %	Variáves nas Tabelas, Créditos e Contato
+  %---------------------------------------------------------------------------------
+    
+    \begin{minipage}[t]{1\linewidth} 
+  
+  \hypertarget{vartab}{\heading{Lista das variáveis apresentadas nas tabelas:}{6pt}}
+  
+  \begin{description}
+  \item [SE =] semana epidemiológica
+  \item [tweet =] número de tweets indicativos de casos de dengue na cidade
+  \item [temperatura =] média das temperaturas mínimas da semana
+  \item [casos notif =] casos notificados de dengue 
+  \item [casos preditos =] número de casos estimados após correção pelo atraso de notificação
+  \item [ICmin =] número mínimo de casos estimados (IC 95\%)
+  \item [ICmax =] número máximo de casos estimados (IC 95\%)
+  \item [Rt] número reprodutivo efetivo ($>$ 1 indica aumento de casos transmissão)
+  \item [pr(inc. subir) =] probabilidade do número reprodutivo ser maior que 1 ($>0.95$ indica aumento significativo de casos)
+  \item [inc =] incidência por 100.000 habitantes
+  \item [Nivel =] cor do alerta (verde, amarelo, laranja, vermelho)
+  \end{description}
+  
+  \hypertarget{notas}{\heading{Notas}{6pt}}
+  
+  \begin{itemize}
+  \item Os dados do sinan mais recentes ainda não foram totalmente digitados. Estimamos o número esperado de casos notificados considerando o tempo até os casos serem digitados.
+  \item Os dados de tweets são gerados pelo Observatório de Dengue (UFMG). Os tweets são processados para exclusão de informes e outros temas relacionados a dengue.
+  \item Algumas vezes, os casos da última semana ainda não estao disponíveis, nesse caso, usa-se uma estimação com base na tendência de variação da série.
+  \end{itemize}
+  
+  \hypertarget{creditos}{\heading{Créditos}{6pt}}
+  
+  Este é um projeto desenvolvido com apoio da SVS/MS em parceria com:
+    
+    \begin{itemize}
+  \item Programa de Computação Científica, Fundação Oswaldo Cruz, Rio de Janeiro.
+  \item Escola de Matemática Aplicada, Fundação Getúlio Vargas.
+  \item Observatório de Dengue da UFMG.
+  \item Secretarias do Estado e Município do Rio de Janeiro.
+  \item Secretaria Estadual de Saúde do Paraná.
+  \end{itemize}
+  
+  \BackToContents % Link back to the contents of the newsletter
+  
+  \vspace{1cm}
+  
+  \hrule
+  Para mais detalhes sobre o sistema de alerta InfoDengue, consultar: \url{http://info.dengue.mat.br}\\
+  
+  \textbf{Contato}: \href{alerta\_dengue@fiocruz.br}{\nolinkurl{alerta\_dengue@fiocruz.br} }
+  \end{minipage} % fim da pagina de creditos
+  
+  \end{document} 

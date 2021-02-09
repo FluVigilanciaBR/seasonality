@@ -8,15 +8,20 @@ import datetime
 Return Brazilian epidemiological week from passed date
 '''
 
+
 def extractweekday(x=datetime.datetime):
+    if x is None:
+        return None
     # Extract weekday as [Sun-Sat] |-> [0-6]
     w = x.isoweekday() % 7  # isoweekday() returns weekday with [Mon-Sun] as [1-7]
     return w
 
 
 def firstepiday(year=int):
-    day = datetime.datetime.strptime('%s-01-01' % year, '%Y-%m-%d')
+    if year is None:
+        return None
 
+    day = datetime.datetime.strptime('%s-01-01' % year, '%Y-%m-%d')
 
     day_week = extractweekday(day)
 
@@ -33,8 +38,9 @@ def firstepiday(year=int):
 
 
 def lastepiday(year=int):
+    if year is None:
+        return None
     day = datetime.datetime.strptime('%s-12-31' % year, '%Y-%m-%d')
-
 
     day_week = extractweekday(day)
 
@@ -48,6 +54,13 @@ def lastepiday(year=int):
         day = day + datetime.timedelta(days=(6-day_week))
 
     return day
+
+
+def epiweek2date(y, w):
+    day1 = firstepiday(y)
+    saturday = (day1 + datetime.timedelta(weeks=w-1)).strftime('%Y%m%d')
+
+    return saturday
 
 
 def episem(x, sep='W', out='YW'):

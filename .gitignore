@@ -16,3 +16,5 @@ vignettes/*.pdf
 methods/opportunity_estimator/plots/
 # MEM detailed output:
 methods/mem/mem-data/
+# Data folder
+data/

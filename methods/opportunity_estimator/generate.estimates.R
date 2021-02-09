@@ -11,13 +11,10 @@ generate.estimates <- function(delay.tbl.tmp, Dmax, do.plots=F, uf='tmp'){
   # Última semana no banco
   Tactual <- dim(delay.tbl.tmp)[1]
   
-  delay.tbl.tmp.obs <- delay.tbl.tmp[1:Tactual,(0:Dmax)+1]
+  delay.tbl.tmp.obs.trian <- delay.tbl.tmp[1:Tactual,(0:Dmax)+1]
   
   # Time index of the unknown counts (Dmax+1,...,Tactual) 
   index.time <- (Tactual-Dmax+1):Tactual
-  
-  
-  delay.tbl.tmp.obs.trian <- delay.tbl.tmp.obs
   
   # Creating the run-off triangle data frame
   delay.tbl.tmp.obs.trian[outer(1:Tactual, 0:Dmax, FUN = "+") > Tactual] <- NA

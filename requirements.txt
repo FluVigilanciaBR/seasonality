@@ -1,8 +1,10 @@
+PyYAML
 sqlalchemy
 dbfread
-pandas
+pandas>=0.23
 seaborn
 rpy2
 matplotlib
 scipy
 numpy
+fludashboard>=0.4.0

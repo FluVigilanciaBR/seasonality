@@ -4,19 +4,26 @@ __author__ = 'Marcelo Ferreira da Costa Gomes'
 Convert dfb file to csv format
 '''
 
-import csv
 import argparse
+import logging
+import pandas as pd
 from argparse import RawDescriptionHelpFormatter
 from dbfread import DBF
 
+module_logger = logging.getLogger('update_system.data_filter.dbf2csv')
+
 
 def dbf2csv(fin, fout):
-    table = DBF(fin)
-    writer = csv.writer(open(fout,'w'))
 
-    writer.writerow(table.field_names)
-    for record in table:
-        writer.writerow(list(record.values()))
+    for enc in ['utf-8', 'utf-16', 'latin-1']:
+        try:
+            table = DBF(fin, encoding=enc)
+            df = pd.DataFrame(iter(table))
+            break
+        except UnicodeDecodeError:
+            pass
+
+    df.to_csv(fout, encoding='utf-8')
 
     return
 
@@ -24,11 +31,10 @@ def dbf2csv(fin, fout):
 def main(flist):
 
     for fname in flist:
-        print(fname)
+        module_logger.info('DBF2CSV: PROCESSING %s' % fname)
         fout = '.'.join(fname.split('.')[:-1]) + '.csv'
         dbf2csv(fname, fout)
-
-    exit()
+        module_logger.info('DBF2CSV: CONVERTED TO %s' % fout)
 
 
 if __name__ == '__main__':
