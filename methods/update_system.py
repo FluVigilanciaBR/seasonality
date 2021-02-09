@@ -134,26 +134,41 @@ Segue o resumo do boletim semanal gerado pelo InfoGripe, com base nos dados do S
 Esta é uma mensagem automática, não é necessário responder o e-mail.
 
 Em função do tamanho do documento completo, o mesmo não será enviado por e-mail, mas pode ser feito o download do 
-arquivo através do endereço usual: https://bit.ly/mave-infogripe-boletim-atual .
+arquivo através do endereço usual: https://bit.ly/mave-infogripe-boletim-atual . No repositório de gráficos 
+referentes às capitais (https://bit.ly/infogripe-capitais e http://bit.ly/mave-infrogripe-dados-capitais) estão 
+incluídas também as análises estratificadas por grupo jurídico da unidade de notificação, permitindo avaliação de 
+eventuais subnotificações, aumento no atraso de notificação/digitação, ou fluxo de atendimento distinto em cada rede.
+
+Neste edição do resumo incluímos anexo com comparação entre as estimativas produzidas ao final da semana 53 2020 e a 
+atual, para auxiliar a avaliação da perda de oportunidade de digitação em relação aos dados de dezembro.
+No link http://bit.ly/infogripe-painel-se02_04-2021 disponibilizamos painel em alta resolução com os gráficos 
+comparativos de todas as capitais distribuídas no formato do mapa do Brasil.
 
 *** ATENÇÃO ***
-Em decorrência da interrupção temporária da inserção de registros entre o fechamento da semana 45 e início da semana 
-46, afetando o perfil da oportunidade de digitação em cada localidade, a qualidade do estimador de casos recentes pode 
-ter sido afetada em alguns territórios. Como o sistema é recalibrado semanalmente, eventual perda de precisão deve ser 
-reduzida gradativamente nas próximas semanas.
+Registros de SRAG no SIVEP-Gripe para diversos estados aparentaram uma piora significativa na oportunidade de 
+digitação (tempo entre data de primeiros sintomas e data de digitação no SIVEP-Gripe dos casos notificados) refente 
+aos casos ocorridos durante os últimos meses de 2020 e início de 2021. Alterações repentinas e significativas no 
+perfil de atraso impactam na qualidade do estimador de casos recentes, podendo gerar subestimação de casos e, 
+inclusive, falso sinal de queda. Tal efeito pode ser inferido de maneira indireta ao contrastar os registros 
+inseridos à época e as taxas de ocupação de leitos. Incluímos ao final deste documento painel comparativo entre as 
+estimativas geradas para as capitais ao término da semana epidemiológica 02 de 2020 e a presente atualização, 
+ilustrando o impacto disso nas estimativas com base nos dados do início do ano, ainda em decorrência da mudança no 
+perfil do atraso durante o mês de dezembro. Observa-se uma melhora no quadro geral, com um conjunto menor de 
+capitais ainda apresentando diferenças relevantes entre os dados atuais e aqueles inseridos até a início da segunda 
+quinzena de janeiro. Tal melhora pode ser identificada ao contrastar a diferença aqui apresentada e a comparação 
+apresentada no boletim anterior (comparação entre as SE 2020 53 e 2021 03). Vale destacar que locais que ainda 
+possuam um passivo considerável de fichas de notificação referentes ao final de 2020 podem ainda não apresentar 
+diferença significativa entre essas duas atualizações, tornando necessário um acompanhamento ao longo dos primeiros 
+meses de 2021 para uma avaliação adequada.
+Como os dados aqui analisados se referem a notificações de hospitalizações ou óbitos, a superlotação da rede 
+hospitalar, com formação de lista de espera para disponibilização de leitos, pode gerar subnotificação. Isso ocorre 
+toda vez que pacientes que atendem a definição de SRAG deixam de ser notificados por não ser possível realizar a 
+internação do paciente. Por causa desse risco de subnotificação, é possível que os casos de SRAG notificados na base 
+SIVEP subestimem o total de casos em locais com índice de ocupação de leitos elevado. Portanto, locais com índice de 
+ocupação de leitos elevado devem deixar os indicadores de SRAG em segundo plano em relação à tomada de decisão até 
+que a ocupação volte a diminuir.
 
-Para o estado do Mato Grosso continuam sendo observadas grandes inconsistências entre os dados de SRAG 
-notificados no SIVEP-gripe e aqueles reportados no portal da SES-MT, com grande subnotificação no SIVEP-gripe em 
-relação ao painel local.
-Em função disso, as análises e indicadores gerados pelo InfoGripe como estimativa de casos recentes para correção da 
-oportundiade de digitação, e tendências de curto e longo prazo para capital e macrorregiões de saúde para o estado 
-devem ser desconsiderados até que seja reestabelecida a alimentação adequada do sistema nacional, pois potencialmente 
-não refletem a realidade local.
-Contamos com a colaboração das autoriadades locais para o reestabelecimento oportuno dos registros das SRAG no 
-SIVEP-gripe.
-
-Sugestões de melhorias podem ser encaminhadas para o endereço eletrônico de contato,
-disponível no documento.
+Sugestões de melhorias podem ser encaminhadas para o endereço eletrônico de contato, disponível no documento.
 
 Acesse o site para mais informações:
 http://info.gripe.fiocruz.br
@@ -256,7 +271,7 @@ def email_update(dir, years, sep=','):
     return
 
 
-def apply_filters(flist=None, filtertype='srag'):
+def apply_filters(flist=None, filtertype='srag', append_cases=None, append_delay=None):
     from data_filter import sinan_filter_of_interest
 
     module_name = sinan_filter_of_interest.__name__
@@ -266,7 +281,10 @@ def apply_filters(flist=None, filtertype='srag'):
 
     logger.info('Historical files: %s', flist)
     try:
-        sinan_filter_of_interest.main(flist, filtertype=filtertype)
+        sinan_filter_of_interest.main(flist,
+                                      filtertype=filtertype,
+                                      append_cases=append_cases,
+                                      append_delay=append_delay)
     except Exception as err:
         logger.exception(module_name)
         logger.exception(err)
@@ -574,9 +592,14 @@ def generate_public_datasets(filtertype='srag'):
             "SARS2": "SARS-CoV-2",
             "VSR": 'Vírus sincicial respiratório (VSR)',
             "ADNO": "Adenovirus",
+            "RINO": "Rinovirus",
+            "BOCA": "Bocavirus",
+            "METAP": "Metapneumovirus",
             "PARA1": "Parainfluenza 1",
             "PARA2": "Parainfluenza 2",
             "PARA3": "Parainfluenza 3",
+            "PARA4": "Parainfluenza 4",
+            "OTHERS": "Outros virus",
             'NEGATIVE': "Testes negativos",
             'NOTTESTED': "Casos sem teste laboratorial",
             'DELAYED': "Casos aguardando resultado",
@@ -667,8 +690,17 @@ def generate_public_datasets(filtertype='srag'):
                  'intensidade alta',
                  'intensidade muito alta']]
         df.loc[df.Situation != 'estimated', ['2.5%', '50%', 'bounded_97.5%']] = None
-        epiweekmax = df.loc[df.Situation == 'estimated', ['epiyear', 'epiweek']].max()
-        df.loc[(df.epiyear == epiweekmax.epiyear) & (df.epiweek >= epiweekmax.epiweek-1), 'SRAG'] = None
+        epiweekmax = df.loc[df.Situation == 'estimated',
+                            ['epiyear', 'epiweek']].sort_values(by=['epiyear', 'epiweek']).tail(1)
+        df.loc[(df.epiyear == epiweekmax.epiyear.values[0]) &
+               (df.epiweek >= epiweekmax.epiweek.values[0]-1),
+               'SRAG'] = None
+        if epiweekmax.epiweek.values[0] == 1:
+            epiyearprev = epiweekmax.epiyear.values[0] - 1
+            epiwkmax = df.epiweek[df.Situation == 'estimated'].max()
+            df.loc[(df.epiyear == epiyearprev) &
+                   (df.epiweek == epiwkmax),
+                   'SRAG'] = None
 
         df.Situation = df.Situation.map(situation_dict)
         df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
@@ -706,12 +738,20 @@ def generate_public_datasets(filtertype='srag'):
         df.to_csv(fname, sep=';', index=False, decimal=',')
 
         # tabela:
-        df = df.loc[(df['Ano epidemiológico'] == 2020) &
-                    (df['Semana epidemiológica'].isin([epiweekmax.epiweek-1, epiweekmax.epiweek])) &
-                    (df.dado == 'srag') &
-                    (df.escala == 'incidência'),
-                    ['UF', 'Unidade da Federação', 'dado', 'escala', 'Ano epidemiológico', 'Semana epidemiológica',
-                     'casos estimados', 'média móvel', 'nível semanal', 'nível por média móvel']].copy()
+        if epiweekmax.epiweek.values[0] == 1:
+            df = df.loc[(((df['Ano epidemiológico'] == epiyearprev) & (df['Semana epidemiológica'] == epiwkmax)) |
+                         ((df['Ano epidemiológico'] == epiyearprev+1) & (df['Semana epidemiológica'] == 1))) &
+                        (df.dado == 'srag') &
+                        (df.escala == 'incidência'),
+                        ['UF', 'Unidade da Federação', 'dado', 'escala', 'Ano epidemiológico', 'Semana epidemiológica',
+                         'casos estimados', 'média móvel', 'nível semanal', 'nível por média móvel']].copy()
+        else:
+            df = df.loc[(df['Ano epidemiológico'] == epiweekmax.epiyear.values[0]) &
+                        (df['Semana epidemiológica'].isin([epiweekmax.epiweek-1, epiweekmax.epiweek])) &
+                        (df.dado == 'srag') &
+                        (df.escala == 'incidência'),
+                        ['UF', 'Unidade da Federação', 'dado', 'escala', 'Ano epidemiológico', 'Semana epidemiológica',
+                         'casos estimados', 'média móvel', 'nível semanal', 'nível por média móvel']].copy()
 
         fname = os.path.join(data_folder, 'tabela_de_alerta%s.csv' % suff_out[filtertype])
         df.to_csv(fname, sep=';', index=False, decimal=',')
@@ -726,8 +766,6 @@ def generate_public_datasets(filtertype='srag'):
         df = df.rename(columns=rename_cols)
         df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
 
-        drop_cols = ['OTHERS']
-        df = df.drop(columns=drop_cols)
         tgt_cols = ['data de publicação',
                     'UF',
                     'Unidade da Federação',
@@ -747,7 +785,8 @@ def generate_public_datasets(filtertype='srag'):
                     'Casos sem informação laboratorial', 'Casos sem teste laboratorial',
                     'Resultado inconclusivo',
                     'Influenza A', 'Influenza B', 'SARS-CoV-2', 'Vírus sincicial respiratório (VSR)',
-                    'Parainfluenza 1', 'Parainfluenza 2', 'Parainfluenza 3', 'Adenovirus'
+                    'Parainfluenza 1', 'Parainfluenza 2', 'Parainfluenza 3', 'Parainfluenza 4', 'Adenovirus',
+                    'Rinovirus', 'Bocavirus', 'Metapneumovirus', 'Outros virus'
                     ]
         fname = os.path.join(data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv' % suff_out[filtertype])
         df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
@@ -797,7 +836,7 @@ def generate_public_datasets(filtertype='srag'):
 
 
 def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, sep=',', years=None, date='max',
-         dbdump=None, plot=None, filtertype='srag', extra: str=None):
+         dbdump=None, plot=None, filtertype='srag', extra=None, append_cases=None, append_delay=None):
     """
     Run all scripts to update the system with new database.
 
@@ -860,8 +899,7 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
                        'report']
 
     if module_list and 'local_update' in module_list:
-        module_list = ['filter',
-                       'convert2mem',
+        module_list = ['convert2mem',
                        'estimator',
                        'consolidate',
                        'public_dataset',
@@ -895,7 +933,7 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
 
     if 'filter' in module_list:
         logger.info('Aggregate and filter data')
-        apply_filters(history_files, filtertype)
+        apply_filters(history_files, filtertype, append_cases=append_cases, append_delay=append_delay)
 
     if 'epiweek' in module_list:
         logger.info('Insert epiweek')
@@ -927,7 +965,7 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     os.chdir('../')
     os.chdir('./report')
     epiyear, epiweek = episem(date).split('W')
-    if epiweek == 1:
+    if int(epiweek) == 1:
         epiyear = int(epiyear) - 1
         epiweek = int(lastepiweek(epiyear))
     else:
@@ -985,6 +1023,10 @@ if __name__ == '__main__':
     parser.add_argument('--filtertype', help='Default=srag. Which filter should be used? [srag, sragnofever, '
                                              'hospdeath]', default='srag')
     parser.add_argument('--extra', help='Default=None. Path to additional pdf for mailing list (if any)', default=None)
+    parser.add_argument('--append_cases', help='Default=None. Path to case files to append to',
+                        default=None)
+    parser.add_argument('--append_delay', help='Default=None. Path to delay file to append to',
+                        default=None)
 
     args = parser.parse_args()
     if args.path:
@@ -998,4 +1040,4 @@ if __name__ == '__main__':
 
     main(flist=args.path, update_mem=args.mem, module_list=args.modules, history_files=args.history, dir=args.dir,
          sep=args.sep, years=args.years, date=args.date, dbdump=args.dbdump, plot=args.plot, filtertype=args.filtertype,
-         extra=args.extra)
+         extra=args.extra, append_cases=args.append_cases, append_delay=args.append_delay)

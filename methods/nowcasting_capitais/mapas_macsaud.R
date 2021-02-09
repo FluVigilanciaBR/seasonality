@@ -131,7 +131,7 @@ plot.macsaude.tendencia <- function(uf, df, orientation='landscape'){
       left_join(df %>% mutate(CO_MACSAUD = as.character(CO_MACSAUD), by='CO_MACSAUD'))
     
     if (orientation == 'landscape'){
-      suffix <- 'horizontal'
+      suffix <- '_horizontal'
     }
   } else {
     sigla <- geomacsaud %>%
@@ -153,7 +153,7 @@ plot.macsaude.tendencia <- function(uf, df, orientation='landscape'){
     p[[2]] <- p[[2]] +
       geom_sf(data=brazil.shp, size=.4, aes(fill=NA))
   }
-  png(paste0('./Figs/MACSAUD/Mapa_macrorregioes_saude_', sigla, '_tendencia_', suffix,'.png'),
+  png(paste0('./Figs/MACSAUD/Mapa_macrorregioes_saude_', sigla, '_tendencia', suffix,'.png'),
       height = plt.height, width = plt.width, units = 'in', res = 100)
   grid_arrange_shared_legend(p[[1]], p[[2]], ncol = ncol, nrow = nrow, position = 'right')
   grid::grid.raster(info.logo, x = 0.001, y = 0.001, just = c('left', 'bottom'), width = unit(.8, 'inches'))
@@ -161,14 +161,14 @@ plot.macsaude.tendencia <- function(uf, df, orientation='landscape'){
   
 }
 
-plot.ufs.tendencia <- function(df, tgt.col='CO_UF'){
+plot.ufs.tendencia <- function(df, tgt.col='CO_UF', fpath = './Figs/Capitais/Mapa_capitais_tendencia.png'){
   fill.var <- c('tendencia.3s', 'tendencia.6s')
   plot.title <- c('curto prazo\n(3 semanas)', 'longo prazo\n(6 semanas)')
   geom.shp <- brazil.shp %>%
     left_join(df, by=c('CD_GEOCODU' = tgt.col))
   
   p <- lapply(c(1,2), plot.tendencia, geom.tendencia=geom.shp)
-  png(paste0('./Figs/Capitais/Mapa_capitais_tendencia.png'),
+  png(fpath,
       height = 4, width = 10, units = 'in', res = 100)
   grid_arrange_shared_legend(p[[1]], p[[2]], ncol = 2, nrow = 1, position = 'right')
   grid::grid.raster(info.logo, x = 0.001, y = 0.001, just = c('left', 'bottom'), width = unit(.8, 'inches'))

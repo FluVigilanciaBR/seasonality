@@ -107,9 +107,10 @@ A nível nacional, o cenário atual sugere que a situação de cada indicador se
 	\begin{itemize}
 		\item [] Dado semanal na \textbf{\Sexpr{br.report$texto[br.report$indicador == 'canal endêmico' & br.report$dado == 1]}}.
 		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 1]}}.
-		\item [] Total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag']} casos} já reportados no ano, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag']}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
-		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag']} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag']} aguardando resultado}.
-		\item [] Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag'])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag'])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag'])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag'])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} casos} já reportados no ano, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == args$epiyear]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
+		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} aguardando resultado}.
+		\item [] Dentre os casos positivos do ano corrente, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Referente a 2020, já foram reportados um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == 2020]} casos} casos, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == 2020]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório, \textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == 2020]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == 2020]} aguardando resultado}. Dentre os casos positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{SARS-CoV-2} (COVID-19).
 	\end{itemize}
 
 %	\item [Casos notificados de SRAG por influenza:] \hfill
@@ -122,9 +123,10 @@ A nível nacional, o cenário atual sugere que a situação de cada indicador se
   \begin{itemize}
 		\item [] Dado semanal na \textbf{\Sexpr{br.report$texto[br.report$indicador == 'canal endêmico' & br.report$dado == 6]}}.
 		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 6]}}.
-		\item [] Total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito']} casos} já reportados no ano, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito']}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
-		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito']} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito']} aguardando resultado}.
-		\item [] Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito'])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito'])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito'])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito'])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Referente os casos do ano corrente, um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} óbitos} já foram reportados, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == args$epiyear]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
+		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} aguardando resultado}.
+		\item [] Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Referente os casos do ano de 2020, um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == 2020]} óbitos} já foram reportados, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == 2020]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório, \textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == 2020]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == 2020]} aguardando resultado}. Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{SARS-CoV-2} (COVID-19).
 	\end{itemize}
 \end{description}
 
@@ -166,7 +168,7 @@ A Fig.~\ref{fig:st_reg2} apresenta a incidência de casos e óbitos de SRAG nas 
 
 \clearpage
 
-\hypertarget{Mapas contingencia}{\heading{Mapas de situação para o plano de contingência}{6pt}}
+\hypertarget{Mapas contingencia}{\heading{Mapas de situação para o plano de contingência para vírus Influenza}{6pt}}
 Além das análises por Unidade da Federação, o sistema InfoGripe reporta análise por agregados regionais, utilizando tanto a divisão geopolítica quanto por perfil de atividade de SRAG. A Fig.\ref{fig:regioes} apresenta essas duas divisões para referência.
 \begin{figure}[h]
 	\centering
@@ -174,7 +176,7 @@ Além das análises por Unidade da Federação, o sistema InfoGripe reporta aná
 	\caption{Estados agregados por regiões geopolíticas (esquerda) e com base na similaridade do perfil de aividade de SRAG (direita)}\label{fig:regioes}
 \end{figure}
 
-Os mapas referentes ao plano de contingência seguem os critérios definidos pela SVS:
+Os mapas referentes ao plano de contingência para o vírus Influenza seguem os critérios definidos pela SVS/MS:
 \begin{description}
 	\item[Nível basal:] quando nenhum dos critéiros a seguir forem satisfeitos;
 	\item[Nível 0:] casos de SRAG em ascensão por 4 semanas consecutivas \textbf{e}, em ao menos uma delas, dentro da zona de alerta (região laranja dos canais endêmicos) ou acima;
@@ -190,12 +192,12 @@ A desativação de cada nível se dará de forma progressiva, atendendo os segui
 	\item Caso a curva de incidência do novo nível não tenha registrado ao menos duas semanas consecutivas na zona de segurança ou êxito desde a SE de ativação do nível em que o sistema se encontrava, o sistema adotará este nível como o atual. Caso contrário, este passo será repetido com a curva de incidência do nível imediatamente inferior.
 \end{itemize}
 
-Os mapas na Figura~\ref{fig:contingencia} apresentam o nível em relação ao plano de contingência para território.
+Os mapas na Figura~\ref{fig:contingencia} apresentam o nível em relação ao plano de contingência para vírus Influenza no território.
 
 \begin{figure}[!h]
 	\centering
 	\includegraphics[width=\textwidth]{Figs/contingency_sragnofever.png}
-	\caption{Nível do plano de contingência para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita).}\label{fig:contingencia}
+	\caption{Nível do plano de contingência para vírus Influenza. Dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita).}\label{fig:contingencia}
 \end{figure}
 
 \clearpage
@@ -207,7 +209,7 @@ O sistema InfoGripe utiliza três limiares: pré-epidêmico, atividade alta, e a
 Com base neles, cada região é classificada em quatro níveis de atividade:
 \begin{description}
 	\item[Atividade baixa:] incidência abaixo do limiar pré-epidêmico.
-	\item[Ativiade epidêmcia:] incidência acima do limiar pré-epidêmico (linha verde tracejada na série temporal) e abaixo do limiar de atividade alta (linha azul tracejada na série temporal).
+	\item[Ativiade epidêmica:] incidência acima do limiar pré-epidêmico (linha verde tracejada na série temporal) e abaixo do limiar de atividade alta (linha azul tracejada na série temporal).
 	\item[Atividade alta:] incidência acima do limiar de atividade alta e abaixo do de atividade muito alta (linha vermelha tracejada na série temporal).
 	\item[Atividade muito alta:] incidência acima do limiar de atividade muito alta.
 \end{description}

@@ -12,18 +12,45 @@ from argparse import RawDescriptionHelpFormatter
 module_logger = logging.getLogger('update_system.sinan_convert2mem')
 age_cols = ['Idade desconhecida', '0-4 anos', '5-9 anos', '10-19 anos', '20-29 anos', '30-39 anos', '40-49 anos',
             '50-59 anos', '60+ anos']
+vir_cols = ['FLU_A',
+            'FLU_B',
+            'SARS2',
+            'VSR',
+            'PARA1',
+            'PARA2',
+            'PARA3',
+            'PARA4',
+            'ADNO',
+            'METAP',
+            'BOCA',
+            'RINO',
+            'OTHERS']
+
+lab_cols_in = vir_cols + ['POSITIVE',
+                       'NEGATIVE',
+                       'INCONCLUSIVE',
+                       'TESTING_IGNORED',
+                       'NOTTESTED',
+                       'DELAYED']
+lab_cols_out = vir_cols + ['POSITIVE_CASES',
+                           'NEGATIVE',
+                           'INCONCLUSIVE',
+                           'TESTING_IGNORED',
+                           'NOTTESTED',
+                           'DELAYED']
 
 
 def readtable(fname, sep=','):
 
     target_col = ['SG_UF_NOT', 'DT_SIN_PRI_epiyearweek', 'DT_SIN_PRI_epiyear', 'DT_SIN_PRI_epiweek', 'CS_SEXO',
-                  'idade_em_anos', 'FLU_A', 'FLU_B', 'SARS2', 'VSR', 'PARA1', 'PARA2', 'PARA3', 'ADNO', 'OTHERS',
-                  'NEGATIVE', 'INCONCLUSIVE', 'TESTING_IGNORED', 'NOTTESTED', 'DELAYED', 'POSITIVE']
-    df = pd.read_csv(fname, sep=sep, low_memory=False, encoding='utf-8')[target_col].rename(columns={'CS_SEXO': 'sexo',
-                                                                                   'DT_SIN_PRI_epiyearweek':
-                                                                                       'epiyearweek',
-                                                                                   'DT_SIN_PRI_epiyear': 'epiyear',
-                                                                                   'DT_SIN_PRI_epiweek': 'epiweek'})
+                  'idade_em_anos'] + lab_cols_in
+    df = pd.read_csv(fname,
+                     sep=sep,
+                     low_memory=False,
+                     encoding='utf-8')[target_col].rename(columns={'CS_SEXO': 'sexo',
+                                                                   'DT_SIN_PRI_epiyearweek': 'epiyearweek',
+                                                                   'DT_SIN_PRI_epiyear': 'epiyear',
+                                                                   'DT_SIN_PRI_epiweek': 'epiweek'})
     df['Idade desconhecida'] = pd.isnull(df.idade_em_anos).astype(int)
     df['< 2 anos'] = (df.idade_em_anos < 2).astype(int)
     df['2-4 anos'] = ((df.idade_em_anos >= 2) & (df.idade_em_anos < 5)).astype(int)
@@ -36,8 +63,7 @@ def readtable(fname, sep=','):
     df['50-59 anos'] = ((df.idade_em_anos >= 50) & (df.idade_em_anos < 60)).astype(int)
     df['60+ anos'] = (df.idade_em_anos >= 60).astype(int)
 
-    tgt_cols = {'Agentes infecciosos detectados': ['FLU_A', 'FLU_B', 'SARS2', 'VSR', 'PARA1', 'PARA2', 'PARA3', 'ADNO',
-                                                   'OTHERS'],
+    tgt_cols = {'Agentes infecciosos detectados': vir_cols,
                 'Exames laboratoriais': ['POSITIVE_CASES', 'NEGATIVE', 'INCONCLUSIVE',
                                          'TESTING_IGNORED', 'NOTTESTED', 'DELAYED']}
 
@@ -129,21 +155,7 @@ def uf4mem(dfin=pd.DataFrame()):
     tgt_cols.remove('Idade desconhecida')
     dfpop.set_index('Ano', inplace=True)
     # Incidence from lab results:
-    lab_cols = ['FLU_A',
-                'FLU_B',
-                'SARS2',
-                'VSR',
-                'PARA1',
-                'PARA2',
-                'PARA3',
-                'ADNO',
-                'OTHERS',
-                'POSITIVE_CASES',
-                'NEGATIVE',
-                'INCONCLUSIVE',
-                'DELAYED',
-                'TESTING_IGNORED',
-                'NOTTESTED']
+    lab_cols = lab_cols_out
     for uf in uflist:
         for year in yearlist:
             for sex in ['M', 'F', 'Total']:
@@ -160,7 +172,7 @@ def uf4mem(dfin=pd.DataFrame()):
 
     # Structure data in the format accepted by MEM algorithm:
     lastweek = df.epiweek[(df.epiyear == max(yearlist)) & (df.epiweek != 53)].max()
-    tmpdict = [{'UF': uf, 'epiweek': week} for week in range(1,53) for uf in uflist]
+    tmpdict = [{'UF': uf, 'epiweek': week} for week in range(1, 53) for uf in uflist]
     dftmp = pd.DataFrame(tmpdict)
     dftmpinc = dftmp.copy()
     for year in yearlist:

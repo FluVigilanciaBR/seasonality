@@ -84,18 +84,19 @@ Sendo assim, para fins deste boletim são considerados todas as notificações r
 Análises dos dados notificados no sistema Sivep-gripe que utilizem outros critérios de filtro apresentarão resultados distintos para o mesmo período.
 \end{minipage}
 
-\newpage
+\clearpage
 
 \hypertarget{Serie nacional}{\heading{Situação nacional}{6pt}}
 A nível nacional, o cenário atual sugere que a situação de cada indicador se encontra nos seguintes níveis:
 \begin{description}
-	\item [Casos notificados de SRAG independente de sintomas:] \hfill
+	\item [Casos notificados de SRAG independente de febre:] \hfill
 	\begin{itemize}
 		\item [] Dado semanal na \textbf{\Sexpr{br.report$texto[br.report$indicador == 'canal endêmico' & br.report$dado == 1]}}.
 		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 1]}}.
-		\item [] Total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag']} casos} já reportados no ano, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag']}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
-		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag']} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag']} aguardando resultado}.
-		\item [] Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag'])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag'])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag'])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag'])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} casos} já reportados no ano, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == args$epiyear]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
+		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} aguardando resultado}.
+		\item [] Dentre os casos positivos do ano corrente, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Referente a 2020, já foram reportados um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == 2020]} casos} casos, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == 2020]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório, \textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == 2020]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == 2020]} aguardando resultado}. Dentre os casos positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{SARS-CoV-2} (COVID-19).
 	\end{itemize}
 
 %	\item [Casos notificados de SRAG por influenza:] \hfill
@@ -104,13 +105,14 @@ A nível nacional, o cenário atual sugere que a situação de cada indicador se
 %		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 2]}}.
 %	\end{itemize}
 
-	\item [Óbitos de SRAG independente de sintomas:] \hfill
+	\item [Óbitos de SRAG independente de febre:] \hfill
   \begin{itemize}
 		\item [] Dado semanal na \textbf{\Sexpr{br.report$texto[br.report$indicador == 'canal endêmico' & br.report$dado == 6]}}.
 		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 6]}}.
-		\item [] Total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito']} casos} já reportados no ano, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito']}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
-		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito']} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito']} aguardando resultado}.
-		\item [] Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito'])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito'])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito'])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito'])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Referente os casos do ano corrente, um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} óbitos} já foram reportados, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == args$epiyear]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
+		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} aguardando resultado}.
+		\item [] Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Referente os casos do ano de 2020, um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == 2020]} óbitos} já foram reportados, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == 2020]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório, \textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == 2020]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == 2020]} aguardando resultado}. Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{SARS-CoV-2} (COVID-19).
 	\end{itemize}
 \end{description}
 
@@ -122,7 +124,7 @@ A Fig.\ref{fig:st} apresenta a estimativa da incidência no país para cada um d
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de sintomas notificados, por semana de primeiros sintomas. Painel superior: casos de SRAG (esquerda), SRAG por influenza (centro), e SRAG por COVID-19 (direita). Painel inferior: óbitos de SRAG (esquerda), óbitos de SRAG por influenza (centro), e óbitos de SRAG por COVID-19 (direita). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st}}
 \end{figure}
 
-\newpage
+\clearpage
 
 \hypertarget{Casos e obitos}{\heading{Casos e óbitos de SRAG por região}{6pt}}
 
@@ -137,7 +139,7 @@ A Fig.~\ref{fig:st_reg1} apresenta a incidência de casos e óbitos de SRAG nas 
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de sintomas notificados, por semana de primeiros sintomas. Casos (esquerda) e óbitos de SRAG (esquerda). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st_reg1}}
 \end{figure}
 
-\newpage
+\clearpage
 
 A Fig.~\ref{fig:st_reg2} apresenta a incidência de casos e óbitos de SRAG nas regiões Centro-oeste, Sudeste e Sul do país, bem como os canais endêmicos e limiares de atividade correspondentes.
 \begin{figure}[h]
@@ -150,7 +152,7 @@ A Fig.~\ref{fig:st_reg2} apresenta a incidência de casos e óbitos de SRAG nas 
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de sintomas notificados, por semana de primeiros sintomas. Casos (esquerda) e óbitos de SRAG (esquerda). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st_reg2}}
 \end{figure}
 
-\newpage
+\clearpage
 
 \hypertarget{Mapas contingencia}{\heading{Mapas de situação para o plano de contingência}{6pt}}
 Além das análises por Unidade da Federação, o sistema InfoGripe reporta análise por agregados regionais, utilizando tanto a divisão geopolítica quanto por perfil de atividade de SRAG. A Fig.\ref{fig:regioes} apresenta essas duas divisões para referência.
@@ -184,7 +186,7 @@ Os mapas na Figura~\ref{fig:contingencia} apresentam o nível em relação ao pl
 	\caption{Nível do plano de contingência para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita).}\label{fig:contingencia}
 \end{figure}
 
-\newpage
+\clearpage
 
 \hypertarget{Mapas atividade}{\heading{Mapas de alerta de atividade semanal}{6pt}}
 Em paralelo aos níveis de ativação do plano de contingência, o limiares de atividade semanal (linhas horizontais apresentadas na Fig\ref{fig:st}), calculados para cada nível de agregação espacial e para cada um dos três conjuntos de dados (SRAG, SRAG por influenza, e óbitos por influenza), definem alertas de situação com base na incidência semanal correspondente.
@@ -193,13 +195,13 @@ O sistema InfoGripe utiliza três limiares: pré-epidêmico, atividade alta, e a
 Com base neles, cada região é classificada em quatro níveis de atividade:
 \begin{description}
 	\item[Atividade baixa:] incidência abaixo do limiar pré-epidêmico.
-	\item[Ativiade epidêmcia:] incidência acima do limiar pré-epidêmico (linha verde tracejada na série temporal) e abaixo do limiar de atividade alta (linha azul tracejada na série temporal).
+	\item[Ativiade epidêmica:] incidência acima do limiar pré-epidêmico (linha verde tracejada na série temporal) e abaixo do limiar de atividade alta (linha azul tracejada na série temporal).
 	\item[Atividade alta:] incidência acima do limiar de atividade alta e abaixo do de atividade muito alta (linha vermelha tracejada na série temporal).
 	\item[Atividade muito alta:] incidência acima do limiar de atividade muito alta.
 \end{description}
 
 Os mapas nas Figuras \ref{fig:srag} e \ref{fig:obito} apresentam os níveis de atividade de casos e óbitos para cada território.
-\newpage
+\clearpage
 
 \begin{figure}[h!]
 	\centering
@@ -212,7 +214,7 @@ Os mapas nas Figuras \ref{fig:srag} e \ref{fig:obito} apresentam os níveis de a
 	\caption{Nível de atividade de SRAG, independente de sintomas notificados, para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita). Mapas para casos de SRAG (superior), casos de SRAG por influenza (centro), e SRAG por COVID-19 (inferior).}\label{fig:srag}
 \end{figure}
 
-\newpage
+\clearpage
 
 \begin{figure}[h!]
 	\centering
@@ -225,7 +227,7 @@ Os mapas nas Figuras \ref{fig:srag} e \ref{fig:obito} apresentam os níveis de a
 	\caption{Nível de atividade de óbitos SRAG, independente de sintomas notificados, para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita). Mapas para óbitos de SRAG (superior), óbitos de SRAG por influenza (centro), e óbitos de SRAG por COVID-19 (inferior).}\label{fig:obito}
 \end{figure}
 
-\newpage
+\clearpage
 
 \hypertarget{Tabelas de alerta}{\heading{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}{6pt}}
 A análise com base nos canais endêmicos permite avaliar a situação atual de cada território em comparação com o esperado para a mesma semana epidemiológica com base em seu padrão histórico. Os canais endêmicos do InfoGripe são gerados utilizando apenas as temporadas consideradas típicas, de forma a evitar que temporadas com atividade desproporcionalmente altas ou baixas afetem a sensibilidade do sistema. Os canais são indicados por áreas coloridas no pano de fundo do painel das séries temporais na página do InfoGripe (Fig.\ref{fig:st}).
@@ -240,7 +242,7 @@ Os canais endêmicos definem as seguintes zonas de atividade semanal:
 \end{itemize}
 
 As tabelas \ref{tab:canal} e \ref{tab:alerta} apresentam a lista detalhada de onde se situam os dados atuais em termos dos canais endêmicos de cada território e o nível de alerta de atividade semanal mais provável, respectivamente.
-\newpage
+\clearpage
 
 \begin{table}[!h]
 \footnotesize
@@ -306,7 +308,7 @@ As tabelas \ref{tab:canal} e \ref{tab:alerta} apresentam a lista detalhada de on
 	\caption{Níveis relativos aos canais endêmicos e limiares de atividade. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador. Casos de SRAG independente de sintomas notificados}\label{tab:canal}
 \end{table}
 
-\newpage
+\clearpage
 
 \begin{table}[!h]
 \footnotesize
@@ -372,7 +374,7 @@ Dado & Nível territorial & \cellcolor{green!80}Zona de êxito & \cellcolor{yell
 \caption{Níveis relativos aos canais endêmicos e limiares de atividade. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador. Casos de SRAG independente de sintomas notificados}\label{tab:canal}
 \end{table}
 
-\newpage
+\clearpage
 
 \begin{table}[h!]
 \footnotesize
@@ -545,7 +547,7 @@ cat(df.table$lista[df.table$dado == 4 & df.table$territorio == 'UF' & df.table$i
 \caption{Níveis de atividade semanal de SRAG, independente de sintomas notificados, com maior probabilidade para cada território. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador.}\label{tab:alerta}
 \end{table}
 
-\newpage
+\clearpage
 
 %%%%%% Tabela com nível de alerta para óbitos de SRAG
 \begin{table}[h!]
@@ -719,7 +721,7 @@ cat(df.table$lista[df.table$dado == 5 & df.table$territorio == 'UF' & df.table$i
 \caption{Níveis de atividade semanal de óbitos de SRAG, independente de sintomas notificados, com maior probabilidade para cada território. Territórios marcados com * não possuem estimativa de casos recentes e utilizam dados de 4 semanas epidemiológicas anteriores à atual como indicador.}\label{tab:alerta_obito}
 \end{table}
 
-\newpage
+\clearpage
 
   \hypertarget{notas}{\heading{Notas}{6pt}}  
   \begin{itemize}
@@ -747,7 +749,7 @@ cat(df.table$lista[df.table$dado == 5 & df.table$territorio == 'UF' & df.table$i
   
   \textbf{Contato}: \href{fluvigilanciabr@gmail.com}{\nolinkurl{fluvigilanciabr@gmail.com} }
   
-  \newpage
+  \clearpage
 
 	\hypertarget{Série temporal por UF}{\heading{Anexo: série temporal de SRAG para cada UF}{6pt}}
 	Séries temporais de síndrome respiratória aguda grave (SRAG) em cada UF do país independente de sintomas apresentados, por semana de primeiros sintomas. 

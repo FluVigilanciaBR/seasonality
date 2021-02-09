@@ -23,8 +23,15 @@ from scipy.stats.mstats import gmean
 module_logger = logging.getLogger('update_system.sinan_mem_inset_thresholds')
 
 # Load R MEM package:
-mem = importr('mem')
-ro.r.require('mem')
+try:
+    mem = importr('mem')
+except:
+    mem = importr('mem', lib_loc="/home/marfcg/R/x86_64-pc-linux-gnu-library/4.0")
+try:
+    ro.r.require('mem')
+except:
+    ro.r.require('mem', lib_loc="/home/marfcg/R/x86_64-pc-linux-gnu-library/4.0")
+
 # UF codes
 tabela_ufnome = {'11': 'Rondônia',
                  '12': 'Acre',
@@ -129,7 +136,8 @@ def discardseasons(df, seasons, gdthres=2.0, smin=5):
 
 
 def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
-    rdf = pandas2ri.py2ri(df)
+    #rdf = pandas2ri.py2ri(df)
+    rdf = ro.conversion.py2rpy(df)
     seasons = sorted(list(df.columns))
 
     # Discard 2009 season if present:
@@ -174,8 +182,8 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
                       'i.type.intensity=par.type.intensity, i.level.intensity=par.level.intensity)')
 
     # Pre-epidemic threshold:
-    epithreshold = max(lower_bound, pandas2ri.ri2py(epimemrslt.rx2('pre.post.intervals'))[0, 2])
-    typrealcurve = pd.DataFrame(pandas2ri.ri2py(epimemrslt.rx2('typ.real.curve')))
+    epithreshold = max(lower_bound, epimemrslt.rx2('pre.post.intervals')[0, 2])
+    typrealcurve = pd.DataFrame(epimemrslt.rx2('typ.real.curve'))
 
     # Check for seasons below threshold:
     dropseasons = set()
@@ -186,21 +194,20 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
     episeasons = list(seasons)
     if len(dropseasons) > 0 and len(dropseasons) < len(seasons):
         episeasons = sorted(list(set(seasons).difference(dropseasons)))
-        ro.globalenv['episeasons'] = ro.StrVector(episeasons)
+    ro.globalenv['episeasons'] = ro.StrVector(episeasons)
 
-        # epimemrslt = ro.r('memmodel(i.data=subset(df, select=episeasons), i.type.curve=par.type.curve,' +
-        #                   'i.type.threshold=par.type.threshold, i.type.intensity=par.type.intensity,' +
-        #                   'i.type.other=par.type.other, i.n.max=par.n.max, i.level.curve=par.level.curve,' +
-        #                   'i.level.threshold=par.level.threshold, i.level.intensity=par.level.intensity)')
+    # epimemrslt = ro.r('memmodel(i.data=subset(df, select=episeasons), i.type.curve=par.type.curve,' +
+    #                   'i.type.threshold=par.type.threshold, i.type.intensity=par.type.intensity,' +
+    #                   'i.type.other=par.type.other, i.n.max=par.n.max, i.level.curve=par.level.curve,' +
+    #                   'i.level.threshold=par.level.threshold, i.level.intensity=par.level.intensity)')
 
-        epimemrslt = ro.r('memmodel(i.data=df[episeasons], i.type.curve=par.type.curve,' +
-                          'i.method=par.method,' +
-                          'i.n.max=par.n.max, i.level.curve=par.level.curve, i.level.threshold=par.level.threshold,' +
-                          'i.type.intensity=par.type.intensity, i.level.intensity=par.level.intensity)')
+    epimemrslt = ro.r('memmodel(i.data=df[episeasons], i.type.curve=par.type.curve,' +
+                      'i.method=par.method,' +
+                      'i.n.max=par.n.max, i.level.curve=par.level.curve, i.level.threshold=par.level.threshold,' +
+                      'i.type.intensity=par.type.intensity, i.level.intensity=par.level.intensity)')
 
     # Store results in python dictionary of objects
     pyepimemrslt = {}
-    rovector = [ro.vectors.StrVector, ro.vectors.IntVector, ro.vectors.FloatVector, ro.vectors.Vector]
     tgt_names = [
         'pre.post.intervals',
         'mean.start',
@@ -217,10 +224,10 @@ def applymem(df, discarded_seasons=None, wdw_method=2, lower_bound=5.0):
         rdata = epimemrslt.rx2(name)
         if name == 'call':
             pyepimemrslt.update({name: str(rdata)})
-        elif type(rdata) in rovector:
-            pyepimemrslt.update({name: pandas2ri.ri2py_vector(rdata)})
+        elif ndim(rdata) == 1:
+            pyepimemrslt.update({name: rdata[0]})
         else:
-            pyepimemrslt.update({name: pd.DataFrame(pandas2ri.ri2py(rdata))})
+            pyepimemrslt.update({name: pd.DataFrame(rdata)})
 
     # typ.curve is the typical curve obtained from averaging over epidemic seasons with time rescaled
     # so that the start of the epidemic period coincides with mean.start
@@ -258,7 +265,8 @@ def extract_typ_real_curve(df, discarded_seasons=None, wdw_method=2, lower_bound
     seasons = sorted(list(df.columns))
     seasons = sorted(set(seasons).difference(discarded_seasons))
 
-    rdf = pandas2ri.py2ri(df)
+    #rdf = pandas2ri.py2ri(df)
+    rdf = ro.conversion.py2rpy(df)
     rseasons = ro.StrVector(seasons)
 
     ro.globalenv['df'] = rdf
@@ -493,6 +501,7 @@ def recalc_incidence(x, popnorm):
 
 def main(fname, plot_curves=False, sep=',', uflist='all', out_pref=''):
     pref = ('.'.join(fname.replace('-incidence', '').split('.')[:-1])).split('/')[-1]
+    fname = fname.replace('covid', 'flu')
     df = pd.read_csv(fname, sep=sep, encoding='utf-8')
     dfinset = pd.read_csv(fname.replace('-incidence', ''), sep=sep, encoding='utf-8')
     if 'Região' in list(df.columns):
@@ -545,11 +554,15 @@ def main(fname, plot_curves=False, sep=',', uflist='all', out_pref=''):
         # Select "regular seasons" by comparing geometric distance of corresponding peaks
         # discard season 2009 by default
         tmpseasons = seasons.copy()
-        tmpseasons.remove('SRAG2009')
+        if 'SRAG2009' in tmpseasons:
+            tmpseasons.remove('SRAG2009')
+        if 'SRAG2020' in tmpseasons:
+            tmpseasons.remove('SRAG2020')
         discarded_seasons = discardseasons(df=dftmp, seasons=tmpseasons, gdthres=2.8, smin=4)
         discarded_seasons.extend(['SRAG2009'])
+        if lastseason != 'SRAG2020':
+            discarded_seasons.extend(['SRAG2020'])
         discarded_seasons.extend([lastseason])
-
 
         # Calculate incidence normalization factor, per 100.000
         incidence_norm = np.float(100000 / dfpop.loc[dfpop['Código'] == str(uf), 'Total'])
@@ -561,21 +574,23 @@ def main(fname, plot_curves=False, sep=',', uflist='all', out_pref=''):
             if dftmpinset[list(set(seasons).difference(discarded_seasons))].max().max() < 3:
                 dftmp['região de baixa atividade típica'] = 1
 
-            thresholds, lowseasons = applymem(dftmp[seasons], discarded_seasons, wdw_method, lower_bound=1 *
-                                                                                                         incidence_norm)
+            thresholds, lowseasons = applymem(dftmp[seasons],
+                                              discarded_seasons,
+                                              wdw_method,
+                                              lower_bound=1*incidence_norm)
 
             if thresholds['pre.post.intervals'].loc['pre', 2] >= 1*incidence_norm:
                 dftmp['mediana pré-epidêmica'] = recalc_incidence(thresholds['pre.post.intervals'].loc['pre', 1], incidence_norm)
                 dftmp['limiar pré-epidêmico'] = recalc_incidence(thresholds['pre.post.intervals'].loc['pre', 2],
                                                                  incidence_norm)
-                dftmp['SE relativa ao início do surto'] = dftmp['epiweek'] - thresholds['mean.start'][0]
-                dftmp['SE típica do início do surto'] = thresholds['mean.start'][0]
+                dftmp['SE relativa ao início do surto'] = dftmp['epiweek'] - thresholds['mean.start']
+                dftmp['SE típica do início do surto'] = thresholds['mean.start']
                 # Confidence interval for epi.start
                 cimin = thresholds['ci.start'].loc[0, 0]
                 cimax = thresholds['ci.start'].loc[0, 2]
                 dftmp['SE típica do início do surto - IC inferior (2,5%)'] = cimin
                 dftmp['SE típica do início do surto - IC superior (97,5%)'] = cimax
-                dftmp['duração típica do surto'] = thresholds['mean.length'][0]
+                dftmp['duração típica do surto'] = thresholds['mean.length']
                 # Confidence interval for epi.length
                 cimin = thresholds['ci.length'].loc[1, 0]
                 cimax = thresholds['ci.length'].loc[1, 2]
@@ -618,7 +633,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all', out_pref=''):
             dftmp['curva epi. alta'] = recalc_incidence(thresholds['typ.curve']['alto'], incidence_norm)
             epicols = list(thresholds['moving.epidemics'].columns)
             dftmp[epicols] = thresholds['moving.epidemics']
-            dftmp['n.seasons'] = thresholds['n.seasons'][0]
+            dftmp['n.seasons'] = thresholds['n.seasons']
             dftmp['temporadas utilizadas para os corredores endêmicos'] = ', '.join(str(x).strip('SRAG') for x in
                                                                                     sorted(set(
                 seasons).difference(discarded_seasons)))
@@ -681,7 +696,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all', out_pref=''):
             dftmpinset['curva epi. alta'] = round(dftmp['curva epi. alta']/incidence_norm)
             epicols = list(thresholds['moving.epidemics'].columns)
             dftmpinset[epicols] = thresholds['moving.epidemics']
-            dftmpinset['n.seasons'] = thresholds['n.seasons'][0]
+            dftmpinset['n.seasons'] = thresholds['n.seasons']
             dftmpinset['População'] = dftmp['População']
             dftmpinset['temporadas utilizadas para os corredores endêmicos'] = \
                 dftmp['temporadas utilizadas para os corredores endêmicos']
@@ -693,7 +708,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all', out_pref=''):
                                                                               wdw_method_lbl[wdw_method]),
                 index=False, encoding='utf-8')
 
-            if plot_curves == True:
+            if plot_curves:
                 fig = plotmemcurve(uf=uf, dftmp=dftmp, dftmpinset=dftmpinset, thresholds=thresholds, seasons=seasons,
                                    lastseason=lastseason, epicols=epicols)
                 fig.savefig(
@@ -777,7 +792,7 @@ def main(fname, plot_curves=False, sep=',', uflist='all', out_pref=''):
                                                                                     wdw_method_lbl[wdw_method]),
                 index=False, encoding='utf-8')
 
-            if (plot_curves == True):
+            if plot_curves:
                 fig = plotmemfailedcurve(uf=uf, dftmp=dftmp, dftmpinset=dftmpinset, seasons=seasons,
                                          lastseason=lastseason)
                 fig.savefig(

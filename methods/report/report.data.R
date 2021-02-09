@@ -170,25 +170,36 @@ if (args$plot){
     return()
   }
   
-  plot.timeseries <- function(df, scale_val=1){
+  plot.timeseries <- function(df, scale_val=1, last.year.epiweek.max=0){
     # Function for timeseries plot with endemic channels, activity thresholds and estimates
     # Generate plot with 3 datasets if Brazil (territory_id == 0) or else plot only SRAG data (dataset_id == 1)
     territory_id <- unique(df$territory_id)
+    epiweekmax.plot <- args$epiweek[1]
+    if (length(unique(df$epiyear)) > 1){
+      epiweekmax.plot <- epiweekmax.plot + last.year.epiweek.max
+    }
+    
+    epilbls <- c(1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52)
+    xbreaks <- c(epilbls, epilbls + last.year.epiweek.max)
+    xlbls <- c(epilbls, epilbls)
+    xlimits <- c(1, max(53, df$epiweek.plot %>% max()))
+    
 
     df <- df %>%
-      filter(scale_id == scale_val)
+      filter(scale_id == scale_val) %>%
+      mutate(epiweek = epiweek.plot)
     df.ts <- df %>%
       select(dataset_id, epiweek, rolling_average, X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta) %>%
       mutate(SRAG = case_when(
-        epiweek >= args$epiweek[1] - 1 ~ NA_real_,
+        epiweek >= epiweekmax.plot - 1 ~ NA_real_,
         TRUE ~ SRAG
       ),
       rolling_average = case_when(
-        epiweek >= args$epiweek[1] - 2 & dataset_id != 1 ~ NA_real_,
+        epiweek >= epiweekmax.plot - 2 & dataset_id != 1 ~ NA_real_,
         TRUE ~ rolling_average
       )) %>%
       mutate_at(c('X2.5.', 'X97.5.', 'X50.'), function(x) {
-        case_when(.$epiweek >= args$epiweek[1] - 1 & .$dataset_id != 1 ~ NA_real_,
+        case_when(.$epiweek >= epiweekmax.plot - 1 & .$dataset_id != 1 ~ NA_real_,
                   TRUE ~ x)
       }) %>%
         gather(ts.name, measure, c(rolling_average, X50., X2.5., X97.5., SRAG, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta))
@@ -271,7 +282,7 @@ if (args$plot){
           geom_line(data = df.ts %>% filter(dataset_id == d), aes(y = measure, color = ts.name, linetype = ts.name)) +
           scale_fill_manual(name = NULL, values = c('Zona de êxito' = 'green', 'Zona de segurança' = 'yellow', 'Zona de alerta' = 'orange', 'Zona de risco' = 'red'),
                             breaks = c('Zona de êxito', 'Zona de segurança', 'Zona de alerta', 'Zona de risco')) +
-          scale_x_continuous(expand = c(0,0), breaks = c(1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52)) +
+          scale_x_continuous(expand = c(0,0), breaks = xbreaks, labels = xlbls, limits = xlimits) +
           scale_y_continuous(expand = c(0,0), limits = c(0, as.double(y.upper))) +
         scale_linetype_manual(name = NULL, values = c('SRAG' = 1, 'X50.' = 1, 'rolling_average' = 1, 'X2.5.' = 2, 'X97.5.' = 2, 'limiar.pré.epidêmico' = 2, 'intensidade.alta' = 2, 'intensidade.muito.alta' = 2),
                               breaks = c('SRAG', 'X50.', 'rolling_average', 'X2.5.', 'limiar.pré.epidêmico', 'intensidade.alta', 'intensidade.muito.alta'),
@@ -402,18 +413,24 @@ df.typical <- df.typical %>%
     )
   )
 
-
 last.epiyear.flag = (args$epiweek - 2 <= 0)
+last.year.maxweek <- df.current %>%
+  dplyr::filter(epiyear == args$epiyear - 1) %>%
+  select(epiweek) %>%
+  max()
 if (last.epiyear.flag){
-  last.year.maxweek <- df.current %>%
-    dplyr::filter(epiyear == args$epiyear - 1) %>%
-    select(epiweek) %>%
-    max()
   current.minus.4.epiweek <- last.year.maxweek - (2 - args$epiweek)
   current.minus.4.epiyear <- args$epiyear - 1  
 } else {
   current.minus.4.epiweek <- args$epiweek - 2
   current.minus.4.epiyear <- args$epiyear  
+}
+
+if (last.year.maxweek == 53){
+  df.typical <- df.typical %>%
+    filter(epiweek == 52) %>%
+    mutate(epiweek = 53) %>%
+    rbind(df.typical)
 }
 
 df.current$territory_id <- df.current$UF
@@ -446,12 +463,16 @@ if (args$plot){
     print(t.id)
     df.plot.ts <- df.current2plot %>%
       select(-Tipo) %>%
-      filter(territory_id == t.id, epiyear == args$epiyear) %>%
+      filter(territory_id == t.id, epiyear >= min(2020, args$epiyear)) %>%
       right_join(df.typical %>% filter(territory_id == t.id))
     df.plot.ts <- df.report %>%
       select(territory_id, dataset_id, scale_id, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta) %>%
-      right_join(df.plot.ts)
-    plot.timeseries(df.plot.ts, ifelse(t.id == 0, 2, 1))
+      right_join(df.plot.ts) %>%
+      mutate(epiweek.plot = case_when(
+        epiyear == 2020 ~ epiweek,
+        TRUE ~ epiweek + last.year.maxweek
+      ))
+    plot.timeseries(df.plot.ts, ifelse(t.id == 0, 2, 1), last.year.maxweek)
   }
 }
 
@@ -597,13 +618,16 @@ br.report <- df.table %>%
   filter(territorio == 'País') %>%
   left_join(tmp)
 
+# df.lab.orig <- read.csv(paste0(data.folder, 'clean_data_epiweek-weekly-incidence_w_situation', suff_out, '.csv'), stringsAsFactors = F) %>%
+#   filter(epiyear == args$epiyear & escala == 'casos' & sexo == 'Total' & UF == 'BR') %>%
+#   select(dado, FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek)
 df.lab.orig <- read.csv(paste0(data.folder, 'clean_data_epiweek-weekly-incidence_w_situation', suff_out, '.csv'), stringsAsFactors = F) %>%
-  filter(epiyear == args$epiyear & escala == 'casos' & sexo == 'Total' & UF == 'BR') %>%
-  select(dado, FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek)
+  filter(epiyear >= 2020 & escala == 'casos' & sexo == 'Total' & UF == 'BR') %>%
+  select(dado, FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek, epiyear)
 
 df.lab <- df.lab.orig %>%
-  filter(dado == 'srag') %>%
-  select(-dado) %>%
+  filter(dado == 'srag' & epiyear == args$epiyear) %>%
+  select(-dado, -epiyear) %>%
   colSums(na.rm = T) %>%
   t() %>%
   as.data.frame() %>%
@@ -611,10 +635,11 @@ df.lab <- df.lab.orig %>%
          FLU_B = 100*FLU_B/POSITIVE_CASES,
          VSR = 100*VSR/POSITIVE_CASES,
          SARS2 = 100*SARS2/POSITIVE_CASES,
-         dado = 'srag')
+         dado = 'srag',
+         ano = args$epiyear)
 df.lab <- df.lab.orig %>%
-  filter(dado == 'obito') %>%
-  select(-dado) %>%
+  filter(dado == 'obito' & epiyear == args$epiyear) %>%
+  select(-dado, -epiyear) %>%
   colSums(na.rm = T) %>%
   t() %>%
   as.data.frame() %>%
@@ -622,8 +647,40 @@ df.lab <- df.lab.orig %>%
          FLU_B = 100*FLU_B/POSITIVE_CASES,
          VSR = 100*VSR/POSITIVE_CASES,
          SARS2 = 100*SARS2/POSITIVE_CASES,
-         dado = 'obito') %>%
+         dado = 'obito',
+         ano = args$epiyear) %>%
   rbind(df.lab)
+for (y in df.lab.orig %>%
+     filter(epiyear < args$epiyear) %>%
+     select(epiyear) %>%
+     unique()){
+  df.lab <- df.lab.orig %>%
+    filter(dado == 'srag' & epiyear == y) %>%
+    select(-dado, -epiyear) %>%
+    colSums(na.rm = T) %>%
+    t() %>%
+    as.data.frame() %>%
+    mutate(FLU_A = 100*FLU_A/POSITIVE_CASES,
+           FLU_B = 100*FLU_B/POSITIVE_CASES,
+           VSR = 100*VSR/POSITIVE_CASES,
+           SARS2 = 100*SARS2/POSITIVE_CASES,
+           dado = 'srag',
+           ano = y) %>%
+    rbind(df.lab)
+  df.lab <- df.lab.orig %>%
+    filter(dado == 'obito' & epiyear == y) %>%
+    select(-dado, -epiyear) %>%
+    colSums(na.rm = T) %>%
+    t() %>%
+    as.data.frame() %>%
+    mutate(FLU_A = 100*FLU_A/POSITIVE_CASES,
+           FLU_B = 100*FLU_B/POSITIVE_CASES,
+           VSR = 100*VSR/POSITIVE_CASES,
+           SARS2 = 100*SARS2/POSITIVE_CASES,
+           dado = 'obito',
+           ano = y) %>%
+    rbind(df.lab)
+}
 
 Sweave(paste0('Boletim_InfoGripe_template', suff_out, '.Rnw'))
 texi2dvi(file = paste0('Boletim_InfoGripe_template', suff_out, '.tex'), pdf = TRUE, quiet=TRUE, clean=TRUE)

@@ -123,14 +123,17 @@ d_pop <- read.csv('../data/PROJECOES_2013_POPULACAO-simples_agebracket.csv', che
                   stringsAsFactors = FALSE)
 # Read dquantile file:
 dquantile.tbl <- read.csv(paste0('../clean_data/sinpri2digita_quantiles', suff, '.csv'), encoding='utf-8',
-stringsAsFactors =
-FALSE)
+                          stringsAsFactors =
+                            FALSE)
 
 ### Read activity thresholds:
 df.thresholds <- read.csv(paste0('../clean_data/', args$type, suff, '_mem-report', '.csv'), check.names = F,
-encoding='utf-8',
+                          encoding='utf-8',
                           stringsAsFactors = FALSE)
-low.activity <- df.thresholds[df.thresholds$`região de baixa atividade típica` == 1,'UF']
+
+### Identifiy localities with low activity, to avoid nowcasting:
+#low.activity <- df.thresholds[df.thresholds$`região de baixa atividade típica` == 1,'UF']
+low.activity <- c()
 
 for (today in epiweek.list){
   lyear <- as.integer(strsplit(today, 'W')[[1]][1])
@@ -147,7 +150,7 @@ for (today in epiweek.list){
   for (uf in uf_list){
     d[d$UF == uf, delay.week] <- d %>%
       filter(UF == uf) %>%
-      dplyr::select(delay.week) %>%
+      dplyr::select(all_of(delay.week)) %>%
       insert.na.triangle()
   }
   d[is.na(d)] <- 0
@@ -195,7 +198,7 @@ for (today in epiweek.list){
   }
   
   #start.epiweek <- paste0(lyear-2,'W', min(lastepiweek(lyear-2), sprintf('%02d',today.week)))
-  start.epiweek <- paste0(lyear,'W', sprintf('%02d', 1))
+  start.epiweek <- paste0(max(2020,lyear-1),'W', sprintf('%02d', 1))
   for (uf in uf_list){
     qthreshold <- min(dquantile$delayweeks[dquantile$UF == as.character(uf)], 15)
     delay.tbl.tmp <- droplevels(d[d$UF==uf,]) %>%
@@ -297,7 +300,7 @@ for (today in epiweek.list){
     qthreshold <- max(4, qthreshold)
     uf.indexes <- rownames(d_weekly[d_weekly$UF==as.character(uf),])
     Tactual <- length(uf.indexes)
-    index.time <- uf.indexes[(Tactual-min(8,qthreshold)+1):Tactual]
+    index.time <- uf.indexes[(Tactual-qthreshold+1):Tactual]
     
     if (!(uf %in% low.activity)) {
       print(uf)
@@ -305,7 +308,8 @@ for (today in epiweek.list){
       df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold, do.plots=args$graphs, uf=paste0(args$type,'/', uf))
       
       # Keep only up to 8 weeks:
-      i.start <- max(0, qthreshold-8) + 1
+      # i.start <- max(0, qthreshold-8) + 1
+      i.start <- 1
       df.tbl.tmp.estimates$samples <- df.tbl.tmp.estimates$samples[i.start:qthreshold,]
       # Generate quantiles estimates
       aux2 <- round(t(apply(df.tbl.tmp.estimates$samples,1,FUN = post.sum)))

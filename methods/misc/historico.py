@@ -6,7 +6,7 @@ import pandas as pd
 import seaborn as sns
 
 
-wmax = 41
+wmax = 48
 df = pd.read_csv('data/data/historical_estimated_values_sragnofever.csv')[
     lambda df: (df.epiyear == 2020) &
                (df.escala == 'casos') &

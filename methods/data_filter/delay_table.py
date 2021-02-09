@@ -28,7 +28,7 @@ def extract_quantile(dforig=pd.DataFrame, filtertype='srag'):
         else:
             weekmax = int(lastepiweek(year)) + 1
         for week in range(1, weekmax):
-            f_epiweek = '%sW%02d' % (year-2, week)
+            f_epiweek = '%sW%02d' % (year-1, week)
             l_epiweek = '%sW%02d' % (year, week)
             dftmp = df.loc[(df.epiyearweek >= f_epiweek) & (df.DT_DIGITA_epiyearweek <= l_epiweek),
                            tgt_cols + ['dado', 'delayweeks']]
