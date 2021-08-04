@@ -38,6 +38,8 @@ parser$add_argument("-f", "--filtertype", type="character", default='srag',
                     help="Type of filter [srag, sragnofever, hospdeath]. Default %(default)s")
 parser$add_argument("-d", "--date", type="character", default=format(Sys.Date(), '%Y-%m-%d'),
                     help="Date to use as base, in format YYYY-MM-DD [default Sys.Date()]")
+parser$add_argument("-w", "--wdw", type="integer", default=30,
+                    help="Length of timeseries for nowcasting model")
 parser$add_argument("-g", "--graphs", type="character", default="F",
                     help="If graphs should be created [T] or not [F]. Default %(default)s")
 # get command line options, if help option encountered print help and exit,
@@ -198,9 +200,18 @@ for (today in epiweek.list){
   }
   
   #start.epiweek <- paste0(lyear-2,'W', min(lastepiweek(lyear-2), sprintf('%02d',today.week)))
-  start.epiweek <- paste0(max(2020,lyear-1),'W', sprintf('%02d', 1))
+  #start.epiweek <- paste0(max(2020,lyear-1),'W', sprintf('%02d', 1))
   for (uf in uf_list){
-    qthreshold <- min(dquantile$delayweeks[dquantile$UF == as.character(uf)], 15)
+    qthreshold <- min(dquantile$delayweeks[dquantile$UF == as.character(uf)]+2, 15)
+    qthreshold <- max(4, qthreshold)
+    start.epiweek <- today.week - max(2*qthreshold, args$wdw) + 1
+    if (start.epiweek <= 0){
+      wk <- lastepiweek(lyear-1) + start.epiweek
+      start.epiweek <- paste0(lyear-1, 'W', sprintf('%02d', wk))
+    } else {
+      wk <- start.epiweek
+      start.epiweek <- paste0(lyear, 'W', sprintf('%02d', wk))
+    }
     delay.tbl.tmp <- droplevels(d[d$UF==uf,]) %>%
       dplyr::select(-dado, -Notifications) %>%
       rename(Notifications=Notifications_within_26w) %>%
@@ -297,12 +308,12 @@ for (today in epiweek.list){
     
     # Time index of the unknown counts (Dmax+1,...,Tactual)
     
-    qthreshold <- max(4, qthreshold)
     uf.indexes <- rownames(d_weekly[d_weekly$UF==as.character(uf),])
     Tactual <- length(uf.indexes)
     index.time <- uf.indexes[(Tactual-qthreshold+1):Tactual]
-    
-    if (!(uf %in% low.activity)) {
+
+    last.entry <- nrow(delay.tbl.tmp)
+    if (!(uf %in% low.activity) & sum(delay.tbl.tmp$Notifications[(last.entry-10):last.entry]) > 10) {
       print(uf)
       # Calculate estimates
       df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold, do.plots=args$graphs, uf=paste0(args$type,'/', uf))

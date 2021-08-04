@@ -38,7 +38,7 @@ def extract_quantile(dforig=pd.DataFrame, filtertype='srag'):
                     year, 'epiweek': week} for uf in uflist[tgt_col] for dado in ['srag', 'sragflu', 'obitoflu',
                                                                                   'sragcovid', 'obitocovid', 'obito']])
 
-                dfqtmp = dfqtmp.merge((np.ceil(dftmp[out_cols].groupby(out_cols[0:2]).quantile(.95))).reset_index()[
+                dfqtmp = dfqtmp.merge((np.ceil(dftmp[out_cols].groupby(out_cols[0:2]).quantile(.9))).reset_index()[
                     out_cols], on=[tgt_col, 'dado'], how='left').fillna(0)
                 dfquant = dfquant.append(dfqtmp.rename(columns={tgt_col: 'UF'}), ignore_index=True, sort=False)
 

@@ -48,200 +48,217 @@ filtro_dict = {1: '_hospdeath',
 dict_dtypes = {
     'NU_NOTIFIC': 'str',
     'DT_NOTIFIC': 'str',
-    'SEM_NOT': 'float64',
+    'SEM_NOT': 'Int64',
+    'ANO': 'Int16',
     'DT_SIN_PRI': 'str',
-    'SEM_PRI': 'float64',
+    'SEM_PRI': 'Int64',
     'SG_UF_NOT': 'str',
     'ID_REGIONA': 'str',
-    'CO_REGIONA': 'float64',
+    'CO_REGIONA': 'Int32',
     'ID_MUNICIP': 'str',
-    'CO_MUN_NOT': 'float64',
+    'CO_MUN_NOT': 'Int32',
     'ID_UNIDADE': 'str',
-    'CO_UNI_NOT': 'float64',
+    'CO_UNI_NOT': 'Int32',
     'NM_UN_INTE': 'str',
-    'CO_UN_INTE': 'float64',
+    'CO_UN_INTE': 'Int32',
     'LAB_AN': 'str',
-    'CO_LAB_AN': 'float64',
+    'CO_LAB_AN': 'Int32',
     'RES_CAPITAL': 'str',
     'NOT_CAPITAL': 'str',
-    'NU_CPF': 'str',
+    'NU_CPF': 'Int64',
+    'NU_CNS': 'str',
     'NM_PACIENT': 'str',
     'CS_SEXO': 'str',
     'DT_NASC': 'str',
     'NU_IDADE_N': 'str',
-    'TP_IDADE': 'float64',
+    'TP_IDADE': 'Int8',
     'COD_IDADE': 'str',
-    'CS_GESTANT': 'float64',
-    'CS_RACA': 'float64',
+    'CS_GESTANT': 'Int8',
+    'CS_RACA': 'Int8',
     'CS_ETINIA': 'str',
-    'CS_ESCOL_N': 'float64',
+    'TP_POV_CT': 'str',
+    'CS_ESCOL_N': 'Int8',
     'NM_MAE_PAC': 'str',
     'NU_CEP': 'str',
     'ID_PAIS': 'str',
-    'CO_PAIS': 'float64',
+    'CO_PAIS': 'Int16',
     'SG_UF': 'str',
     'ID_RG_RESI': 'str',
-    'CO_RG_RESI': 'float64',
+    'CO_RG_RESI': 'Int16',
     'ID_MN_RESI': 'str',
-    'CO_MUN_RES': 'float64',
+    'CO_MUN_RES': 'Int32',
     'NM_BAIRRO': 'str',
     'NM_LOGRADO': 'str',
     'NU_NUMERO': 'str',
     'NM_COMPLEM': 'str',
-    'NU_DDD_TEL': 'float64',
+    'NU_DDD_TEL': 'Int8',
     'NU_TELEFON': 'str',
-    'CS_ZONA': 'float64',
-    'SURTO_SG': 'float64',
-    'NOSOCOMIAL': 'float64',
-    'AVE_SUINO': 'float64',
-    'FEBRE': 'float64',
-    'TOSSE': 'float64',
-    'GARGANTA': 'float64',
-    'DISPNEIA': 'float64',
-    'DESC_RESP': 'float64',
-    'SATURACAO': 'float64',
-    'DIARREIA': 'float64',
-    'VOMITO': 'float64',
-    'OUTRO_SIN': 'float64',
+    'CS_ZONA': 'Int8',
+    'SURTO_SG': 'Int8',
+    'NOSOCOMIAL': 'Int8',
+    'AVE_SUINO': 'Int8',
+    'FEBRE': 'Int8',
+    'TOSSE': 'Int8',
+    'GARGANTA': 'Int8',
+    'DISPNEIA': 'Int8',
+    'DESC_RESP': 'Int8',
+    'SATURACAO': 'Int8',
+    'DIARREIA': 'Int8',
+    'VOMITO': 'Int8',
+    'OUTRO_SIN': 'Int8',
     'OUTRO_DES': 'str',
-    'PUERPERA': 'float64',
+    'PUERPERA': 'Int8',
     'FATOR_RISC': 'str',
-    'CARDIOPATI': 'float64',
-    'HEMATOLOGI': 'float64',
-    'SIND_DOWN': 'float64',
-    'HEPATICA': 'float64',
-    'ASMA': 'float64',
-    'DIABETES': 'float64',
-    'NEUROLOGIC': 'float64',
-    'PNEUMOPATI': 'float64',
-    'IMUNODEPRE': 'float64',
-    'RENAL': 'float64',
-    'OBESIDADE': 'float64',
+    'CARDIOPATI': 'Int8',
+    'HEMATOLOGI': 'Int8',
+    'SIND_DOWN': 'Int8',
+    'HEPATICA': 'Int8',
+    'ASMA': 'Int8',
+    'DIABETES': 'Int8',
+    'NEUROLOGIC': 'Int8',
+    'PNEUMOPATI': 'Int8',
+    'IMUNODEPRE': 'Int8',
+    'RENAL': 'Int8',
+    'OBESIDADE': 'Int8',
     'OBES_IMC': 'str',
-    'OUT_MORBI': 'float64',
+    'OUT_MORBI': 'Int8',
     'MORB_DESC': 'str',
-    'VACINA': 'float64',
+    'VACINA': 'Int8',
     'DT_UT_DOSE': 'str',
-    'MAE_VAC': 'float64',
+    'MAE_VAC': 'Int8',
     'DT_VAC_MAE': 'str',
-    'M_AMAMENTA': 'float64',
+    'M_AMAMENTA': 'Int8',
     'DT_DOSEUNI': 'str',
     'DT_1_DOSE': 'str',
     'DT_2_DOSE': 'str',
-    'ANTIVIRAL': 'float64',
-    'TP_ANTIVIR': 'float64',
+    'ANTIVIRAL': 'Int8',
+    'TP_ANTIVIR': 'Int8',
     'OUT_ANTIV': 'str',
     'DT_ANTIVIR': 'str',
-    'HOSPITAL': 'float64',
+    'HOSPITAL': 'Int8',
     'DT_INTERNA': 'str',
     'SG_UF_INTE': 'str',
     'ID_RG_INTE': 'str',
-    'CO_RG_INTE': 'float64',
+    'CO_RG_INTE': 'Int16',
     'ID_MN_INTE': 'str',
-    'CO_MU_INTE': 'float64',
-    'UTI': 'float64',
+    'CO_MU_INTE': 'Int32',
+    'UTI': 'Int8',
     'DT_ENTUTI': 'str',
     'DT_SAIDUTI': 'str',
-    'SUPORT_VEN': 'float64',
-    'RAIOX_RES': 'float64',
+    'SUPORT_VEN': 'Int8',
+    'RAIOX_RES': 'Int8',
     'RAIOX_OUT': 'str',
     'DT_RAIOX': 'str',
-    'AMOSTRA': 'float64',
+    'AMOSTRA': 'Int8',
     'DT_COLETA': 'str',
-    'TP_AMOSTRA': 'float64',
+    'TP_AMOSTRA': 'Int8',
     'OUT_AMOST': 'str',
-    'REQUI_GAL': 'float64',
-    'IF_RESUL': 'float64',
+    'REQUI_GAL': 'Int64',
+    'IF_RESUL': 'Int8',
     'DT_IF': 'str',
-    'POS_IF_FLU': 'float64',
-    'TP_FLU_IF': 'float64',
-    'POS_IF_OUT': 'float64',
-    'IF_VSR': 'float64',
-    'IF_PARA1': 'float64',
-    'IF_PARA2': 'float64',
-    'IF_PARA3': 'float64',
-    'IF_ADENO': 'float64',
-    'IF_OUTRO': 'float64',
+    'POS_IF_FLU': 'Int8',
+    'TP_FLU_IF': 'Int8',
+    'POS_IF_OUT': 'Int8',
+    'IF_VSR': 'Int8',
+    'IF_PARA1': 'Int8',
+    'IF_PARA2': 'Int8',
+    'IF_PARA3': 'Int8',
+    'IF_ADENO': 'Int8',
+    'IF_OUTRO': 'Int8',
     'DS_IF_OUT': 'object',
     'LAB_IF': 'str',
-    'CO_LAB_IF': 'float64',
-    'PCR_RESUL': 'float64',
+    'CO_LAB_IF': 'Int64',
+    'PCR_RESUL': 'Int8',
     'DT_PCR': 'str',
-    'POS_PCRFLU': 'float64',
-    'TP_FLU_PCR': 'float64',
-    'PCR_FLUASU': 'float64',
+    'POS_PCRFLU': 'Int8',
+    'TP_FLU_PCR': 'Int8',
+    'PCR_FLUASU': 'Int8',
     'FLUASU_OUT': 'str',
-    'PCR_FLUBLI': 'float64',
+    'PCR_FLUBLI': 'Int8',
     'FLUBLI_OUT': 'str',
-    'POS_PCROUT': 'float64',
-    'PCR_VSR': 'float64',
-    'PCR_PARA1': 'float64',
-    'PCR_PARA2': 'float64',
-    'PCR_PARA3': 'float64',
-    'PCR_PARA4': 'float64',
-    'PCR_ADENO': 'float64',
-    'PCR_METAP': 'float64',
-    'PCR_BOCA': 'float64',
-    'PCR_RINO': 'float64',
-    'PCR_OUTRO': 'float64',
+    'POS_PCROUT': 'Int8',
+    'PCR_VSR': 'Int8',
+    'PCR_PARA1': 'Int8',
+    'PCR_PARA2': 'Int8',
+    'PCR_PARA3': 'Int8',
+    'PCR_PARA4': 'Int8',
+    'PCR_ADENO': 'Int8',
+    'PCR_METAP': 'Int8',
+    'PCR_BOCA': 'Int8',
+    'PCR_RINO': 'Int8',
+    'PCR_OUTRO': 'Int8',
     'DS_PCR_OUT': 'str',
     'LAB_PCR': 'str',
-    'CO_LAB_PCR': 'float64',
-    'CLASSI_FIN': 'float64',
+    'CO_LAB_PCR': 'Int64',
+    'CLASSI_FIN': 'Int8',
     'CLASSI_OUT': 'str',
-    'CRITERIO': 'float64',
-    'EVOLUCAO': 'float64',
+    'CRITERIO': 'Int8',
+    'EVOLUCAO': 'Int8',
     'DT_EVOLUCA': 'str',
-    'NU_DO': 'float64',
+    'NU_DO': 'Int64',
     'DT_ENCERRA': 'str',
     'OBSERVA': 'str',
     'NOME_PROF': 'str',
     'REG_PROF': 'str',
     'DT_DIGITA': 'str',
-    'HISTO_VGM': 'float64',
+    'HISTO_VGM': 'Int8',
     'PAIS_VGM': 'str',
-    'CO_PS_VGM': 'float64',
+    'CO_PS_VGM': 'Int16',
     'LO_PS_VGM': 'str',
     'DT_VGM': 'str',
     'DT_RT_VGM': 'str',
-    'PCR_SARS2': 'float64',
+    'PCR_SARS2': 'Int8',
     'PAC_COCBO': 'str',
     'PAC_DSCBO': 'str',
     'OUT_ANIM': 'str',
-    'DOR_ABD': 'float64',
-    'FADIGA': 'float64',
-    'PERD_OLFT': 'float64',
-    'PERD_PALA': 'float64',
-    'TOMO_RES': 'float64',
+    'DOR_ABD': 'Int8',
+    'FADIGA': 'Int8',
+    'PERD_OLFT': 'Int8',
+    'PERD_PALA': 'Int8',
+    'TOMO_RES': 'Int8',
     'TOMO_OUT': 'str',
     'DT_TOMO': 'str',
-    'TP_TES_AN': 'float64',
+    'TP_TES_AN': 'Int8',
     'DT_RES_AN': 'str',
-    'RES_AN': 'float64',
-    'POS_AN_FLU': 'float64',
-    'TP_FLU_AN': 'float64',
-    'POS_AN_OUT': 'float64',
-    'AN_SARS2': 'float64',
-    'AN_VSR': 'float64',
-    'AN_PARA1': 'float64',
-    'AN_PARA2': 'float64',
-    'AN_PARA3': 'float64',
-    'AN_ADENO': 'float64',
-    'AN_OUTRO': 'float64',
+    'RES_AN': 'Int8',
+    'POS_AN_FLU': 'Int8',
+    'TP_FLU_AN': 'Int8',
+    'POS_AN_OUT': 'Int8',
+    'AN_SARS2': 'Int8',
+    'AN_VSR': 'Int8',
+    'AN_PARA1': 'Int8',
+    'AN_PARA2': 'Int8',
+    'AN_PARA3': 'Int8',
+    'AN_ADENO': 'Int8',
+    'AN_OUTRO': 'Int8',
     'DS_AN_OUT': 'str',
-    'TP_AM_SOR': 'float64',
+    'TP_AM_SOR': 'Int8',
     'SOR_OUT': 'str',
     'DT_CO_SOR': 'str',
-    'TP_SOR': 'float64',
+    'TP_SOR': 'Int8',
     'OUT_SOR': 'str',
     'DT_RES': 'str',
-    'RES_IGG': 'float64',
-    'RES_IGM': 'float64',
-    'RES_IGA': 'float64',
+    'RES_IGG': 'Int8',
+    'RES_IGM': 'Int8',
+    'RES_IGA': 'Int8',
     'DT_ATUALIZACAO': 'str',
-    '@VERSION': 'int64',
+    'DOSE_1_COV': 'str',
+    'DOSE_2_COV': 'str',
+    'LOTE_1_COV': 'str',
+    'LOTE_2_COV': 'str',
+    'LAB_PR_COV': 'str',
+    'VACINA_COV': 'Int8',
+    '@VERSION': 'Int64',
     '@TIMESTAMP': 'str'
 }
+
+
+def eq_notna(s: pd.Series, x):
+    return pd.notna(s) & s.eq(x)
+
+
+def ne_orna(s: pd.Series, x):
+    return pd.isna(s) | s.ne(x)
 
 
 def clean_open_field(s: pd.Series):
@@ -323,7 +340,7 @@ def date_cleanup(df, dt_cols):
         else:
             df[col] = pd.to_datetime(df[col])
     # Discard those neither hospitalized nor deceased. For cases from 2009, keep all:
-    df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) == 2009) | (df.HOSPITAL == 1) | (df.EVOLUCAO == 2)]
+    df = df[(df.DT_SIN_PRI.apply(lambda x: x.year) == 2009) | (eq_notna(df.HOSPITAL, 1)) | (eq_notna(df.EVOLUCAO, 2))]
 
     return df
 
@@ -336,7 +353,9 @@ def table_compatibility(df):
     '''
 
     # Create equivalence between 2020-07-27 new variables and old ones:
-    df[['DT_IF', 'IF_RESUL']] = df[['DT_RES_AN', 'RES_AN']].copy()
+    df['DT_IF'] = df['DT_RES_AN'].copy()
+    if 'RES_AN' in df.columns:
+        df['IF_RESUL'] = df['RES_AN'].copy()
 
     l_new = ['CO_LAB_AN',
              'POS_AN_FLU',
@@ -363,7 +382,7 @@ def table_compatibility(df):
     return
 
 
-def symptoms_filter(df, filtertype='srag'):
+def symptoms_filter(df):
 
     # Filter by symptoms:
     # All cases, regardless of year, must either attend symptoms definition or have evolved to
@@ -375,26 +394,14 @@ def symptoms_filter(df, filtertype='srag'):
     # all
     df['filtro'] = 0
     # hospdeath:
-    df.loc[(df.EVOLUCAO == 2) | (df.HOSPITAL == 1), 'filtro'] = 1
+    df.loc[(eq_notna(df.EVOLUCAO, 2)) | (eq_notna(df.HOSPITAL, 1)), 'filtro'] = 1
     # sragnofever:
     df.loc[(df.filtro == 1) & (
-            ((df.TOSSE == 1) | (df.GARGANTA == 1)) &
-            ((df.DISPNEIA == 1) | (df.SATURACAO == 1) | (df.DESC_RESP == 1))
+            ((eq_notna(df.TOSSE, 1)) | (eq_notna(df.GARGANTA, 1))) &
+            ((eq_notna(df.DISPNEIA, 1)) | (eq_notna(df.SATURACAO, 1)) | (eq_notna(df.DESC_RESP, 1)))
     ), 'filtro'] = 2
     # srag:
-    df.loc[(df.filtro == 2) & (df.FEBRE == 1), 'filtro'] = 3
-
-    # if filtertype == 'srag':
-    #     df = df[(
-    #                 (df.FEBRE == 1) &
-    #                 ((df.TOSSE == 1) | (df.GARGANTA == 1)) &
-    #                 ((df.DISPNEIA == 1) | (df.SATURACAO == 1) | (df.DESC_RESP == 1))
-    #             )].copy()
-    # elif filtertype == 'sragnofever':
-    #     df = df[(
-    #                 ((df.TOSSE == 1) | (df.GARGANTA == 1)) &
-    #                 ((df.DISPNEIA == 1) | (df.SATURACAO == 1) | (df.DESC_RESP == 1))
-    #             )].copy()
+    df.loc[(df.filtro == 2) & (eq_notna(df.FEBRE, 1)), 'filtro'] = 3
 
     return df
 
@@ -480,11 +487,13 @@ def filter_db2019(df, tag=None, filtertype='srag'):
                           'TOMO_RES',
                           'TOMO_OUT',
                           'DT_TOMO']
+    tgt_cols_vac_covid = ['VACINA_COV', 'DOSE_1_COV', 'DOSE_2_COV', 'LAB_PR_COV_', 'FNT_IN_COV']
 
     if 'DT_RES_AN' in df.columns:
         table_compatibility(df)
 
-    tgtcols = list(set(tgtcols).union(tgt_cols_sintomas).union(tgtcols_uti).union(tgtcols_comorb).union(tgtcols_2020_07_27))
+    tgtcols = list(set(tgtcols).union(tgt_cols_sintomas).union(tgtcols_uti).union(tgtcols_comorb).union(
+        tgtcols_2020_07_27).union(tgt_cols_vac_covid))
     if 'DT_IF' in df.columns:
         df['DT_IFI'] = df.DT_IF
 
@@ -493,7 +502,7 @@ def filter_db2019(df, tag=None, filtertype='srag'):
         df[col] = None
 
     df = df[tgtcols].copy()
-    df = symptoms_filter(df, filtertype=filtertype)
+    df = symptoms_filter(df)
 
     regexp = re.compile('^DT')
     dt_cols = list(filter(regexp.match, tgtcols))
@@ -516,11 +525,11 @@ def filter_db2019(df, tag=None, filtertype='srag'):
     # Clean up PCR_RESUL and IF_RESUL fields:
     def labresultcleanup(dfin, x):
         # If sample was collected, IF/PCR result cannot be unknown or empty:
-        dfin.loc[(dfin.AMOSTRA == 1) & (~dfin[x].isin([1, 2, 3, 4])), x] = 5
+        dfin.loc[(eq_notna(dfin.AMOSTRA, 1)) & (~dfin[x].isin([1, 2, 3, 4])), x] = 5
         # IF PCR/IF result field is marked unknown but sample was not collected, convert to not tested:
-        dfin.loc[(dfin[x] == 9) & (dfin.AMOSTRA == 2), x] = 4
+        dfin.loc[(eq_notna(dfin[x], 9)) & (eq_notna(dfin.AMOSTRA, 2)), x] = 4
         # If PCR/IF result field is empty and sample was NOT collected, convert to not tested
-        dfin[x] = dfin[x].where(pd.notnull(dfin[x]) | (dfin.AMOSTRA != 2), 4)
+        dfin[x] = dfin[x].where(pd.notnull(dfin[x]) | (ne_orna(dfin.AMOSTRA, 2)), 4)
         # If PCR/IF result field is empty and sample field is empty or unknown, convert to unknown
         dfin[x] = dfin[x].where(pd.notnull(dfin[x]) | (dfin.AMOSTRA.isin([1, 2])), 9)
 
@@ -529,135 +538,144 @@ def filter_db2019(df, tag=None, filtertype='srag'):
     labresultcleanup(df, 'PCR_RESUL')
     labresultcleanup(df, 'IF_RESUL')
 
-    df['FLU_A'] = None
-    df['FLU_B'] = None
-    df['FLU_LAB'] = None
-    df['VSR'] = None
-    df['PARA1'] = None
-    df['PARA2'] = None
-    df['PARA3'] = None
-    df['PARA4'] = None
-    df['ADNO'] = None
-    df['METAP'] = None
-    df['BOCA'] = None
-    df['RINO'] = None
-    df['SARS2'] = None
-    df['OTHERS'] = None
+    df['FLU_A'] = pd.Series([], dtype='Int8')
+    df['FLU_B'] = pd.Series([], dtype='Int8')
+    df['FLU_LAB'] = pd.Series([], dtype='Int8')
+    df['VSR'] = pd.Series([], dtype='Int8')
+    df['PARA1'] = pd.Series([], dtype='Int8')
+    df['PARA2'] = pd.Series([], dtype='Int8')
+    df['PARA3'] = pd.Series([], dtype='Int8')
+    df['PARA4'] = pd.Series([], dtype='Int8')
+    df['ADNO'] = pd.Series([], dtype='Int8')
+    df['METAP'] = pd.Series([], dtype='Int8')
+    df['BOCA'] = pd.Series([], dtype='Int8')
+    df['RINO'] = pd.Series([], dtype='Int8')
+    df['SARS2'] = pd.Series([], dtype='Int8')
+    df['OTHERS'] = pd.Series([], dtype='Int8')
 
-    df['NEGATIVE'] = None
-    df['POSITIVE'] = None
-    df['INCONCLUSIVE'] = None
-    df['DELAYED'] = None
-    df['TESTED'] = None
-    df['NOTTESTED'] = None
-    df['TESTING_IGNORED'] = None
+    df['NEGATIVE'] = pd.Series([], dtype='Int8')
+    df['POSITIVE'] = pd.Series([], dtype='Int8')
+    df['INCONCLUSIVE'] = pd.Series([], dtype='Int8')
+    df['DELAYED'] = pd.Series([], dtype='Int8')
+    df['TESTED'] = pd.Series([], dtype='Int8')
+    df['NOTTESTED'] = pd.Series([], dtype='Int8')
+    df['TESTING_IGNORED'] = pd.Series([], dtype='Int8')
 
     def labresult(x, y=None, pos=1):
         if all(pd.isnull([x, y])):
             return None
-        elif pos in [x, y]:
+        elif pos in [pd.notna(x), pd.notna(y)]:
             return 1
         else:
             return 0
 
-    df.FLU_A = df[['TP_FLU_PCR', 'TP_FLU_IF']].apply(lambda s: labresult(s[0], s[1]), axis=1)
-    df.FLU_B = df[['TP_FLU_PCR', 'TP_FLU_IF']].apply(lambda s: labresult(s[0], s[1], pos=2), axis=1)
-    df.loc[(df.POS_IF_FLU == 1) | (df.POS_PCRFLU == 1) | (df.FLU_A == 1) | (df.FLU_B == 1) |
-           ((df.CLASSI_FIN == 1) & (df.CRITERIO == 1)), 'FLU_LAB'] = 1
-    df.loc[(df.FLU_LAB != 1) & ((df.POS_IF_FLU == 2) | (df.POS_PCRFLU == 2)), 'FLU_LAB'] = 0
-    df.loc[(df.IF_VSR == 1) | (df.PCR_VSR == 1), 'VSR'] = 1
-    df.loc[(df.IF_PARA1 == 1) | (df.PCR_PARA1 == 1), 'PARA1'] = 1
-    df.loc[(df.IF_PARA2 == 1) | (df.PCR_PARA2 == 1), 'PARA2'] = 1
-    df.loc[(df.IF_PARA3 == 1) | (df.PCR_PARA3 == 1), 'PARA3'] = 1
-    df.loc[(df.PCR_PARA4 == 1), 'PARA4'] = 1
-    df.loc[(df.IF_ADENO == 1) | (df.PCR_ADENO == 1), 'ADNO'] = 1
-    df.loc[(df.PCR_BOCA == 1), 'BOCA'] = 1
-    df.loc[(df.PCR_RINO == 1), 'RINO'] = 1
-    df.loc[(df.PCR_METAP == 1), 'METAP'] = 1
-    df.loc[(df.IF_OUTRO == 1) | (df.PCR_OUTRO == 1), 'OTHERS'] = 1
+    mask = (df[['TP_FLU_PCR', 'TP_FLU_IF']].notna().sum(axis=1) >= 1)
+    df.loc[mask, 'FLU_A'] = df.loc[mask, 'FLU_A'] = (
+            eq_notna(df.TP_FLU_PCR[mask], 1) | eq_notna(df.TP_FLU_IF[mask], 1)
+    ).astype('Int8')
+    df.loc[mask, 'FLU_B'] = df.loc[mask, 'FLU_A'] = (
+            eq_notna(df.TP_FLU_PCR[mask], 2) | eq_notna(df.TP_FLU_IF[mask], 2)
+    ).astype('Int8')
+    
+    df.loc[(eq_notna(df.POS_IF_FLU, 1)) |
+           (eq_notna(df.POS_PCRFLU, 1)) |
+           (eq_notna(df.FLU_A, 1)) |
+           (eq_notna(df.FLU_B, 1)) |
+           ((eq_notna(df.CLASSI_FIN, 1)) & (eq_notna(df.CRITERIO, 1))), 'FLU_LAB'] = 1
+    df.loc[(ne_orna(df.FLU_LAB, 1)) & ((eq_notna(df.POS_IF_FLU, 2)) | (eq_notna(df.POS_PCRFLU, 2))), 'FLU_LAB'] = 0
+    df.loc[(eq_notna(df.IF_VSR, 1)) | (eq_notna(df.PCR_VSR, 1)), 'VSR'] = 1
+    df.loc[(eq_notna(df.IF_PARA1, 1)) | (eq_notna(df.PCR_PARA1, 1)), 'PARA1'] = 1
+    df.loc[(eq_notna(df.IF_PARA2, 1)) | (eq_notna(df.PCR_PARA2, 1)), 'PARA2'] = 1
+    df.loc[(eq_notna(df.IF_PARA3, 1)) | (eq_notna(df.PCR_PARA3, 1)), 'PARA3'] = 1
+    df.loc[eq_notna(df.PCR_PARA4, 1), 'PARA4'] = 1
+    df.loc[(eq_notna(df.IF_ADENO, 1)) | (eq_notna(df.PCR_ADENO, 1)), 'ADNO'] = 1
+    df.loc[eq_notna(df.PCR_BOCA, 1), 'BOCA'] = 1
+    df.loc[eq_notna(df.PCR_RINO, 1), 'RINO'] = 1
+    df.loc[eq_notna(df.PCR_METAP, 1), 'METAP'] = 1
+    df.loc[(eq_notna(df.IF_OUTRO, 1)) | (eq_notna(df.PCR_OUTRO, 1)), 'OTHERS'] = 1
 
     mask_covid19_ds_pcr = check_covid19_regex(df, 'DS_PCR_OUT')
     mask_covid19_ds_if = check_covid19_regex(df, 'DS_IF_OUT')
 
-    df.loc[(df.PCR_SARS2 == 1) |
-           (df.AN_SARS2 == 1) |
+    df.loc[(eq_notna(df.PCR_SARS2, 1)) |
+           (eq_notna(df.AN_SARS2, 1)) |
            mask_covid19_ds_pcr |
            mask_covid19_ds_if |
-           ((df.CLASSI_FIN == 5) & (df.CRITERIO == 1)),
+           ((eq_notna(df.CLASSI_FIN, 5)) & (eq_notna(df.CRITERIO, 1))),
            'SARS2'] = 1
-    df.loc[(df.PCR_SARS2 == 1) |
+    df.loc[(eq_notna(df.PCR_SARS2, 1)) |
            mask_covid19_ds_pcr |
            mask_covid19_ds_if,
-           'OTHERS'] = None
+           'OTHERS'] = pd.NA
 
     # Positive cases:
-    df.loc[(df.POS_PCRFLU == 1) | (df.POS_PCROUT == 1), 'PCR_RESUL'] = 1
-    df.loc[(df.POS_IF_FLU == 1) | (df.POS_IF_OUT == 1), 'IF_RESUL'] = 1
-    df.loc[(df.PCR_RESUL == 1) |
-           (df.IF_RESUL == 1) |
-           (df.FLU_LAB == 1) |
-           (df.SARS2 == 1) |
-           (df.VSR == 1) |
-           (df.PARA1 == 1) |
-           (df.PARA2 == 1) |
-           (df.PARA3 == 1) |
-           (df.PARA4 == 1) |
-           (df.ADNO == 1) |
-           (df.BOCA == 1) |
-           (df.RINO == 1) |
-           (df.METAP == 1) |
-           (df.OTHERS == 1),
+    df.loc[(eq_notna(df.POS_PCRFLU, 1)) | (eq_notna(df.POS_PCROUT, 1)), 'PCR_RESUL'] = 1
+    df.loc[(eq_notna(df.POS_IF_FLU, 1)) | (eq_notna(df.POS_IF_OUT, 1)), 'IF_RESUL'] = 1
+    df.loc[(eq_notna(df.PCR_RESUL, 1)) |
+           (eq_notna(df.IF_RESUL, 1)) |
+           (eq_notna(df.FLU_LAB, 1)) |
+           (eq_notna(df.SARS2, 1)) |
+           (eq_notna(df.VSR, 1)) |
+           (eq_notna(df.PARA1, 1)) |
+           (eq_notna(df.PARA2, 1)) |
+           (eq_notna(df.PARA3, 1)) |
+           (eq_notna(df.PARA4, 1)) |
+           (eq_notna(df.ADNO, 1)) |
+           (eq_notna(df.BOCA, 1)) |
+           (eq_notna(df.RINO, 1)) |
+           (eq_notna(df.METAP, 1)) |
+           (eq_notna(df.OTHERS, 1)),
            'POSITIVE'] = 1
 
     # Negative cases:
-    df.loc[(df.POS_PCRFLU == 2) & (df.POS_PCROUT == 2), 'PCR_RESUL'] = 2
-    df.loc[(df.POS_IF_FLU == 2) & (df.POS_IF_OUT == 2), 'IF_RESUL'] = 2
+    df.loc[(eq_notna(df.POS_PCRFLU, 2)) & (eq_notna(df.POS_PCROUT, 2)), 'PCR_RESUL'] = 2
+    df.loc[(eq_notna(df.POS_IF_FLU, 2)) & (eq_notna(df.POS_IF_OUT, 2)), 'IF_RESUL'] = 2
     mask = (
-            (df.POSITIVE != 1) &
-            ((df.FLU_LAB == 0) | (df.POS_PCROUT == 2) | (df.POS_IF_OUT == 2))
+            (ne_orna(df.POSITIVE, 1)) &
+            ((eq_notna(df.FLU_LAB, 0)) | (eq_notna(df.POS_PCROUT, 2)) | (eq_notna(df.POS_IF_OUT, 2)))
     )
     df.loc[mask, 'NEGATIVE'] = 1
 
-    df.loc[(((df.IF_RESUL == 2) & (df.PCR_RESUL.isin([2, 3, 4, 5, 9]))) |
-           ((df.PCR_RESUL == 2) & (df.IF_RESUL.isin([2, 3, 4, 5, 9])))) &
-           (df.POSITIVE != 1), 'NEGATIVE'] = 1
+    df.loc[(((eq_notna(df.IF_RESUL, 2)) & (df.PCR_RESUL.isin([2, 3, 4, 5, 9]))) |
+           ((eq_notna(df.PCR_RESUL, 2)) & (df.IF_RESUL.isin([2, 3, 4, 5, 9])))) &
+           (ne_orna(df.POSITIVE, 1)), 'NEGATIVE'] = 1
     df.loc[:, 'INCONCLUSIVE'] = (
                                     (
-                                            ((df.IF_RESUL == 3) & (~df.PCR_RESUL.isin([1, 2, 5]))) |
-                                            ((df.PCR_RESUL == 3) & (~df.IF_RESUL.isin([1, 2, 5])))
+                                            ((eq_notna(df.IF_RESUL, 3)) & (~df.PCR_RESUL.isin([1, 2, 5]))) |
+                                            ((eq_notna(df.PCR_RESUL, 3)) & (~df.IF_RESUL.isin([1, 2, 5])))
                                     ) &
-                                    (df.POSITIVE != 1) &
-                                    (df.NEGATIVE != 1)
+                                    (ne_orna(df.POSITIVE, 1)) &
+                                    (ne_orna(df.NEGATIVE, 1))
     ).astype(int)
-    df.loc[(df.POSITIVE == 1) | (df.NEGATIVE == 1) | (df.INCONCLUSIVE == 1), 'TESTED'] = 1
+    df.loc[(eq_notna(df.POSITIVE, 1)) | (eq_notna(df.NEGATIVE, 1)) | (eq_notna(df.INCONCLUSIVE, 1)), 'TESTED'] = 1
 
     df.loc[:, 'DELAYED'] = (
                                (
-                                       ((df.IF_RESUL == 5) & (pd.isnull(df.TESTED))) |
-                                       ((df.PCR_RESUL == 5) & (pd.isnull(df.TESTED)))
+                                       ((eq_notna(df.IF_RESUL, 5)) & (pd.isnull(df.TESTED))) |
+                                       ((eq_notna(df.PCR_RESUL, 5)) & (pd.isnull(df.TESTED)))
                                ) &
-                               (df.POSITIVE != 1) &
-                               (df.NEGATIVE != 1) &
-                               (df.INCONCLUSIVE != 1)
+                               (ne_orna(df.POSITIVE, 1)) &
+                               (ne_orna(df.NEGATIVE, 1)) &
+                               (ne_orna(df.INCONCLUSIVE, 1))
     ).astype(int)
 
     # Clinical and clinical-epidemiological diagnose:
-    df['FLU_CLINIC'] = ((df.POS_IF_FLU != 1) & (df.POS_PCRFLU != 1) & (df.CLASSI_FIN == 1) &
+    df['FLU_CLINIC'] = ((ne_orna(df.POS_IF_FLU, 1)) & (ne_orna(df.POS_PCRFLU, 1)) & (eq_notna(df.CLASSI_FIN, 1)) &
                         (df.CRITERIO.isin([2, 3]))).astype(int)
 
     notknownrows = (
-                           ((df.PCR_RESUL == 9) | pd.isnull(df.PCR_RESUL)) &
-                           ((df.IF_RESUL == 9) | pd.isnull(df.IF_RESUL)) &
-                           (df.POSITIVE != 1) &
-                           (df.NEGATIVE != 1) &
-                           (df.DELAYED != 1) &
-                           (df.INCONCLUSIVE != 1)
+                           ((eq_notna(df.PCR_RESUL, 9)) | pd.isnull(df.PCR_RESUL)) &
+                           ((eq_notna(df.IF_RESUL, 9)) | pd.isnull(df.IF_RESUL)) &
+                           (ne_orna(df.POSITIVE, 1)) &
+                           (ne_orna(df.NEGATIVE, 1)) &
+                           (ne_orna(df.DELAYED, 1)) &
+                           (ne_orna(df.INCONCLUSIVE, 1))
     )
     nottestedrows = (
             ~(notknownrows) &
             (df.PCR_RESUL.isin([4, 9])) &
             (df.IF_RESUL.isin([4, 9])) &
-            (df.TESTED != 1)
+            (ne_orna(df.TESTED, 1))
     )
     df['NOTTESTED'] = nottestedrows.astype(int)
     df['TESTING_IGNORED'] = notknownrows.astype(int)
@@ -725,7 +743,7 @@ def applysinanfilter(df, tag=None, filtertype='srag'):
 
     df = df[tgtcols].copy()
 
-    df = symptoms_filter(df, filtertype=filtertype)
+    df = symptoms_filter(df)
 
     regexp = re.compile('^DT')
     dt_cols = list(filter(regexp.match, tgtcols))
@@ -736,9 +754,9 @@ def applysinanfilter(df, tag=None, filtertype='srag'):
     labrows = ((df.PCR_RES.isin([1, 2, 3])) |
                (df.CULT_RES.isin([1, 2])) |
                (df.HEMA_RES.isin([1, 2, 3])) |
-               (df.IFI == 1) |
-               (df.PCR == 1) |
-               (df.OUT_METODO == 1))
+               (eq_notna(df.IFI, 1)) |
+               (eq_notna(df.PCR, 1)) |
+               (eq_notna(df.OUT_METODO, 1)))
 
     notknownrows = (
         pd.isnull(df.PCR_RES) &
@@ -754,59 +772,64 @@ def applysinanfilter(df, tag=None, filtertype='srag'):
         (pd.isnull(df.PCR_RES) | (df.PCR_RES.isin([4]))) &
         (pd.isnull(df.CULT_RES) | (df.CULT_RES.isin([3]))) &
         (pd.isnull(df.HEMA_RES) | (df.HEMA_RES.isin([4]))) &
-        (pd.isnull(df.IFI) | (df.IFI == 2)) &
-        (pd.isnull(df.PCR) | (df.PCR == 2)) &
-        (pd.isnull(df.OUT_METODO) | (df.OUT_METODO == 2))
+        (pd.isnull(df.IFI) | (eq_notna(df.IFI, 2))) &
+        (pd.isnull(df.PCR) | (eq_notna(df.PCR, 2))) &
+        (pd.isnull(df.OUT_METODO) | (eq_notna(df.OUT_METODO, 2)))
     )
 
-    df['FLU_A'] = None
-    df['FLU_B'] = None
-    df['VSR'] = None
-    df['PARA1'] = None
-    df['PARA2'] = None
-    df['PARA3'] = None
-    df['PARA4'] = None
-    df['ADNO'] = None
-    df['METAP'] = None
-    df['BOCA'] = None
-    df['RINO'] = None
-    df['SARS2'] = None
+    df['FLU_A'] = pd.Series([], dtype='Int8')
+    df['FLU_B'] = pd.Series([], dtype='Int8')
+    df['FLU_LAB'] = pd.Series([], dtype='Int8')
+    df['VSR'] = pd.Series([], dtype='Int8')
+    df['PARA1'] = pd.Series([], dtype='Int8')
+    df['PARA2'] = pd.Series([], dtype='Int8')
+    df['PARA3'] = pd.Series([], dtype='Int8')
+    df['PARA4'] = pd.Series([], dtype='Int8')
+    df['ADNO'] = pd.Series([], dtype='Int8')
+    df['METAP'] = pd.Series([], dtype='Int8')
+    df['BOCA'] = pd.Series([], dtype='Int8')
+    df['RINO'] = pd.Series([], dtype='Int8')
+    df['SARS2'] = pd.Series([], dtype='Int8')
+    df['OTHERS'] = pd.Series([], dtype='Int8')
 
-    df['OTHERS'] = None
-    df['NEGATIVE'] = None
-    df['INCONCLUSIVE'] = None
-    df['DELAYED'] = None
+    df['NEGATIVE'] = pd.Series([], dtype='Int8')
+    df['POSITIVE'] = pd.Series([], dtype='Int8')
+    df['INCONCLUSIVE'] = pd.Series([], dtype='Int8')
+    df['DELAYED'] = pd.Series([], dtype='Int8')
+    df['TESTED'] = pd.Series([], dtype='Int8')
+    df['NOTTESTED'] = pd.Series([], dtype='Int8')
+    df['TESTING_IGNORED'] = pd.Series([], dtype='Int8')
 
     df['TESTED'] = labrows.astype(int)
     df['NOTTESTED'] = nottestedrows.astype(int)
     df['TESTING_IGNORED'] = notknownrows.astype(int)
 
     df.loc[labrows, 'FLU_A'] = ((df.PCR_ETIOL[labrows].isin([1, 2, 4])) | (df.HEMA_ETIOL[labrows].isin([1, 2, 4])) |
-                                (df.RES_FLUA[labrows] == 1)).astype(int)
-    df.loc[labrows, 'FLU_B'] = ((df.PCR_ETIOL[labrows] == 3) | (df.HEMA_ETIOL[labrows] == 3) |
-                                (df.RES_FLUB[labrows] == 1)).astype(int)
-    df.loc[labrows, 'VSR'] = (df.RES_VSR[labrows] == 1).astype(int)
-    df.loc[labrows, 'PARA1'] = (df.RES_PARA1[labrows] == 1).astype(int)
-    df.loc[labrows, 'PARA2'] = (df.RES_PARA2[labrows] == 1).astype(int)
-    df.loc[labrows, 'PARA3'] = (df.RES_PARA3[labrows] == 1).astype(int)
-    df.loc[labrows, 'ADNO'] = (df.RES_ADNO[labrows] == 1).astype(int)
+                                (eq_notna(df.RES_FLUA[labrows], 1))).astype(int)
+    df.loc[labrows, 'FLU_B'] = ((eq_notna(df.PCR_ETIOL[labrows], 3)) | (eq_notna(df.HEMA_ETIOL[labrows], 3)) |
+                                (eq_notna(df.RES_FLUB[labrows], 1))).astype(int)
+    df.loc[labrows, 'VSR'] = (eq_notna(df.RES_VSR[labrows], 1)).astype(int)
+    df.loc[labrows, 'PARA1'] = (eq_notna(df.RES_PARA1[labrows], 1)).astype(int)
+    df.loc[labrows, 'PARA2'] = (eq_notna(df.RES_PARA2[labrows], 1)).astype(int)
+    df.loc[labrows, 'PARA3'] = (eq_notna(df.RES_PARA3[labrows], 1)).astype(int)
+    df.loc[labrows, 'ADNO'] = (eq_notna(df.RES_ADNO[labrows], 1)).astype(int)
     df.loc[labrows, 'SARS2'] = 0
 
     df.loc[labrows, 'OTHERS'] = (
-        (df.PCR_ETIOL[labrows] == 5) |
-        (df.HEMA_ETIOL[labrows] == 5) |
-        (df.RES_OUTRO[labrows] == 1)).astype(int)
-    df.loc[labrows, 'DELAYED'] = ((pd.isnull(df.PCR_RES[labrows]) | df.PCR_RES[labrows] == 4) &
-                                  (pd.isnull(df.HEMA_RES[labrows]) | df.HEMA_RES[labrows] == 4) &
-                                  (pd.isnull(df.RES_FLUA[labrows]) | df.RES_FLUA[labrows] == 4) &
-                                  (pd.isnull(df.RES_FLUB[labrows]) | df.RES_FLUB[labrows] == 4) &
-                                  (pd.isnull(df.RES_VSR[labrows]) | df.RES_VSR[labrows] == 4) &
-                                  (pd.isnull(df.RES_PARA1[labrows]) | df.RES_PARA1[labrows] == 4) &
-                                  (pd.isnull(df.RES_PARA2[labrows]) | df.RES_PARA2[labrows] == 4) &
-                                  (pd.isnull(df.RES_PARA3[labrows]) | df.RES_PARA3[labrows] == 4) &
-                                  (pd.isnull(df.RES_ADNO[labrows]) | df.RES_ADNO[labrows] == 4) &
-                                  (pd.isnull(df.RES_OUTRO[labrows]) | df.RES_OUTRO[labrows] == 4)).astype(int)
-    df.loc[labrows, 'INCONCLUSIVE'] = ((df.DELAYED[labrows] == 0) &
+        (eq_notna(df.PCR_ETIOL[labrows], 5)) |
+        (eq_notna(df.HEMA_ETIOL[labrows], 5)) |
+        (eq_notna(df.RES_OUTRO[labrows], 1))).astype(int)
+    df.loc[labrows, 'DELAYED'] = ((pd.isnull(df.PCR_RES[labrows]) | eq_notna(df.PCR_RES[labrows], 4)) &
+                                  (pd.isnull(df.HEMA_RES[labrows]) | eq_notna(df.HEMA_RES[labrows], 4)) &
+                                  (pd.isnull(df.RES_FLUA[labrows]) | eq_notna(df.RES_FLUA[labrows], 4)) &
+                                  (pd.isnull(df.RES_FLUB[labrows]) | eq_notna(df.RES_FLUB[labrows], 4)) &
+                                  (pd.isnull(df.RES_VSR[labrows]) | eq_notna(df.RES_VSR[labrows], 4)) &
+                                  (pd.isnull(df.RES_PARA1[labrows]) | eq_notna(df.RES_PARA1[labrows], 4)) &
+                                  (pd.isnull(df.RES_PARA2[labrows]) | eq_notna(df.RES_PARA2[labrows], 4)) &
+                                  (pd.isnull(df.RES_PARA3[labrows]) | eq_notna(df.RES_PARA3[labrows], 4)) &
+                                  (pd.isnull(df.RES_ADNO[labrows]) | eq_notna(df.RES_ADNO[labrows], 4)) &
+                                  (pd.isnull(df.RES_OUTRO[labrows]) | eq_notna(df.RES_OUTRO[labrows], 4))).astype(int)
+    df.loc[labrows, 'INCONCLUSIVE'] = ((eq_notna(df.DELAYED[labrows], 0)) &
                                        (pd.isnull(df.PCR_RES[labrows]) | df.PCR_RES[labrows].isin([3, 4])) &
                                        (pd.isnull(df.HEMA_RES[labrows]) | df.HEMA_RES[labrows].isin([3, 4])) &
                                        (pd.isnull(df.RES_FLUA[labrows]) | df.RES_FLUA[labrows].isin([3, 4])) &
@@ -818,15 +841,27 @@ def applysinanfilter(df, tag=None, filtertype='srag'):
                                        (pd.isnull(df.RES_ADNO[labrows]) | df.RES_ADNO[labrows].isin([3, 4])) &
                                        (pd.isnull(df.RES_OUTRO[labrows]) | df.RES_OUTRO[labrows].isin([3, 4]))).astype(
         int)
-    df.loc[labrows, 'NEGATIVE'] = ((df.FLU_A[labrows] == 0) & (df.FLU_B[labrows] == 0) & (df.VSR[labrows] == 0) &
-                                   (df.PARA1[labrows] == 0) & (df.PARA2[labrows] == 0) & (df.PARA3[labrows] == 0) &
-                                   (df.ADNO[labrows] == 0) & (df.OTHERS[labrows] == 0) & (df.DELAYED[labrows] == 0) &
-                                   (df.INCONCLUSIVE[labrows] == 0)).astype(int)
-    df.loc[labrows & (df.INCONCLUSIVE != 1) & (df.NEGATIVE != 1) & (df.DELAYED != 1), 'POSITIVE'] = 1
+    df.loc[labrows, 'NEGATIVE'] = ((eq_notna(df.FLU_A[labrows], 0)) &
+                                   (eq_notna(df.FLU_B[labrows], 0)) &
+                                   (eq_notna(df.VSR[labrows], 0)) &
+                                   (eq_notna(df.PARA1[labrows], 0)) &
+                                   (eq_notna(df.PARA2[labrows], 0)) &
+                                   (eq_notna(df.PARA3[labrows], 0)) &
+                                   (eq_notna(df.ADNO[labrows], 0)) &
+                                   (eq_notna(df.OTHERS[labrows], 0)) &
+                                   (eq_notna(df.DELAYED[labrows], 0)) &
+                                   (eq_notna(df.INCONCLUSIVE[labrows], 0))).astype(int)
+    df.loc[labrows &
+           (ne_orna(df.INCONCLUSIVE, 1)) &
+           (ne_orna(df.NEGATIVE, 1)) &
+           (ne_orna(df.DELAYED, 1)),
+           'POSITIVE'] = 1
 
     # Clinical and clinical-epidemiological diagnose:
-    df['FLU_CLINIC'] = ((df.FLU_A != 1) & (df.FLU_B != 1) & (df.CLASSI_FIN == 1) & (df.CRITERIO.isin([2, 3]))).astype(
-        int)
+    df['FLU_CLINIC'] = ((ne_orna(df.FLU_A, 1)) &
+                        (ne_orna(df.FLU_B, 1)) &
+                        (eq_notna(df.CLASSI_FIN, 1)) &
+                        (df.CRITERIO.isin([2, 3]))).astype(int)
 
     df.NU_IDADE_N = df.NU_IDADE_N.astype(np.float)
 
@@ -1068,6 +1103,9 @@ def main(flist, sep=',', yearmax=None, filtertype='srag', append_cases=None, app
     df.RAIOX_OUT = clean_open_field(df.RAIOX_OUT)
     df.TOMO_OUT = clean_open_field(df.TOMO_OUT)
 
+    # Clean obvious duplicates
+    df.drop_duplicates(inplace=True, ignore_index=True)
+
     # Convert date fields to text and leave NaT as empty cell
     regexp = re.compile('^DT')
     target_cols = list(filter(regexp.match, df.columns))
@@ -1078,7 +1116,7 @@ def main(flist, sep=',', yearmax=None, filtertype='srag', append_cases=None, app
         df.CO_UNI_NOT.update(df.ID_UNIDADE)
 
     mask_sanity_check = (
-            (df.SARS2 == 1) &
+            (eq_notna(df.SARS2, 1)) &
             (
                     (df.DT_SIN_PRI_epiyear.astype(int) < 2020) |
                     ((df.DT_SIN_PRI_epiyear.astype(int) == 2020) &
@@ -1095,11 +1133,11 @@ def main(flist, sep=',', yearmax=None, filtertype='srag', append_cases=None, app
     else:
         dfout = df.copy()
 
-    mask_flu = ((pd.notnull(dfout.FLU_A) & (dfout.FLU_A == 1)) |
-                (pd.notnull(dfout.FLU_B) & (dfout.FLU_B == 1)) |
-                (dfout.FLU_CLINIC == 1))
-    mask_covid = (dfout.SARS2 == 1)
-    mask_obito = (dfout.EVOLUCAO == 2)
+    mask_flu = ((eq_notna(dfout.FLU_A, 1)) |
+                (eq_notna(dfout.FLU_B, 1)) |
+                (eq_notna(dfout.FLU_CLINIC, 1)))
+    mask_covid = (eq_notna(dfout.SARS2, 1))
+    mask_obito = (eq_notna(dfout.EVOLUCAO, 2))
     mask_obitoflu = mask_flu & mask_obito
     mask_obitocovid = mask_covid & mask_obito
 
@@ -1116,11 +1154,11 @@ def main(flist, sep=',', yearmax=None, filtertype='srag', append_cases=None, app
     del dfout
 
     def masks(dfin: pd.DataFrame):
-        mask_flu = ((pd.notnull(dfin.FLU_A) & (dfin.FLU_A == 1)) |
-                    (pd.notnull(dfin.FLU_B) & (dfin.FLU_B == 1)) |
-                    (dfin.FLU_CLINIC == 1))
-        mask_covid = (dfin.SARS2 == 1)
-        mask_obito = (dfin.EVOLUCAO == 2)
+        mask_flu = ((eq_notna(dfin.FLU_A, 1)) |
+                    (eq_notna(dfin.FLU_B, 1)) |
+                    (eq_notna(dfin.FLU_CLINIC, 1)))
+        mask_covid = (eq_notna(dfin.SARS2, 1))
+        mask_obito = (eq_notna(dfin.EVOLUCAO, 2))
         mask_obitoflu = mask_flu & mask_obito
         mask_obitocovid = mask_covid & mask_obito
         dfin['obito'] = mask_obito.astype(int)

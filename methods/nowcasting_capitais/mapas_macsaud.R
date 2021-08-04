@@ -67,9 +67,10 @@ plot.macsaud <- function(uf){
 # }
 
 
-plot.tendencia <- function(i, geom.tendencia){
+plot.tendencia <- function(i, geom.tendencia, subtitle=element_blank()){
   fill.var <- c('tendencia.3s', 'tendencia.6s')
   plot.title <- c('curto prazo\n(3 semanas)', 'longo prazo\n(6 semanas)')
+  plot.subtitle <- subtitle
   p <-  geom.tendencia %>%
     ggplot() +
     geom_sf(aes(fill=factor(get(fill.var[i]), levels=c(-1, -.5, 0, .5, 1))),
@@ -87,7 +88,7 @@ plot.tendencia <- function(i, geom.tendencia){
                       drop=F,
                       name=NULL) +
     guides(fill = guide_legend(reverse=T)) +
-    ggtitle(plot.title[i]) +
+    ggtitle(plot.title[i], subtitle=plot.subtitle) +
     theme_Publication() +
     theme(plot.margin=unit(c(1,0,15,0), units='pt'),
           axis.text.x=element_blank(),
@@ -104,10 +105,49 @@ plot.tendencia <- function(i, geom.tendencia){
   return(p)
 }
 
+plot.transmission.threshold <- function(geom.thres, subtitle=element_blank()){
+  fill.lbl <- c('Pré-epidêmica', 'Epidêmica', 'Alta', 'Muito Alta', 'Extremamente Alta')
+  plot.title <- 'Transmissão comunitária de vírus respiratórios segundo SRAG'
+  plot.subtitle <- subtitle
+  p <-  geom.thres %>%
+    ggplot() +
+    geom_sf(aes(fill=factor(nivel, levels=c(0, 1, 2, 3, 4), labels=fill.lbl)),
+            size=0.1) +
+    scale_x_continuous(expand=c(0.01,0)) +
+    scale_y_continuous(expand=c(0.01,0)) +
+    scale_fill_manual(values=c('#e0f3f8','#ffffbf','#fee090','#fc8d59', '#d73027'),
+                      drop=F,
+                      name=NULL) +
+    ggtitle(plot.title, subtitle=plot.subtitle) +
+    theme_Publication() +
+    theme(plot.margin=unit(c(0,0,0,0), units='pt'),
+          axis.text.x=element_blank(),
+          axis.text.y=element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks = element_blank(),
+          legend.margin = margin(0,0,0,0, unit='pt'),
+          legend.position = 'bottom',
+          legend.direction = 'horizontal',
+          legend.key.size = unit(12, 'pt'),
+          legend.text = element_text(family = 'Roboto', size = rel(.8)),
+          plot.title = element_text(size = rel(.95)),
+          strip.background = element_blank(),
+          strip.text = element_text(face='plain'))
+  
+  return(p)
+  
+}
 
 brazil.shp <- sf::st_read(dsn='../report/Figs', layer='Brasil', stringsAsFactors = F)
 brazil.shp$CD_GEOCODU <- as.integer(brazil.shp$CD_GEOCODU)
 plot.macsaude.tendencia <- function(uf, df, orientation='landscape'){
+  
+  plt.date <- df %>%
+    select(Date) %>%
+    unique() %>%
+    as.integer()
   
   fill.var <- c('tendencia.3s', 'tendencia.6s')
   plot.title <- c('curto prazo\n(3 semanas)', 'longo prazo\n(6 semanas)')
@@ -159,6 +199,12 @@ plot.macsaude.tendencia <- function(uf, df, orientation='landscape'){
   grid::grid.raster(info.logo, x = 0.001, y = 0.001, just = c('left', 'bottom'), width = unit(.8, 'inches'))
   dev.off()
   
+  png(paste0('./Figs/MACSAUD/Mapa_macrorregioes_saude_', sigla, '_tendencia', suffix, '_se', plt.date,'.png'),
+      height = plt.height, width = plt.width, units = 'in', res = 100)
+  grid_arrange_shared_legend(p[[1]], p[[2]], ncol = ncol, nrow = nrow, position = 'right')
+  grid::grid.raster(info.logo, x = 0.001, y = 0.001, just = c('left', 'bottom'), width = unit(.8, 'inches'))
+  dev.off()
+  
 }
 
 plot.ufs.tendencia <- function(df, tgt.col='CO_UF', fpath = './Figs/Capitais/Mapa_capitais_tendencia.png'){
@@ -173,4 +219,34 @@ plot.ufs.tendencia <- function(df, tgt.col='CO_UF', fpath = './Figs/Capitais/Map
   grid_arrange_shared_legend(p[[1]], p[[2]], ncol = 2, nrow = 1, position = 'right')
   grid::grid.raster(info.logo, x = 0.001, y = 0.001, just = c('left', 'bottom'), width = unit(.8, 'inches'))
   dev.off()
+}
+
+
+plot.macsaude.nivel <- function(df){
+  
+  geomacsaud.tendencia <- geomacsaud %>%
+    left_join(df %>% 
+                filter(Date > max(df$Date) - 30) %>%
+                mutate(CO_MACSAUD = as.character(CO_MACSAUD), by='CO_MACSAUD'))
+  maxdate <- max(df$Date)
+  epi.week <- df$epiweek[df$Date == maxdate]
+  epi.year <- df$epiyear[df$Date == maxdate]
+  
+  plt.height = 6
+  plt.width = 6
+  p <- plot.transmission.threshold(geomacsaud.tendencia %>% filter(Date == maxdate), subtitle=paste('Semana epidemiológica', epi.week, epi.year, sep=' ')) + geom_sf(data=brazil.shp, size=.4, alpha=0)
+  png('./Figs/MACSAUD/Mapa_transmissao.png', height = plt.height, width = plt.width, units='in', res=100)
+  print(p)
+  grid::grid.raster(info.logo, x = 0.999, y = 0.04, just = c('right', 'bottom'), width = unit(.8, 'inches'))
+  dev.off()
+  
+  plt.height = 10
+  plt.width = 8
+  p <- plot.transmission.threshold(geomacsaud.tendencia %>% filter(Date >= maxdate-30), subtitle=paste('Dados até a semana epi.', epi.week, epi.year, sep=' ')) + facet_wrap(~sabado, nrow=5)
+  png('./Figs/MACSAUD/Mapa_transmissao_serie.png', height = plt.height, width = plt.width, units='in', res=100)
+  print(p)
+  grid::grid.raster(info.logo, x = 0.999, y = 0.001, just = c('right', 'bottom'), width = unit(.8, 'inches'))
+  dev.off()
+  
+  
 }

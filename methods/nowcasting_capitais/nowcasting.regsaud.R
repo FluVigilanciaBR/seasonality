@@ -34,7 +34,7 @@ parser$add_argument("-f", "--filtertype", type="character", default='sragnofever
                     help="Type of filter [srag, sragnofever, hospdeath]. Default %(default)s")
 parser$add_argument("-d", "--date", type="character", default=format(Sys.Date(), '%Y-%m-%d'),
                     help="Date to use as base, in format YYYY-MM-DD [default Sys.Date()]")
-parser$add_argument("-g", "--graphs", action='store_true', default=FALSE,
+parser$add_argument("-g", "--graphs", action='store_true', default=TRUE,
                     help="If argument passed, generate graphs")
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults,
@@ -349,7 +349,7 @@ for(k in 1:nrow(tblMACSAUD)){
       dadosBR <- dadosBR0
     }
     title <- paste0(title0, ttl.xtra[gpj + 1])
-
+    
     if (nrow(dadosBR) > 10){
       Inicio <- min(dadosBR$DT_SIN_PRI)
       macsaud.id <- dadosBR$co_regsaud_am %>% unique()
