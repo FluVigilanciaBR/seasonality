@@ -50,6 +50,7 @@
 \begin{itemize}
 \item \hyperlink{Serie nacional}{Situação nacional}
 \item \hyperlink{Casos e obitos}{Casos e óbitos por região}
+\item \hyperlink{Nivel transmissao}{Nível de transmissão comunitária nas macrorregiões de saúde}
 \item \hyperlink{Mapas contingencia}{Mapas de situação para o plano de contingência}
 \item \hyperlink{Mapas atividade}{Mapas de alerta de atividade semanal}
 \item \hyperlink{Tabelas}{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}
@@ -107,10 +108,10 @@ A nível nacional, o cenário atual sugere que a situação de cada indicador se
 	\begin{itemize}
 		\item [] Dado semanal na \textbf{\Sexpr{br.report$texto[br.report$indicador == 'canal endêmico' & br.report$dado == 1]}}.
 		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 1]}}.
-		\item [] Total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} casos} já reportados no ano, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == args$epiyear]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
-		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} aguardando resultado}.
-		\item [] Dentre os casos positivos do ano corrente, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\% \textbf{SARS-CoV-2} (COVID-19).
-		\item [] Referente a 2020, já foram reportados um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == 2020]} casos} casos, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == 2020]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório, \textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == 2020]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == 2020]} aguardando resultado}. Dentre os casos positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag' & df.lab$ano == 2020])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} casos} já reportados no ano, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == args$epiyear]}} ($\Sexpr{sprintf('%.1f', 100*df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == args$epiyear] / df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\%$) com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
+		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} ($\Sexpr{sprintf('%.1f', 100*df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == args$epiyear] / df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\%$) negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == args$epiyear]} ($\Sexpr{sprintf('%.1f', 100*df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == args$epiyear] / df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\%$) aguardando resultado}.
+		\item [] Dentre os casos positivos do ano corrente, $\Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\%$ \textbf{Influenza A}, $\Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\%$ \textbf{Influenza B}, $\Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\%$ \textbf{vírus sincicial respiratório}, e $\Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag' & df.lab$ano == args$epiyear])}\%$ \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Referente a 2020, já foram reportados um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == 2020]} casos} casos, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == 2020]}} ($\Sexpr{sprintf('%.1f', 100*df.lab$POSITIVE_CASES[df.lab$dado=='srag' & df.lab$ano == 2020] / df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == 2020])}\%$) com resultado laboratorial \textbf{positivo} para algum vírus respiratório, \textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == 2020]} ($\Sexpr{sprintf('%.1f', 100*df.lab$NEGATIVE[df.lab$dado=='srag' & df.lab$ano == 2020] / df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == 2020])}\%$) negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == 2020]} ($\Sexpr{sprintf('%.1f', 100*df.lab$DELAYED[df.lab$dado=='srag' & df.lab$ano == 2020] / df.lab$SRAG[df.lab$dado=='srag' & df.lab$ano == 2020])}\%$) aguardando resultado}. Dentre os casos positivos, $\Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='srag' & df.lab$ano == 2020])}\%$ \textbf{Influenza A}, $\Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='srag' & df.lab$ano == 2020])}\%$ \textbf{Influenza B}, $\Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='srag' & df.lab$ano == 2020])}\%$ \textbf{vírus sincicial respiratório}, e $\Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='srag' & df.lab$ano == 2020])}\%$ \textbf{SARS-CoV-2} (COVID-19).
 	\end{itemize}
 
 %	\item [Casos notificados de SRAG por influenza:] \hfill
@@ -123,10 +124,10 @@ A nível nacional, o cenário atual sugere que a situação de cada indicador se
   \begin{itemize}
 		\item [] Dado semanal na \textbf{\Sexpr{br.report$texto[br.report$indicador == 'canal endêmico' & br.report$dado == 6]}}.
 		\item [] Atividade semanal \textbf{\Sexpr{br.report$texto[br.report$indicador == 'atividade semanal' & br.report$dado == 6]}}.
-		\item [] Referente os casos do ano corrente, um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} óbitos} já foram reportados, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == args$epiyear]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
-		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} aguardando resultado}.
-		\item [] Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\% \textbf{SARS-CoV-2} (COVID-19).
-		\item [] Referente os casos do ano de 2020, um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == 2020]} óbitos} já foram reportados, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == 2020]}} com resultado laboratorial \textbf{positivo} para algum vírus respiratório, \textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == 2020]} negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == 2020]} aguardando resultado}. Dentre os positivos, \Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{Influenza A}, \Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{Influenza B}, \Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{vírus sincicial respiratório}, e \Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito' & df.lab$ano == 2020])}\% \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Referente os casos do ano corrente, um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} óbitos} já foram reportados, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == args$epiyear]}} ($\Sexpr{sprintf('%.1f', 100*df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == args$epiyear] / df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\%$) com resultado laboratorial \textbf{positivo} para algum vírus respiratório,
+		\textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} ($\Sexpr{sprintf('%.1f', 100*df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == args$epiyear] / df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\%$) negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == args$epiyear]} ($\Sexpr{sprintf('%.1f', 100*df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == args$epiyear] / df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\%$) aguardando resultado}.
+		\item [] Dentre os positivos, $\Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\%$ \textbf{Influenza A}, $\Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\%$ \textbf{Influenza B}, $\Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\%$ \textbf{vírus sincicial respiratório}, e $\Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito' & df.lab$ano == args$epiyear])}\%$ \textbf{SARS-CoV-2} (COVID-19).
+		\item [] Referente os casos do ano de 2020, um total de \textbf{\Sexpr{df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == 2020]} óbitos} já foram reportados, sendo \textbf{\Sexpr{df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == 2020]}} ($\Sexpr{sprintf('%.1f', 100*df.lab$POSITIVE_CASES[df.lab$dado=='obito' & df.lab$ano == 2020] / df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == 2020])}\%$) com resultado laboratorial \textbf{positivo} para algum vírus respiratório, \textbf{\Sexpr{df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == 2020]} ($\Sexpr{sprintf('%.1f', 100*df.lab$NEGATIVE[df.lab$dado=='obito' & df.lab$ano == 2020] / df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == 2020])}\%$) negativos}, e ao menos \textbf{\Sexpr{df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == 2020]} ($\Sexpr{sprintf('%.1f', 100*df.lab$DELAYED[df.lab$dado=='obito' & df.lab$ano == 2020] / df.lab$SRAG[df.lab$dado=='obito' & df.lab$ano == 2020])}\%$) aguardando resultado}. Dentre os positivos, $\Sexpr{sprintf('%.1f', df.lab$FLU_A[df.lab$dado=='obito' & df.lab$ano == 2020])}\%$ \textbf{Influenza A}, $\Sexpr{sprintf('%.1f', df.lab$FLU_B[df.lab$dado=='obito' & df.lab$ano == 2020])}\%$ \textbf{Influenza B}, $\Sexpr{sprintf('%.1f', df.lab$VSR[df.lab$dado=='obito' & df.lab$ano == 2020])}\%$ \textbf{vírus sincicial respiratório}, e $\Sexpr{sprintf('%.1f', df.lab$SARS2[df.lab$dado=='obito' & df.lab$ano == 2020])}\%$ \textbf{SARS-CoV-2} (COVID-19).
 	\end{itemize}
 \end{description}
 
@@ -168,6 +169,42 @@ A Fig.~\ref{fig:st_reg2} apresenta a incidência de casos e óbitos de SRAG nas 
 
 \clearpage
 
+\hypertarget{Nivel transmissao}{\heading{Nível de transmissão comunitária de vírus respiratório segundo SRAG, durante a epidemia de COVID-19}{6pt}}
+Indicadores de transmissão comunitária durante a atual epidemia de COVID-19 no Brasil a partir da incidência semanal de SRAG nas macrorregiões de saúde de cada estado e do distrito federal, conforme descrito em \href{https://bit.ly/mave-infogripe-nota-transmissao}{nota técnica} do Observatório Covid-19 da Fiocruz e equipe InfoGripe.
+
+A Tabela~\ref{tab:transm} apresenta o total de macrorregiões de saúde em cada nível. As Figuras \ref{fig:transm} e \ref{fig:transmserie} apresentam o mapa do país com o nível de cada macrorregião de saúde para a semana epidemiológica mais recente e a evolução desse indicador nas últimas 30 semanas epidemiológicas, respectivamente.
+
+\textbf{Atenção:} dados referentes às Macrorregiões Litoral do Piauí, e Sul do Espírito Santo, estão subestimados em razão de subnotificação no sistema SIVEP-Gripe dos casos de SRAG em unidades de saúde dessas regiões e, portanto, não devem ser utilizados para tomada de decisão.
+
+\begin{table}[!h]
+\centering
+\settowidth\tymin{Alta}
+{\renewcommand{\arraystretch}{2.5}
+	\begin{tabulary}{1.0\textwidth}{l|C|C|C|C|C}
+	& \cellcolor[HTML]{e0f3f8}Pré-epidêmica & \cellcolor[HTML]{ffffbf}Epidêmica & \cellcolor[HTML]{fee090}Alta & \cellcolor[HTML]{fc8d59}Muito Alta & \cellcolor[HTML]{d73027}Extremamente Alta \\
+	\hline
+	\parbox{15em}{Total de novos casos de SRAG por 100 mil habitantes na última semana} & $<0.5$ & $0.5$ a $1.0$ & $1.0$ a $5.0$ & $5.0$ a $10.0$ & $10.0$ ou mais \\
+	\hline
+	\parbox{15em}{Total de macrorregiões} & $\Sexpr{pred.macros$n[pred.macros$nivel == 0]}$ & $\Sexpr{pred.macros$n[pred.macros$nivel == 1]}$ & $\Sexpr{pred.macros$n[pred.macros$nivel == 2]}$ & $\Sexpr{pred.macros$n[pred.macros$nivel == 3]}$ & $\Sexpr{pred.macros$n[pred.macros$nivel == 4]}$
+\end{tabulary}}
+	\caption{Níveis estimados para transmissão comunitária durante a epidemia de COVID-19 no Brasil, com base na média móvel das últimas três semanas epidemiológicas calculada sobre as estimativas de casos recentes de SRAG independentemente da presença de febre.}\label{tab:transm}
+\end{table}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.75\textwidth]{../nowcasting_capitais/Figs/MACSAUD/Mapa_transmissao.png}
+	\caption{Mapa do país com nível estimado para transmissão comunitária durante a epidemia de COVID-19 no Brasil, para cada uma das 118 macrorregiões de saúde, com base na média móvel das últimas três semanas epidemiológicas calculada sobre as estimativas de casos recentes de SRAG independentemente da presença de febre.}\label{fig:transm}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.75\textwidth]{../nowcasting_capitais/Figs/MACSAUD/Mapa_transmissao_serie.png}
+	\caption{Evolução do indicador de nível de transmissão comunitária em cada macrorregião de saúde nas últimas 30 semanas epidemiológicas. As datas referem-se ao sábado correspondente ao encerramento de cada semana. O nível estimado para transmissão comunitária durante a epidemia de COVID-19 no Brasil, para cada uma das 118 macrorregiões de saúde, usa como base as estimativas de casos recentes de SRAG independentemente da presença de febre.}\label{fig:transmserie}
+\end{figure}
+
+\clearpage
 \hypertarget{Mapas contingencia}{\heading{Mapas de situação para o plano de contingência para vírus Influenza}{6pt}}
 Além das análises por Unidade da Federação, o sistema InfoGripe reporta análise por agregados regionais, utilizando tanto a divisão geopolítica quanto por perfil de atividade de SRAG. A Fig.\ref{fig:regioes} apresenta essas duas divisões para referência.
 \begin{figure}[h]
@@ -769,141 +806,191 @@ cat(df.table$lista[df.table$dado == 5 & df.table$territorio == 'UF' & df.table$i
   Séries temporais de síndrome respiratória aguda grave (SRAG) em cada UF do país independente de apresentar febre, por semana de primeiros sintomas. 
   
   A estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.
+
+\begin{itemize}
+\item \hyperlink{mapa_tendencia_ufs}{InfoGráfico da tendência atual}
+\item \hyperlink{ufreg1}{Região Norte}
+\item \hyperlink{ufreg2}{Região Nordeste}
+\item \hyperlink{ufreg3}{Região Sudeste}
+\item \hyperlink{ufreg4}{Região Sul}
+\item \hyperlink{ufreg5}{Região Centro-Oeste}
+\end{itemize}
+
+\clearpage
+\hypertarget{mapa_tendencia_ufs}{\heading{Tendência até a semana atual}{4pt}}
+\begin{figure*}[!hb]
+	\centering
+	\includegraphics[width=1\textwidth]{../nowcasting_capitais/Figs/UF/Mapa_ufs_tendencia.png}
+\end{figure*}
+
+<<results=tex, echo=FALSE>>=
+tblCADMUN <- read.csv("../data/municip_macsaud_regmetr.csv", stringsAsFactors = F)
+
+tblCADMUN.uf <- tblCADMUN %>% filter(IN_CAPITAL %in% c('E', 'F'))
+reg <- tblCADMUN.uf$CO_REGIAO[1]
+reg.label <- c('Região Norte',
+               'Região Nordeste',
+               'Região Sudeste',
+               'Região Sul',
+               'Região Centro-Oeste')
+cat("\\hypertarget{ufreg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
+
+cat('\\begin{multicols}{2}\n')
+reg.old <- reg
+for(k in 1:nrow(tblCADMUN.uf)){
+  reg <- tblCADMUN.uf$CO_REGIAO[k]
+  if (reg != reg.old){
+    cat('\\end{multicols}\n')
+    cat('\\clearpage\n')
+    cat("\\hypertarget{ufreg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
+    cat('\\begin{multicols}{2}\n')
+    reg.old <- reg
+  }
   
-  \begin{figure*}[!ht]
-  	\centering
-  	\includegraphics[width=.8\textwidth]{Figs/Territory_11_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
+  file <- paste0("../nowcasting_capitais/Figs/UF/fig_", tblCADMUN.uf$DS_UF_SIGLA[k],".png")
+  cat("\\begin{Figure}\n")
+  cat("\\centering\n")
+  cat("\\includegraphics[width=\\linewidth]{", file, "}\n", sep="")
+  cat("\\end{Figure}\n\n")
+}
+@
+  \end{multicols}
+
   
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_12_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_13_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_14_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_15_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_16_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_17_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_21_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_22_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_23_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_24_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_25_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_26_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_27_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_28_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_29_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_31_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_32_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_33_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_35_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_41_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_42_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_43_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_50_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_51_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_52_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
-
-  \begin{figure*}[!ht]
-	\centering
-	\includegraphics[width=.8\textwidth]{Figs/Territory_53_dataset_1_timeseries_sragnofever.png}
-  \end{figure*}
+%   \begin{figure*}[!ht]
+%   	\centering
+%   	\includegraphics[width=.8\textwidth]{Figs/Territory_11_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+%   
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_12_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_13_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_14_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_15_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_16_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_17_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_21_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_22_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_23_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_24_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_25_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_26_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_27_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_28_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_29_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_31_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_32_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_33_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_35_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_41_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_42_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_43_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_50_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_51_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_52_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
+% 
+%   \begin{figure*}[!ht]
+% 	\centering
+% 	\includegraphics[width=.8\textwidth]{Figs/Territory_53_dataset_1_timeseries_sragnofever.png}
+%   \end{figure*}
 
   \clearpage
   

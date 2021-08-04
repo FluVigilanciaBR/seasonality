@@ -1,8 +1,19 @@
 # Auxiliar functions for nowcasting
 
 # Auxiliar function, sampling from a negative binomial likelihood
-ff <- function(x, idx){
-  rnbinom(n = idx, mu = exp(x$latent[idx]), size = x$hyperpar[1])
+# ff <- function(x, idx){
+#   rnbinom(n = idx, mu = exp(x$latent[idx]), size = x$hyperpar[1])
+# }
+
+# Zero inflated:
+ff <- function(x, idx = index.missing, zero.inflated = TRUE){
+  if (zero.inflated){
+    aux <- rnbinom(n = idx, mu = exp(x$latent[idx]), size = x$hyperpar[1])
+    aux.unif <- rbinom(n = length(idx), 1, prob = 1-x$hyperpar[2])
+    return(aux * aux.unif)
+  } else {
+    rnbinom(n = idx, mu = exp(x$latent[idx]), size = x$hyperpar[1])
+  }
 }
 
 # Auxiliar function selecionando um pedaco do dataset
@@ -25,18 +36,19 @@ gg <- function(x, dados, idx, Fim.sat, Dmax){
 # Algorithm to get samples for the predictive distribution for the number of cases
 
 nowcasting <- function(output.day, dadosRio.ag, 
-                       Fim = today.week, Dm = Dmax){
+                       Fim = today.week, Dm = Dmax, zero.inflated = TRUE){
   
   index.missing = which(is.na(dadosRio.ag$Casos))
   
   
   # Step 1: Sampling from the approximate posterior distribution using INLA
-  srag.samples.list <- inla.posterior.sample(n = 1000, output.day)
+  srag.samples.list <- inla.posterior.sample(n = 500, output.day)
   
   # Step 2: Sampling the missing triangle (in vector form) from the likelihood using INLA estimates
   vector.samples <- lapply(X = srag.samples.list, 
                            FUN = ff,
-                           idx = index.missing
+                           idx = index.missing,
+                           zero.inflated = zero.inflated
   )
   
   # Step 3: Calculate N_t for each triangle sample {N_t : t=Tactual-Dmax+1,...Tactual}
@@ -79,17 +91,31 @@ nowcasting <- function(output.day, dadosRio.ag,
 
 
 # Running INLA for the nowcasting model
-nowcast.INLA <- function(dados.ag, model.day,...){
+nowcast.INLA <- function(dados.ag, model.day, zero.inflated = TRUE, ...){
   hess.min <- -1
-  h.value <- 0.01
+  h.value <- 0.0001
   trials <- 0
+  
+  if (zero.inflated){
+    family = "zeroinflatednbinomial1"
+    control.family = list( 
+      hyper = list("theta1" = list(prior = "loggamma", param = c(0.1, 0.1)),
+                   "theta2" = list(prior = "gaussian", param = c(0, 0.4)))
+    )
+  } else {
+    family = 'nbinomial'
+    control.family = list( 
+                         hyper = list("theta" = list(prior = "loggamma", param = c(0.1, 0.1)))
+                       )
+  }
   while (hess.min <= 0 & trials < 50){
     output <- inla(formula = model.day, 
-                 family = "nbinomial", 
+                 family = family, 
                  data = dados.ag,
                  num.threads = 4,
                  control.predictor = list(link = 1, compute = T),
                  control.compute = list( config = T),
+                 control.family = control.family,
                  control.inla = list(h = h.value),
                  ...
                  # control.family = list( 
@@ -99,7 +125,7 @@ nowcast.INLA <- function(dados.ag, model.day,...){
     )
     hess.start <- which(output$logfile == 'Eigenvalues of the Hessian')
     hess.min <- min(as.numeric(output$logfile[(hess.start+1):(hess.start+3)]))
-    h.value <- h.value + 0.01
+    h.value <- h.value + 0.0001
     trials <- trials + 1
   }
   output
@@ -124,6 +150,9 @@ plot.nowcast <- function(pred.summy, Fim, nowcast = T){
       geom_line(size = 1, na.rm = T) +
       geom_ribbon( aes( ymin=IC90I, ymax=IC90S), fill = 'gray', 
                    color = 'gray', alpha = 0.5, 
+                   show.legend = F) + 
+      geom_ribbon( aes( ymin=Q1, ymax=Q3), fill = 'gray', 
+                   color = 'gray', alpha = 0.75, 
                    show.legend = F) + 
       geom_line(aes(x = Date, y = Median, 
                     colour = "Casos estimados", 

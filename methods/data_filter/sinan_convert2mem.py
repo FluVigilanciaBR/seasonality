@@ -77,14 +77,14 @@ def readtable(fname, sep=','):
 
     # Aggregate independent of sex:
     dftmp = df[grp_cols].groupby(['UF', 'epiyearweek', 'epiyear', 'epiweek'], as_index=False).agg(sum)
-    dftmp['SRAG'] = dftmp[age_cols].apply(sum, axis=1)
+    dftmp['SRAG'] = dftmp[age_cols].fillna(0).sum(axis=1)
     dftmp['sexo'] = 'Total'
 
     # Aggregate separating by sex:
     grp_cols = ['UF', 'epiyearweek','epiyear', 'epiweek', 'sexo', '< 2 anos', '2-4 anos'] + age_cols + \
                tgt_cols['Agentes infecciosos detectados'] + tgt_cols['Exames laboratoriais']
     df = df[grp_cols].groupby(['UF', 'epiyearweek', 'epiyear', 'epiweek', 'sexo'], as_index=False).agg(sum)
-    df['SRAG'] = df[age_cols].apply(sum, axis=1)
+    df['SRAG'] = df[age_cols].fillna(0).sum(axis=1)
 
     df = df.append(dftmp, ignore_index=True, sort=True)
 
@@ -153,20 +153,19 @@ def uf4mem(dfin=pd.DataFrame()):
                                                                          axis=1)
     tgt_cols = ['Total'] + age_cols
     tgt_cols.remove('Idade desconhecida')
-    dfpop.set_index('Ano', inplace=True)
     # Incidence from lab results:
     lab_cols = lab_cols_out
     for uf in uflist:
         for year in yearlist:
             for sex in ['M', 'F', 'Total']:
                 tgt_rows = (dfinc.UF == uf) & (dfinc.epiyear == year) & (dfinc.sexo == sex)
-                dfpop_tgt_rows = (dfpop.UF == str(uf)) & (dfpop.Sexo == sex) & (dfpop.index == year)
+                dfpop_tgt_rows = (dfpop.UF == str(uf)) & (dfpop.Sexo == sex) & (dfpop.Ano == year)
                 # Cases by age:
                 dfinc.loc[tgt_rows, tgt_cols] = 100000*dfinc.loc[tgt_rows, tgt_cols].\
-                    div(dfpop.loc[dfpop_tgt_rows, tgt_cols].ix[year], axis='columns')
+                    div(dfpop.loc[np.where(dfpop_tgt_rows)[0], tgt_cols].squeeze())
                 # Lab results:
                 dfinc.loc[tgt_rows, lab_cols] = (100000*dfinc.loc[tgt_rows, lab_cols] /
-                    dfpop.loc[dfpop_tgt_rows, 'Total'].ix[year])
+                    dfpop.loc[np.where(dfpop_tgt_rows)[0], 'Total'].squeeze())
 
     dfinc.rename(columns={'Total': 'SRAG'}, inplace=True)
 

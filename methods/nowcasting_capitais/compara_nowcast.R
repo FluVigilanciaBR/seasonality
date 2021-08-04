@@ -75,7 +75,7 @@ plot.geo.facet <- function(seilbl, seflbl, pred.capitais, current=F){
   xlbls <- c(epilbls, epilbls)
   xlimits <- c(1, as.integer(seflbl))
 
-    p0.day <- pred.capitais %>%
+  p0.day <- pred.capitais %>%
     filter(grupo_jur == 0) %>%
     ggplot(aes(x =  Date,
                color = base,

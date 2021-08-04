@@ -42,11 +42,12 @@ dfs['OUTROS'] = dfs[['BOCA',
                      'PARA4',
                      'OTHERS'
                      ]].sum(axis=1)
+dfs.loc[dfs.epiyear > 2020, 'epiweek'] += 53
 
 dfss = dfs.loc[(dfs.escala == 'casos') &
                (dfs.sexo == 'Total') &
                (dfs.dado.isin(['srag', 'obito'])) &
-               (dfs.epiyear == 2020),
+               (dfs.epiyear >= 2020),
                ['UF',
                 'dado',
                 'epiweek',
@@ -88,6 +89,7 @@ dfid.loc[dfid.UF == 'CO', 'sigla'] = 'Região Centro-Oeste'
 
 title = {'testados': 'positividade entre os testados',
          'positivos': 'percentual entre os positivos para vírus respiratórios'}
+xmax = dftmpplt.epiweek.max()
 
 for uf in dftmpplt.UF.unique():
     for n in ['testados', 'positivos']:
@@ -100,10 +102,34 @@ for uf in dftmpplt.UF.unique():
                           data=dftmpplt[(dftmpplt.UF == uf) &
                                         (dftmpplt.normalizacao == n)])
 
-        ax.set_xlabel('Semana epimdeiológica de primeiros sintomas', fontfamily='Roboto', fontsize='x-large')
+        ax.set_xlabel('Semana epidemiológica de primeiros sintomas', fontfamily='Roboto', fontsize='x-large')
         ax.set_ylabel('Percentual', fontfamily='Roboto', fontsize='x-large')
-        plt.xticks(fontfamily='Roboto', fontsize='large')
-        plt.xlim([1, 48])
+        plt.xticks(ticks=[1, 8, 16, 24, 32, 40, 48, 54, 62, 70, 78, 86],
+                   labels=[1, 8, 16, 24, 32, 40, 48, 1, 8, 16, 24, 32],
+                   fontfamily='Roboto', fontsize='large')
+        plt.xlim([1, xmax])
         plt.yticks(fontfamily='Roboto', fontsize='large')
         ax.set_title('%s: %s' % (sigla, title[n]), fontfamily='Roboto', fontsize='x-large')
-        plt.savefig('positividade/positividade_%s_%s.svg' % (uf, n), bbox_to_inches='tight')
+        plt.savefig('positividade/positividade_%s_%s.png' % (uf, n), bbox_to_inches='tight')
+
+for uf in dftmpplt.UF.unique():
+    for n in ['testados', 'positivos']:
+        plt.close('all')
+        sigla = dfid.sigla[dfid.UF == str(uf)].values[0]
+        ax = sns.lineplot(x='epiweek',
+                          y='value',
+                          hue='Vírus',
+                          style='Dado',
+                          data=dftmpplt[(dftmpplt.UF == uf) &
+                                        (dftmpplt.Vírus != 'SARS2') &
+                                        (dftmpplt.normalizacao == n)])
+
+        ax.set_xlabel('Semana epidemiológica de primeiros sintomas', fontfamily='Roboto', fontsize='x-large')
+        ax.set_ylabel('Percentual', fontfamily='Roboto', fontsize='x-large')
+        plt.xticks(ticks=[1, 8, 16, 24, 32, 40, 48, 54, 62, 70, 78, 86],
+                   labels=[1, 8, 16, 24, 32, 40, 48, 1, 8, 16, 24, 32],
+                   fontfamily='Roboto', fontsize='large')
+        plt.xlim([1, xmax])
+        plt.yticks(fontfamily='Roboto', fontsize='large')
+        ax.set_title('%s: %s' % (sigla, title[n]), fontfamily='Roboto', fontsize='x-large')
+        plt.savefig('positividade/positividade_%s_%s_sem_sars2.png' % (uf, n), bbox_to_inches='tight')

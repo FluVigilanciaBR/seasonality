@@ -12,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.encoders import encode_base64
 from subprocess import run
-from settings import EMAIL, SERVER, REPORT
+from settings import EMAIL, SERVER, SERVERNEW, REPORT
 from data_filter.episem import episem, lastepiweek
 
 
@@ -132,34 +132,19 @@ Caro(a),
 Segue o resumo do boletim semanal gerado pelo InfoGripe, com base nos dados do Sivep-gripe até a SE %s 
 %02d.
 Esta é uma mensagem automática, não é necessário responder o e-mail.
+** ALERTA ** Alguns estados e capitais que até então apresentavam queda dão sinais de possível estabilização em 
+patamares significativamente elevados. Pedimos atenção aos destaques apresentados no pdf contendo o resumo do boletim,
+ nas sessões referentes aos dados de notificações nos estados e aos dados referentes a residentes das capitais.  
 
 Em função do tamanho do documento completo, o mesmo não será enviado por e-mail, mas pode ser feito o download do 
 arquivo através do endereço usual: https://bit.ly/mave-infogripe-boletim-atual . No repositório de gráficos 
-referentes às capitais (https://bit.ly/infogripe-capitais e http://bit.ly/mave-infrogripe-dados-capitais) estão 
+referentes às capitais (https://bit.ly/infogripe-capitais e http://bit.ly/mave-infogripe-dados-capitais) estão 
 incluídas também as análises estratificadas por grupo jurídico da unidade de notificação, permitindo avaliação de 
 eventuais subnotificações, aumento no atraso de notificação/digitação, ou fluxo de atendimento distinto em cada rede.
-
-Neste edição do resumo incluímos anexo com comparação entre as estimativas produzidas ao final da semana 53 2020 e a 
-atual, para auxiliar a avaliação da perda de oportunidade de digitação em relação aos dados de dezembro.
-No link http://bit.ly/infogripe-painel-se02_04-2021 disponibilizamos painel em alta resolução com os gráficos 
-comparativos de todas as capitais distribuídas no formato do mapa do Brasil.
+Disponibilizamos também imagem com mapa de tendências para as Unidades Federativas, capitais e macorregiões de saúde 
+em arquivo único no endereço http://bit.ly/infogripe-mapa-tendencias
 
 *** ATENÇÃO ***
-Registros de SRAG no SIVEP-Gripe para diversos estados aparentaram uma piora significativa na oportunidade de 
-digitação (tempo entre data de primeiros sintomas e data de digitação no SIVEP-Gripe dos casos notificados) refente 
-aos casos ocorridos durante os últimos meses de 2020 e início de 2021. Alterações repentinas e significativas no 
-perfil de atraso impactam na qualidade do estimador de casos recentes, podendo gerar subestimação de casos e, 
-inclusive, falso sinal de queda. Tal efeito pode ser inferido de maneira indireta ao contrastar os registros 
-inseridos à época e as taxas de ocupação de leitos. Incluímos ao final deste documento painel comparativo entre as 
-estimativas geradas para as capitais ao término da semana epidemiológica 02 de 2020 e a presente atualização, 
-ilustrando o impacto disso nas estimativas com base nos dados do início do ano, ainda em decorrência da mudança no 
-perfil do atraso durante o mês de dezembro. Observa-se uma melhora no quadro geral, com um conjunto menor de 
-capitais ainda apresentando diferenças relevantes entre os dados atuais e aqueles inseridos até a início da segunda 
-quinzena de janeiro. Tal melhora pode ser identificada ao contrastar a diferença aqui apresentada e a comparação 
-apresentada no boletim anterior (comparação entre as SE 2020 53 e 2021 03). Vale destacar que locais que ainda 
-possuam um passivo considerável de fichas de notificação referentes ao final de 2020 podem ainda não apresentar 
-diferença significativa entre essas duas atualizações, tornando necessário um acompanhamento ao longo dos primeiros 
-meses de 2021 para uma avaliação adequada.
 Como os dados aqui analisados se referem a notificações de hospitalizações ou óbitos, a superlotação da rede 
 hospitalar, com formação de lista de espera para disponibilização de leitos, pode gerar subnotificação. Isso ocorre 
 toda vez que pacientes que atendem a definição de SRAG deixam de ser notificados por não ser possível realizar a 
@@ -415,7 +400,7 @@ def apply_opportunities(filtertype='srag'):
         raise
 
 
-def apply_estimator(date='max', filtertype='srag'):
+def apply_estimator(date='max', filtertype='srag', dmax=None, wdw=None):
     from opportunity_estimator import add_situation2weekly_data
 
     dataset = ['srag', 'sragflu', 'obitoflu', 'obito', 'sragcovid', 'obitocovid']
@@ -425,7 +410,11 @@ def apply_estimator(date='max', filtertype='srag'):
         logger.info('Calculating estimates for dataset: %s' % data)
         module_name = 'opportunity_estimator.opportunity.estimator.R'
         try:
-            run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype], check=True)
+            if wdw:
+                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype, '-w', wdw],
+                    check=True)
+            else:
+                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype], check=True)
         except Exception as err:
             logger.exception(module_name)
             logger.exception(err)
@@ -453,7 +442,18 @@ def apply_estimator(date='max', filtertype='srag'):
             cwd = os.getcwd()
             os.chdir('../nowcasting_capitais')
             Rscript = 'nowcastingCapitaisMacrosaude.R'
-            run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype, '--graphs'], check=True)
+            if all([dmax, wdw]):
+                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
+                     '--dmax', dmax, '--window', wdw, '--graphs'], check=True)
+            elif dmax:
+                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
+                     '--dmax', dmax, '--graphs'], check=True)
+            elif wdw:
+                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
+                     '--window', wdw, '--graphs'], check=True)
+            else:
+                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype, '--graphs'],
+                    check=True)
             os.chdir(cwd)
         except Exception as err:
             logger.exception(module_name)
@@ -510,6 +510,23 @@ def exportdb(fname=None):
                 fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
 
             run(['scp', '-C', fname, '%(USER)s@%(HOST)s:~/update/infogripe.dump' % SERVER], check=True)
+        except Exception as err:
+            if i < tries - 1:  # i is zero indexed
+                sleep(2)
+                continue
+            else:
+                logger.exception(module_name)
+                logger.exception(err)
+                mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+                send_email(mail_error)
+                raise
+        break
+
+    for i in range(tries):
+        try:
+            for n in ['macros', 'ufs', 'capitais']:
+                fname = os.path.join(data_folder, '%s_current.rds' % n)
+                run(['scp', '-C', fname, '%(USER)s@%(HOST)s:/opt/fludashboard/data/.' % SERVERNEW], check=True)
         except Exception as err:
             if i < tries - 1:  # i is zero indexed
                 sleep(2)
@@ -804,8 +821,21 @@ def generate_public_datasets(filtertype='srag'):
             check=True, shell=True)
         run(['cp --force ./report/Boletim_InfoGripe_atual%s.pdf %s/.' % (suff_out[filtertype], public_report_folder)],
             check=True, shell=True)
+        run(['cp --force ./report/Boletim_InfoGripe_SE%s%s%s.pdf %s/.' % (epiweekmax.epiyear.values[0],
+                                                                          epiweekmax.epiweek.values[0],
+                                                                          suff_out[filtertype], public_report_folder)],
+            check=True, shell=True)
 
         if filtertype == 'sragnofever':
+            run(['cp --force ./nowcasting_capitais/Figs/UF/fig*.png %s/UF/.' % public_figs_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/Figs/UF/Mapa_ufs_tendencia.png %s/UF/.' %
+                 public_figs_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/estados_e_pais_serie_estimativas_tendencia_sem_filtro_febre.csv '
+                 '%s/.' %
+                 public_data_folder],
+                check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/Figs/Capitais/fig*.png %s/Capitais/.' % public_figs_folder],
                 check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/Figs/Capitais/Mapa_capitais_tendencia.png %s/Capitais/.' %
@@ -817,6 +847,14 @@ def generate_public_datasets(filtertype='srag'):
             run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/fig*.png %s/Macrorregioes_de_saude/.' % public_figs_folder],
                 check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa*tendencia.png %s/Macrorregioes_de_saude/.' %
+                 public_figs_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa*tendencia_horizontal.png '
+                 '%s/Macrorregioes_de_saude/.' %
+                 public_figs_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa_transmissao*png '
+                 '%s/Macrorregioes_de_saude/.' %
                  public_figs_folder],
                 check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/macsaud_serie_estimativas_tendencia_sem_filtro_febre.csv %s/.' %
@@ -836,7 +874,8 @@ def generate_public_datasets(filtertype='srag'):
 
 
 def main(flist=None, update_mem=False, module_list=None, history_files=None, dir=None, sep=',', years=None, date='max',
-         dbdump=None, plot=None, filtertype='srag', extra=None, append_cases=None, append_delay=None):
+         dbdump=None, plot=None, filtertype='srag', extra=None, append_cases=None, append_delay=None, dmax=None,
+         wdw=None):
     """
     Run all scripts to update the system with new database.
 
@@ -955,7 +994,7 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     os.chdir('../opportunity_estimator')
     if 'estimator' in module_list:
         logger.info('Apply opportunity estimator')
-        apply_estimator(date, filtertype)
+        apply_estimator(date, filtertype, dmax, wdw)
 
     os.chdir('../data_filter')
     if 'consolidate' in module_list:
@@ -1027,6 +1066,10 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--append_delay', help='Default=None. Path to delay file to append to',
                         default=None)
+    parser.add_argument('--dmax', help='Default=None. Maximum delay cutoff',
+                        default=None)
+    parser.add_argument('--wdw', help='Default=None. Estimates window',
+                        default=None)
 
     args = parser.parse_args()
     if args.path:
@@ -1040,4 +1083,4 @@ if __name__ == '__main__':
 
     main(flist=args.path, update_mem=args.mem, module_list=args.modules, history_files=args.history, dir=args.dir,
          sep=args.sep, years=args.years, date=args.date, dbdump=args.dbdump, plot=args.plot, filtertype=args.filtertype,
-         extra=args.extra, append_cases=args.append_cases, append_delay=args.append_delay)
+         extra=args.extra, append_cases=args.append_cases, append_delay=args.append_delay, dmax=args.dmax, wdw=args.wdw)

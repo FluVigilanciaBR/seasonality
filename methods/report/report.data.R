@@ -682,6 +682,13 @@ for (y in df.lab.orig %>%
     rbind(df.lab)
 }
 
+if (args$filtertype == 'sragnofever'){
+  pred.macros <- readRDS('../nowcasting_capitais/macros_current.rds') %>%
+    filter(Date == max(Date)) %>%
+    mutate(nivel=factor(nivel, levels=c(0,1,2,3,4))) %>%
+    count(nivel, .drop=FALSE)
+}
+
 Sweave(paste0('Boletim_InfoGripe_template', suff_out, '.Rnw'))
 texi2dvi(file = paste0('Boletim_InfoGripe_template', suff_out, '.tex'), pdf = TRUE, quiet=TRUE, clean=TRUE)
 suff_out_ptbr <- ''

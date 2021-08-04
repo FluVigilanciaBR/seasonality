@@ -1,9 +1,10 @@
-generate.estimates <- function(delay.tbl.tmp, Dmax, do.plots=F, uf='tmp'){
+generate.estimates <- function(delay.tbl.tmp.ori, Dmax, do.plots=F, uf='tmp'){
   
   # Generate etimates for the previous Dmax weeks based on notification oportunity profile
   # found in delay.tbl.tmp
   delay.week <- paste0("d",0:Dmax)
-  delay.tbl.tmp <- delay.tbl.tmp[delay.week]
+  delay.tbl.tmp <- delay.tbl.tmp.ori[delay.week]
+  delay.tbl.tmp[, Dmax+1] <- delay.tbl.tmp[,Dmax+1] + delay.tbl.tmp.ori$Notifications - rowSums(delay.tbl.tmp)
   
   # tempo máximo do banco
   Tmax <- nrow(delay.tbl.tmp)
@@ -35,7 +36,8 @@ generate.estimates <- function(delay.tbl.tmp, Dmax, do.plots=F, uf='tmp'){
   # make.df.trian(A)
   
   # Creating a data frame for INLA
-  delay.inla.trian <- make.df.trian(delay.tbl.tmp.obs.trian)
+  delay.inla.trian <- make.df.trian(delay.tbl.tmp.obs.trian) %>%
+    mutate(TimeDelay = paste(Time, Delay))
   
   # Find the missing values
   index.missing <- which(is.na(delay.inla.trian$Y))
@@ -44,8 +46,10 @@ generate.estimates <- function(delay.tbl.tmp, Dmax, do.plots=F, uf='tmp'){
   
   # Equacao do modelo: intercepto + efeito_de_tempo + efeito_de_oportunidade!!!
   model <- Y ~ 1 + 
-    f(Time, model = "rw1", hyper = list("prec" = list(prior = "loggamma", param = c(0.001, 0.001)))) + 
-    f(Delay, model = "rw1", hyper = list("prec" = list(prior = "loggamma", param = c(0.001, 0.001))))
+    f(Time, model = "rw2", hyper = list("prec" = list(prior = "loggamma", param = c(0.01, 0.01)))) +
+    f(Delay, model = "rw1", hyper = list("prec" = list(prior = "loggamma", param = c(0.01, 0.01)))) #+
+    # Efeito tempo-atraso
+    #f(TimeDelay, model = "iid", constr = T)
   
   
   # model.ar <- Y ~ 1 + 
@@ -57,20 +61,29 @@ generate.estimates <- function(delay.tbl.tmp, Dmax, do.plots=F, uf='tmp'){
   
   # ajuste, verossimilhanca binomial negativa 
   hess.min <- -1
-  h.value <- 0.01
+  h.value <- 0.0001
   trials <- 0
   while (hess.min <= 0 & trials < 50){
-    output <- inla(model, family = "nbinomial", data = delay.inla.trian,
+    # output <- inla(model, family = "nbinomial", data = delay.inla.trian,
+    #                control.predictor = list(link = 1, compute = T),
+    #                control.compute = list( config = T, waic=TRUE, dic=TRUE),
+    #                control.family = list( 
+    #                  hyper = list("theta" = list(prior = "loggamma", param = c(0.1, 0.1)))
+    #                ),
+    #                control.inla = list(h = h.value)
+    # )
+    output <- inla(model, family = "zeroinflatednbinomial1", data = delay.inla.trian,
                    control.predictor = list(link = 1, compute = T),
                    control.compute = list( config = T, waic=TRUE, dic=TRUE),
                    control.family = list( 
-                     hyper = list("theta" = list(prior = "loggamma", param = c(0.1, 0.1)))
+                     hyper = list("theta1" = list(prior = "loggamma", param = c(0.1, 0.1)),
+                                  "theta2" = list(prior = "gaussian", param = c(0, 0.4)))
                    ),
                    control.inla = list(h = h.value)
     )
     hess.start <- which(output$logfile == 'Eigenvalues of the Hessian')
     hess.min <- min(as.numeric(output$logfile[(hess.start+1):(hess.start+3)]))
-    h.value <- h.value + 0.01
+    h.value <- h.value + 0.0001
     trials <- trials + 1
   }
   print(paste('Hessian trials:',trials))
@@ -103,12 +116,18 @@ generate.estimates <- function(delay.tbl.tmp, Dmax, do.plots=F, uf='tmp'){
   
   
   # Gerando amostras da posteriori dos parâmetros do modelo ajustado no INLA
-  delay.samples.list <- inla.posterior.sample(n = 250, output)
+  delay.samples.list <- inla.posterior.sample(n = 500, output)
   
   
   
   # Sampling the missing triangule from inla output in vector format from the model likelihood
-  aaa <- lapply(X = delay.samples.list, FUN = function(x, idx = index.missing) rnbinom(n = idx, mu = exp(x$latent[idx]), size = x$hyperpar[1])) 
+  aaa <- lapply(X = delay.samples.list,
+                FUN = function(x, idx = index.missing){
+                  aux <- rnbinom(n = idx, mu = exp(x$latent[idx]), size = x$hyperpar[1])
+                  aux.unif <- rbinom(n = length(idx), 1, prob = 1-x$hyperpar[2])
+                  return(aux * aux.unif)
+                }
+  ) 
   
   
   # Creating a vectorized version of the triangle matrix
@@ -116,7 +135,7 @@ generate.estimates <- function(delay.tbl.tmp, Dmax, do.plots=F, uf='tmp'){
   
   # Transforming back from the vector form to the matrix form
   bbb <- lapply(aaa, FUN = function(xxx, data = delay.vec.trian){
-    data[which(is.na(data))] <- xxx
+    data[which(is.na(data))] <- ifelse(is.na(xxx), 0, xxx)
     inla.vector2matrix(data, ncol = Dmax+1) } )
   
   

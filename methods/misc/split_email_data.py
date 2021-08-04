@@ -51,8 +51,8 @@ def date_cleanup(df, dt_cols):
         if sum(~pd.isnull(df[col])) > 0:
             sample = df.loc[~pd.isnull(df[col]), col].values[0]
             if isinstance(sample, str):
-                if 'T' in sample:
-                    df[col] = pd.to_datetime(df[col].str[:10], errors='coerce', format='%Y-%m-%d')
+                if 'T' in sample or any(df[col].str.contains('T')):
+                    df[col] = pd.to_datetime(df[col].str[:10], errors='coerce', utc=True).dt.date
                 else:
                     dtsep = '-'
                     if '/' in sample:
@@ -89,6 +89,15 @@ def write_to_folder(df, year, dir=None, append=False):
         df = df.append(pd.read_csv(output, dtype=df.dtypes.to_dict()), ignore_index=True, sort=False)
     df.columns = df.columns.str.upper()
     df.to_csv(output, index=False, encoding='utf-8', date_format='%Y-%m-%d')
+    output = os.path.join(os.path.expanduser('~'),
+                          'ownCloud',
+                          'Fiocruz',
+                          'Influenza',
+                          'Dados-equipe',
+                          'dados-brutos',
+                          'INFLUD%s.zip' % year)
+    df.to_csv(output, compression={'method': 'zip', 'archive_name': 'INFLUD%s.csv' % year})
+
     return
 
 
