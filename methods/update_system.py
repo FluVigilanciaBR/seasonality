@@ -821,9 +821,8 @@ def generate_public_datasets(filtertype='srag'):
             check=True, shell=True)
         run(['cp --force ./report/Boletim_InfoGripe_atual%s.pdf %s/.' % (suff_out[filtertype], public_report_folder)],
             check=True, shell=True)
-        run(['cp --force ./report/Boletim_InfoGripe_SE%s%s%s.pdf %s/.' % (epiweekmax.epiyear.values[0],
-                                                                          epiweekmax.epiweek.values[0],
-                                                                          suff_out[filtertype], public_report_folder)],
+        run(['cp --force ./report/Boletim_InfoGripe_SE%s%s%s.pdf %s/boletins_anteriores/.' % (
+            epiweekmax.epiyear.values[0], epiweekmax.epiweek.values[0], suff_out[filtertype], public_report_folder)],
             check=True, shell=True)
 
         if filtertype == 'sragnofever':

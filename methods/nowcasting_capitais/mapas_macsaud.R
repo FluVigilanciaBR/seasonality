@@ -69,7 +69,7 @@ plot.macsaud <- function(uf){
 
 plot.tendencia <- function(i, geom.tendencia, subtitle=element_blank()){
   fill.var <- c('tendencia.3s', 'tendencia.6s')
-  plot.title <- c('curto prazo\n(3 semanas)', 'longo prazo\n(6 semanas)')
+  plot.title <- c('curto prazo\n(últimas 3 semanas)', 'longo prazo\n(últimas 6 semanas)')
   plot.subtitle <- subtitle
   p <-  geom.tendencia %>%
     ggplot() +
@@ -150,7 +150,7 @@ plot.macsaude.tendencia <- function(uf, df, orientation='landscape'){
     as.integer()
   
   fill.var <- c('tendencia.3s', 'tendencia.6s')
-  plot.title <- c('curto prazo\n(3 semanas)', 'longo prazo\n(6 semanas)')
+  plot.title <- c('curto prazo\n(últimas 3 semanas)', 'longo prazo\n(últimas 6 semanas)')
   if (orientation != 'landscape'){
     plt.height = 10
     plt.width = 8
@@ -209,7 +209,7 @@ plot.macsaude.tendencia <- function(uf, df, orientation='landscape'){
 
 plot.ufs.tendencia <- function(df, tgt.col='CO_UF', fpath = './Figs/Capitais/Mapa_capitais_tendencia.png'){
   fill.var <- c('tendencia.3s', 'tendencia.6s')
-  plot.title <- c('curto prazo\n(3 semanas)', 'longo prazo\n(6 semanas)')
+  plot.title <- c('curto prazo\n(últimas 3 semanas)', 'longo prazo\n(últimas 6 semanas)')
   geom.shp <- brazil.shp %>%
     left_join(df, by=c('CD_GEOCODU' = tgt.col))
   

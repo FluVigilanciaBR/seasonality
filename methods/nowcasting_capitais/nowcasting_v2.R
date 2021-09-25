@@ -177,3 +177,134 @@ plot.nowcast <- function(pred.summy, Fim, nowcast = T){
   
   p0.day
 }
+
+# Nowcasting_age ----------------
+nowcasting_age <- function(dados.age){
+  
+  index.missing <- which(is.na(dados.age$Y))
+  
+  dados.age <- dados.age %>% 
+    mutate(fx_etaria.num = as.numeric(fx_etaria))
+  
+  # Model equation: intercept + (time random effect) + (Delay random effect)
+  model <- Y ~ 1 + fx_etaria +  
+    f(Time, 
+      model = "rw2", 
+      hyper = list("prec" = list(prior = "loggamma", 
+                                 param = c(0.001, 0.001))
+      ),
+      group = fx_etaria.num, control.group = list(model = "iid")) + 
+    # f(delay, model = "rw1", 
+    #   hyper = list("prec" = list(prior = "loggamma", 
+    #                              param = c(0.001, 0.001)))
+    # )
+  # Age-Delay effects
+  f(delay, model = "rw1",
+    hyper = list("prec" = list(prior = "loggamma",
+                               param = c(0.001, 0.001))),
+    group = fx_etaria.num, control.group = list(model = "iid"))
+  
+  # Running the Negative Binomial model in INLA
+  output0 <- inla(model, family = "nbinomial", data = dados.age,
+                  control.predictor = list(link = 1, compute = T),
+                  control.compute = list( config = T, waic=F, dic=F),
+                  control.family = list(
+                    hyper = list("theta" = list(prior = "loggamma", 
+                                                param = c(0.001, 0.001))
+                    )
+                  )
+  )
+  
+  #plot(output0)
+  
+  ## Fixed effects 
+  #output0$summary.fixed
+  
+  ## Hyperparameters (negative binomial parameter, random effects precisions)
+  # output0$summary.hyperpar
+  
+  
+  
+  # Algorithm to get samples for the predictive distribution for the number of cases
+  
+  # Step 1: Sampling from the approximate posterior distribution using INLA
+  srag.samples0.list <- inla.posterior.sample(n = 1000, output0)
+  
+  
+  # Step 2: Sampling the missing triangule from the likelihood using INLA estimates
+  vector.samples0 <- lapply(X = srag.samples0.list, 
+                            FUN = function(x, idx = index.missing){
+                              rnbinom(n = idx, 
+                                      mu = exp(x$latent[idx]), 
+                                      size = x$hyperpar[1]
+                              )
+                            } ) 
+  
+  
+  #####
+  # Step 3: Calculate N_{a,t} for each triangle sample {N_{t,a} : t=Tactual-Dmax+1,...Tactual}
+  
+  # Auxiliar function selecionando um pedaco do dataset
+  gg.age <- function(x, dados.gg, idx){
+    data.aux <- dados.gg
+    Tmin <- min(dados.gg$Time[idx])
+    data.aux$Y[idx] <- x
+    data.aggregated <- data.aux %>%
+      # Selecionando apenas os dias faltantes a partir
+      # do domingo da respectiva ultima epiweek
+      # com dados faltantes
+      filter(Time >= Tmin  ) %>%
+      group_by(Time, dt_event, fx_etaria, fx_etaria.num) %>% 
+      dplyr::summarise( 
+        Y = sum(Y), .groups = "keep"
+      )
+    data.aggregated
+  }
+  
+  tibble.samples.0 <- lapply( X = vector.samples0,
+                              FUN = gg.age,
+                              dados = dados.age, 
+                              idx = index.missing)
+  
+  srag.pred.0 <- bind_rows(tibble.samples.0, .id = "sample")
+  
+  srag.pred.0
+  
+}
+
+# nowcasting.summary -----------------------
+nowcasting.summary <- function(trajetoria, age = F){
+  # Trajetoria tem as colunas: sample, Time, dt_event, Y
+  # Se age = T tb terá as colunas fx_etaria e fx_etaria.num
+  
+  total.summy <- trajetoria %>% 
+    group_by(Time, dt_event, sample) %>%
+    summarise(Y = sum(Y)) %>%
+    group_by(Time, dt_event) %>%
+    summarise(Median = median(Y),
+              LI = quantile(Y, probs = 0.025),
+              LS = quantile(Y, probs = 0.975),
+              LIb = quantile(Y, probs = 0.25),
+              LSb = quantile(Y, probs = 0.75),
+              .groups = "drop")
+  if(age){
+    age.summy <- trajetoria %>%
+      group_by(Time, dt_event, fx_etaria, fx_etaria.num) %>%
+      summarise(Median = median(Y),
+                LI = quantile(Y, probs = 0.025),
+                LS = quantile(Y, probs = 0.975),
+                LIb = quantile(Y, probs = 0.25),
+                LSb = quantile(Y, probs = 0.75),
+                .groups = "drop")
+    
+    output <- list()
+    output$total <- total.summy
+    output$age <- age.summy
+    
+  }else{
+    output = total.summy
+  }
+  
+  
+  output
+}

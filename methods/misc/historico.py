@@ -6,7 +6,7 @@ import pandas as pd
 import seaborn as sns
 
 
-wmax = 73
+wmax = 86
 
 df = pd.read_csv('data/data/historical_estimated_values_sragnofever.csv')[
     lambda df: (df.epiyear >= 2020) &
@@ -34,7 +34,7 @@ dff.loc[dff.DT_DIGITA_epiyear == 2021, 'DT_DIGITA_epiweek'] += 53
 ds = dfc.copy()
 ds['rollavg'] = None
 
-wlist = [x for x in range(15, wmax-1, 5)] + [wmax]
+wlist = [x for x in range(16, wmax-1, 4)] + [wmax]
 uflist = df.UF.unique().tolist()
 
 

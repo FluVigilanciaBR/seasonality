@@ -487,7 +487,7 @@ def filter_db2019(df, tag=None, filtertype='srag'):
                           'TOMO_RES',
                           'TOMO_OUT',
                           'DT_TOMO']
-    tgt_cols_vac_covid = ['VACINA_COV', 'DOSE_1_COV', 'DOSE_2_COV', 'LAB_PR_COV_', 'FNT_IN_COV']
+    tgt_cols_vac_covid = ['VACINA_COV', 'DOSE_1_COV', 'DOSE_2_COV', 'LAB_PR_COV', 'FNT_IN_COV']
 
     if 'DT_RES_AN' in df.columns:
         table_compatibility(df)

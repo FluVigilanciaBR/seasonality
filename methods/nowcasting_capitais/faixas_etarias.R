@@ -399,7 +399,7 @@ tmp.sragcovid <- calc.props.and.ic(df=dadosBR %>% filter(PCR_SARS2 == 1),
 tmp %>%
   left_join(epiweek.table, by='DT_SIN_PRI_epiweek') %>%
   saveRDS(paste0('~/codes/covid19br/Sivep_status/hosp_manaus/Multinomial/Data/infogripe.srag.60mais.bin5.2021', today.week.ori, '.rds'))
-tmp %>%
+tmp.sragcovid %>%
   left_join(epiweek.table, by='DT_SIN_PRI_epiweek') %>%
   saveRDS(paste0('~/codes/covid19br/Sivep_status/hosp_manaus/Multinomial/Data/infogripe.sragcovid.60mais.bin5.2021', today.week.ori, '.rds'))
 
