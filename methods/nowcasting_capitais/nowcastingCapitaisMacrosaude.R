@@ -249,7 +249,7 @@ try.estimate <- function(nivel, uf, dadosBR, Inicio=Inicio, today.week=today.wee
 
 
 # Read CNES data
-cnes <- read.csv2('../data/tbEstabelecimento_atual.csv', stringsAsFactors = F) %>%
+cnes <- read.csv2('../data/tbEstabelecimento_atual_clean.csv', stringsAsFactors = F) %>%
   select(CO_CNES, CO_NATUREZA_JUR)
 dados_full <- dados_full %>%
   left_join(cnes, by=c('CO_UNI_NOT' = 'CO_CNES')) %>%
