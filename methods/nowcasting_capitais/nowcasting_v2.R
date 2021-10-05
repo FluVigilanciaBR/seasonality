@@ -36,13 +36,13 @@ gg <- function(x, dados, idx, Fim.sat, Dmax){
 # Algorithm to get samples for the predictive distribution for the number of cases
 
 nowcasting <- function(output.day, dadosRio.ag, 
-                       Fim = today.week, Dm = Dmax, zero.inflated = TRUE){
+                       Fim = today.week, Dm = Dmax, zero.inflated = TRUE, n.samples = 1000){
   
   index.missing = which(is.na(dadosRio.ag$Casos))
   
   
   # Step 1: Sampling from the approximate posterior distribution using INLA
-  srag.samples.list <- inla.posterior.sample(n = 500, output.day)
+  srag.samples.list <- inla.posterior.sample(n = n.samples, output.day)
   
   # Step 2: Sampling the missing triangle (in vector form) from the likelihood using INLA estimates
   vector.samples <- lapply(X = srag.samples.list, 
@@ -93,7 +93,8 @@ nowcasting <- function(output.day, dadosRio.ag,
 # Running INLA for the nowcasting model
 nowcast.INLA <- function(dados.ag, model.day, zero.inflated = TRUE, ...){
   hess.min <- -1
-  h.value <- 0.0001
+  h.value <- 0.01
+  h.trials <- 0.001
   trials <- 0
   
   if (zero.inflated){
@@ -125,7 +126,8 @@ nowcast.INLA <- function(dados.ag, model.day, zero.inflated = TRUE, ...){
     )
     hess.start <- which(output$logfile == 'Eigenvalues of the Hessian')
     hess.min <- min(as.numeric(output$logfile[(hess.start+1):(hess.start+3)]))
-    h.value <- h.value + 0.0001
+    h.value <- h.trials + 0.001
+    h.trials <- h.value
     trials <- trials + 1
   }
   output
@@ -179,7 +181,7 @@ plot.nowcast <- function(pred.summy, Fim, nowcast = T){
 }
 
 # Nowcasting_age ----------------
-nowcasting_age <- function(dados.age){
+nowcasting_age <- function(dados.age, n.samples=1000){
   
   index.missing <- which(is.na(dados.age$Y))
   
@@ -204,17 +206,32 @@ nowcasting_age <- function(dados.age){
                                param = c(0.001, 0.001))),
     group = fx_etaria.num, control.group = list(model = "iid"))
   
-  # Running the Negative Binomial model in INLA
-  output0 <- inla(model, family = "nbinomial", data = dados.age,
-                  control.predictor = list(link = 1, compute = T),
-                  control.compute = list( config = T, waic=F, dic=F),
-                  control.family = list(
-                    hyper = list("theta" = list(prior = "loggamma", 
-                                                param = c(0.001, 0.001))
-                    )
-                  )
-  )
-  
+  hess.min <- -1
+  h.value <- 0.01
+  h.trials <- 0.001
+  trials <- 0
+  while (hess.min <= 0 & trials < 50){
+    
+    # Running the Negative Binomial model in INLA
+    output0 <- inla(model, family = "nbinomial", data = dados.age,
+                    control.predictor = list(link = 1, compute = T),
+                    control.compute = list( config = T, waic=F, dic=F),
+                    control.family = list(
+                      hyper = list("theta" = list(prior = "loggamma", 
+                                                  param = c(0.001, 0.001))
+                      )
+                    ),
+                    num.threads = 4,
+                    control.inla = list(h = h.value),
+                    
+    )
+    hess.start <- which(output0$logfile == 'Eigenvalues of the Hessian')
+    hess.min <- min(as.numeric(output0$logfile[(hess.start+1):(hess.start+3)]))
+    h.value <- h.trials + 0.001
+    h.trials <- h.value
+    trials <- trials + 1
+    
+  }  
   #plot(output0)
   
   ## Fixed effects 
@@ -228,7 +245,7 @@ nowcasting_age <- function(dados.age){
   # Algorithm to get samples for the predictive distribution for the number of cases
   
   # Step 1: Sampling from the approximate posterior distribution using INLA
-  srag.samples0.list <- inla.posterior.sample(n = 1000, output0)
+  srag.samples0.list <- inla.posterior.sample(n = n.samples, output0)
   
   
   # Step 2: Sampling the missing triangule from the likelihood using INLA estimates
@@ -277,28 +294,40 @@ nowcasting.summary <- function(trajetoria, age = F){
   # Trajetoria tem as colunas: sample, Time, dt_event, Y
   # Se age = T tb terá as colunas fx_etaria e fx_etaria.num
   
-  total.summy <- trajetoria %>% 
+  total.samples <- trajetoria %>% 
     group_by(Time, dt_event, sample) %>%
-    summarise(Y = sum(Y)) %>%
+    summarise(Y = sum(Y))
+  total.summy <- total.samples %>%
     group_by(Time, dt_event) %>%
-    summarise(Median = median(Y),
-              LI = quantile(Y, probs = 0.025),
-              LS = quantile(Y, probs = 0.975),
-              LIb = quantile(Y, probs = 0.25),
-              LSb = quantile(Y, probs = 0.75),
+    summarise(      Median = replace_na(round(median(Y, na.rm=T)), 0), 
+                    Q1 = round(quantile(Y, probs = 0.25, na.rm=T)),
+                    Q3 = round(quantile(Y, probs = 0.75, na.rm=T)),
+                    IC80I = round(quantile(Y, probs = 0.1, na.rm=T)),
+                    IC80S = round(quantile(Y, probs = 0.9, na.rm=T)),
+                    IC90I = round(quantile(Y, probs = 0.05, na.rm=T)),
+                    IC90S = round(quantile(Y, probs = 0.95, na.rm=T)),
+                    LI = round(quantile(Y, probs = 0.025, na.rm=T)),
+                    LS = round(quantile(Y, probs = 0.975, na.rm=T))
+                    ,
               .groups = "drop")
   if(age){
     age.summy <- trajetoria %>%
       group_by(Time, dt_event, fx_etaria, fx_etaria.num) %>%
-      summarise(Median = median(Y),
-                LI = quantile(Y, probs = 0.025),
-                LS = quantile(Y, probs = 0.975),
-                LIb = quantile(Y, probs = 0.25),
-                LSb = quantile(Y, probs = 0.75),
+      summarise(      Median = replace_na(round(median(Y, na.rm=T)), 0), 
+                      Q1 = round(quantile(Y, probs = 0.25, na.rm=T)),
+                      Q3 = round(quantile(Y, probs = 0.75, na.rm=T)),
+                      IC80I = round(quantile(Y, probs = 0.1, na.rm=T)),
+                      IC80S = round(quantile(Y, probs = 0.9, na.rm=T)),
+                      IC90I = round(quantile(Y, probs = 0.05, na.rm=T)),
+                      IC90S = round(quantile(Y, probs = 0.95, na.rm=T)),
+                      LI = round(quantile(Y, probs = 0.025, na.rm=T)),
+                      LS = round(quantile(Y, probs = 0.975, na.rm=T))
+                      ,
                 .groups = "drop")
     
     output <- list()
     output$total <- total.summy
+    output$total.samples <- total.samples
     output$age <- age.summy
     
   }else{

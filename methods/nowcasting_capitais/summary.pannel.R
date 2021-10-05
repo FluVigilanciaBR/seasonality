@@ -14,6 +14,11 @@ pred.macros %>%
 
 pred.macros %>%
   filter(Date == max(Date)) %>%
+  group_by(nivel) %>%
+  tally()
+
+pred.macros %>%
+  filter(Date == max(Date)) %>%
   group_by(DS_UF_SIGLA) %>%
   summarise(nivel = max(nivel)) %>%
   ungroup() %>%

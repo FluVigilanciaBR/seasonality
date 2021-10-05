@@ -14,7 +14,16 @@ vignettes/*.pdf
 .idea/
 # Function plots
 methods/opportunity_estimator/plots/
+methods/nowcasting_capitais/Figs/
 # MEM detailed output:
 methods/mem/mem-data/
-# Data folder
+# Data folders
 data/
+methods/data
+methods/clean_data
+# Plots
+*.pdf
+*.svg
+*.png
+# Report LaTeX files
+methods/report/*tex

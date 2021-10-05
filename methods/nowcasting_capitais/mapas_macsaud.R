@@ -11,7 +11,7 @@ source('../report/theme.publication.R')
 data_folder <- '../data/'
 info.logo <- image_read('../report/Figs/infogripe.png')
 
-geomacsaud <- st_read('~/codes/covid-19/malha/mapa_MRS_indicadores.gpkg')
+geomacsaud <- st_read('../data/mapa_MRS_indicadores.gpkg')
 df <- read.csv(paste0(data_folder, 'municip_macsaud_regmetr.csv')) %>%
   filter(!is.na(CO_MACSAUD) & CO_UF != 0) %>%
   select(CO_MACSAUD, DS_NOMEPAD_macsaud, DS_ABREV_macsaud, CO_UF, DS_UF_SIGLA) %>%
