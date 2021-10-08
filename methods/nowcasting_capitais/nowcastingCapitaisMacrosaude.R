@@ -43,7 +43,7 @@ parser$add_argument("-d", "--date", type="character", default=format(Sys.Date(),
                     help="Date to use as base, in format YYYY-MM-DD [default Sys.Date()]")
 parser$add_argument("-g", "--graphs", action='store_true', default=FALSE,
                     help="If argument passed, generate graphs")
-parser$add_argument("-q", "--qthreshold", type='double', default=0.9,
+parser$add_argument("-q", "--qthreshold", type='double', default=0.95,
                     help="Quantile for calculating local Dmax")
 parser$add_argument('--dmax', type='integer', default=15,
                     help="Maximum delay. Default %(default)s")
@@ -339,6 +339,8 @@ pred.ufs <- c()
 
 for (uf in uf.list$CO_UF){
   uf.name <- uf.list$DS_UF_SIGLA[uf.list$CO_UF == uf]
+  pop <- uf.list$Populacao[uf.list$CO_UF == uf]
+  gpj <- 0
   
   age.BR.h.srag.pred <- nowcasting_age(dados.obs %>% filter(
     SG_UF_NOT == uf,
@@ -478,9 +480,7 @@ for (uf in uf.list$CO_UF){
 df.uf.age <- df.uf.age %>%
   rename(DT_SIN_PRI_epiweek=dt_event,
          casos_notificados=n,
-         mediana_da_estimativa=Median,
-         Q1=LIb,
-         Q3=LSb) %>%
+         mediana_da_estimativa=Median) %>%
   left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek'))
 df.uf.age %>%
   saveRDS(file='uf.estimativas.fx.etaria.rds')
@@ -867,7 +867,7 @@ pred.failed %>%
 
 pred.capitais <- pred.capitais %>%
   left_join(epiweek.table, by=c('Date' = 'DT_SIN_PRI_epiweek'))
-      saveRDS(pred.capitais, paste0(preff,'/capitais_', lyear, '_', today.week, '.rds'))
+saveRDS(pred.capitais, paste0(preff,'/capitais_', lyear, '_', today.week, '.rds'))
 saveRDS(pred.capitais, paste0(preff,'/capitais_current.rds'))
 saveRDS(pred.capitais, '../../data/data/capitais_current.rds')
 
@@ -925,9 +925,7 @@ gc(verbose=F)
 df.uf.age <- df.uf.age %>%
   rename(DT_SIN_PRI_epiweek=dt_event,
          casos_notificados=n,
-         mediana_da_estimativa=Median,
-         Q1=LIb,
-         Q3=LSb) %>%
+         mediana_da_estimativa=Median) %>%
   left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek'))
 df.uf.age %>%
   saveRDS(file='capitais.estimativas.fx.etaria.rds')

@@ -914,143 +914,6 @@ for(k in 1:nrow(tblCADMUN.uf)){
   cat("\\end{center}\n\n")
 }
 @
-%\end{multicols}
-
-  
-%   \begin{figure*}[!ht]
-%   	\centering
-%   	\includegraphics[width=.8\textwidth]{Figs/Territory_11_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-%   
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_12_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_13_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_14_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_15_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_16_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_17_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_21_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_22_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_23_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_24_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_25_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_26_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_27_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_28_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_29_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_31_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_32_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_33_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_35_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_41_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_42_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_43_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_50_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_51_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_52_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_53_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
 
   \clearpage
   
@@ -1095,26 +958,32 @@ reg.label <- c('Região Norte',
                'Região Centro-Oeste')
 cat("\\hypertarget{reg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
 
-cat('\\begin{multicols}{2}\n')
+#cat('\\begin{multicols}{2}\n')
 reg.old <- reg
 for(k in 1:nrow(tblCADMUN.capital)){
   reg <- tblCADMUN.capital$CO_REGIAO[k]
   if (reg != reg.old){
-    cat('\\end{multicols}\n')
+    #cat('\\end{multicols}\n')
     cat('\\clearpage\n')
     cat("\\hypertarget{reg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
-    cat('\\begin{multicols}{2}\n')
+    #cat('\\begin{multicols}{2}\n')
     reg.old <- reg
   }
   
+  cat("\\begin{center}\n")
   file <- paste0("../nowcasting_capitais/Figs/Capitais/fig_", tblCADMUN.capital$DS_UF_SIGLA[k], '_', str_replace_all(tblCADMUN.capital$DS_NOMEPAD_municip[k], ' ', '_'),".png")
-  cat("\\begin{Figure}\n")
-  cat("\\centering\n")
-  cat("\\includegraphics[width=\\linewidth]{", file, "}\n", sep="")
-  cat("\\end{Figure}\n\n")
+  cat("\\includegraphics[align=c,width=.495\\textwidth]{", file, "}", sep="")
+  file <- paste0("../nowcasting_capitais/Figs/Capitais/fig_", tblCADMUN.capital$DS_UF_SIGLA[k], '_', str_replace_all(tblCADMUN.capital$DS_NOMEPAD_municip[k], ' ', '_'),"_fx_etaria.png")
+  cat(" ")
+  cat("\\includegraphics[align=c,width=.495\\textwidth]{", file, "}\n", sep="")
+  cat("\\end{center}\n\n")
+  # cat("\\begin{Figure}\n")
+  # cat("\\centering\n")
+  # cat("\\includegraphics[width=\\linewidth]{", file, "}\n", sep="")
+  # cat("\\end{Figure}\n\n")
 }
 @
-  \end{multicols}
+  %\end{multicols}
 
   \clearpage
 

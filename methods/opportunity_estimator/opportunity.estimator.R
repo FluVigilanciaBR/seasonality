@@ -24,8 +24,6 @@ source('./post.sum.R')
 source('./insert.na.triangle.R')
 suppressWarnings(suppressPackageStartupMessages(library("tidyverse")))
 
-# TODO: update to new data structure
-
 ## Read command line arguments
 suppressWarnings(suppressPackageStartupMessages(library("argparse")))
 # create parser object
