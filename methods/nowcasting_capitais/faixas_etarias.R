@@ -329,7 +329,7 @@ for (uf in unique(tbl.ufs$CO_UF)){
   print(plot_grid(p[[1]], p[[2]], ncol=1, rel_heights = c(1, .25)))
   dev.off()
   
-  plt <- plt.age.inc(df %>% filter(CO_UF == uf, age_cat %in% c('0-4', '5-9', '10-14', '15-19', '20-29', '30-39')),
+  plt <- plt.age.inc(df %>% filter(CO_UF == uf, age_cat %in% c('0-4', '5-9', '10-14', '15-19', '20-29')),
                      facet_cols=c('inc', 'inc.obitos'), facet_labs=c('Casos', 'Óbitos')) +
     theme(legend.key.size=unit(14, 'pt')) +
     ggtitle(paste0(sigla, ': SRAGCOVID'), subtitle=paste('Dados até a semana', today.week.ori, lyear))
@@ -399,7 +399,7 @@ tmp.sragcovid <- calc.props.and.ic(df=dadosBR %>% filter(PCR_SARS2 == 1),
 tmp %>%
   left_join(epiweek.table, by='DT_SIN_PRI_epiweek') %>%
   saveRDS(paste0('~/codes/covid19br/Sivep_status/hosp_manaus/Multinomial/Data/infogripe.srag.60mais.bin5.2021', today.week.ori, '.rds'))
-tmp %>%
+tmp.sragcovid %>%
   left_join(epiweek.table, by='DT_SIN_PRI_epiweek') %>%
   saveRDS(paste0('~/codes/covid19br/Sivep_status/hosp_manaus/Multinomial/Data/infogripe.sragcovid.60mais.bin5.2021', today.week.ori, '.rds'))
 

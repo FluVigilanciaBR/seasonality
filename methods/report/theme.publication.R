@@ -31,7 +31,7 @@ theme_Publication <- function(base_size=14, base_family="Helvetica") {
             legend.spacing = unit(0, "cm"),
             legend.title = element_text(face="italic", size = rel(1)),
             legend.text = element_text(size = rel(.8)),
-            plot.margin=unit(c(10,5,5,5),"mm"),
+            plot.margin=margin(2,2,2,2, unit='pt'),
             strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
             strip.text = element_text(face="bold")
     ))

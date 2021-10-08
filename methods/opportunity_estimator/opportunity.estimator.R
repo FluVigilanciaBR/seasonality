@@ -24,8 +24,6 @@ source('./post.sum.R')
 source('./insert.na.triangle.R')
 suppressWarnings(suppressPackageStartupMessages(library("tidyverse")))
 
-# TODO: update to new data structure
-
 ## Read command line arguments
 suppressWarnings(suppressPackageStartupMessages(library("argparse")))
 # create parser object
@@ -204,7 +202,7 @@ for (today in epiweek.list){
   for (uf in uf_list){
     qthreshold <- min(dquantile$delayweeks[dquantile$UF == as.character(uf)]+2, 15)
     qthreshold <- max(4, qthreshold)
-    start.epiweek <- today.week - max(2*qthreshold, args$wdw) + 1
+    start.epiweek <- today.week - min(ceiling(2.25*qthreshold), args$wdw) + 1
     if (start.epiweek <= 0){
       wk <- lastepiweek(lyear-1) + start.epiweek
       start.epiweek <- paste0(lyear-1, 'W', sprintf('%02d', wk))
@@ -313,7 +311,7 @@ for (today in epiweek.list){
     index.time <- uf.indexes[(Tactual-qthreshold+1):Tactual]
 
     last.entry <- nrow(delay.tbl.tmp)
-    if (!(uf %in% low.activity) & sum(delay.tbl.tmp$Notifications[(last.entry-10):last.entry]) > 10) {
+    if (!(uf %in% low.activity) & (sum(delay.tbl.tmp$Notifications[max(1,last.entry-10):last.entry]) > 10)) {
       print(uf)
       # Calculate estimates
       df.tbl.tmp.estimates <- generate.estimates(delay.tbl.tmp, Dmax=qthreshold, do.plots=args$graphs, uf=paste0(args$type,'/', uf))

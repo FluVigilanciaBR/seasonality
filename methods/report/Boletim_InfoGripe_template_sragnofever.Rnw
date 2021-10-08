@@ -11,7 +11,9 @@
 \usepackage[utf8]{inputenc}
 %\usepackage[brazilian]{babel}
 \usepackage{wallpaper}
-\usepackage{subfig}
+\usepackage{subcaption}
+\usepackage{graphbox}
+%\usepackage{subfig}
 \usepackage{multicol}
 \SweaveOpts{keep.source=TRUE}
 \input{structure_infogripe.tex} 
@@ -131,7 +133,32 @@ A nível nacional, o cenário atual sugere que a situação de cada indicador se
 	\end{itemize}
 \end{description}
 
+Na Fig.\ref{fig:brnowcastfull} apresentamos a estimativa de casos recentes de SRAG no país com a análise de tendência até a última semana com base no comportamento das últimas 3 e 6 semanas, bem como as estimativas de novos casos por faixa etária.
+
 A Fig.\ref{fig:st} apresenta a estimativa da incidência no país para cada um dos três conjuntos de dados analisados, bem como os canais endêmicos, e limiares de atividade correspondentes. A série temporal de óbitos tem maior efeito de atraso de digitação (tempo decorrido entre a data de primeiros sintomas e data de digitação do caso ou óbito), afetando a qualidade das estimativas mais recentes. Portanto, deve-se ter cautela ao interpretar as semanas mais próximas à data do boletim. Recomendamos focar na tendência apresentada pela estimativa de casos de SRAG, levando em consideração não apenas a curva estimada como também o intervalo de confiança associado.
+
+
+\begin{figure}[hb]
+\centering
+\begin{subfigure}{\columnwidth}\centering
+\includegraphics[height=.4\textheight, keepaspectratio=true]{../nowcasting_capitais/Figs/UF/fig_BR.png}  
+\caption{Estimativa da incidência e análise de tendência atual para os casos de SRAG no Brasil.}
+\label{fig:brnowcast}
+\end{subfigure}
+
+\vfill
+
+  % include first image
+\begin{subfigure}{\columnwidth}\centering
+% include second image
+  \includegraphics[height=.4\textheight, keepaspectratio=true]{../nowcasting_capitais/Figs/UF/fig_BR_fx_etaria.png}  
+\caption{Estimativa de novos casos semanais de SRAG no Brasil, por faixa etária.}
+\label{fig:brnocastfx}
+\end{subfigure}
+\caption{Série temporal e estimativa de casos de recentes de SRAG em todo o território nacional.}
+\label{fig:brnowcastfull}
+\end{figure}
+\clearpage
 
 \begin{figure}[hb]
 	\centering
@@ -148,9 +175,16 @@ A série temporal de óbitos tem maior efeito de atraso de digitação, afetando
 A Fig.~\ref{fig:st_reg1} apresenta a incidência de casos e óbitos de SRAG nas regiões Norte e Nordeste do país, bem como os canais endêmicos e limiares de atividade correspondentes.
 \begin{figure}[h]
 	\centering
-	\subfloat[Região Norte.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_1_dataset_1_6_timeseries_sragnofever.png}}\\
+	\begin{subfigure}{.95\columnwidth}
+	\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_1_dataset_1_6_timeseries_sragnofever.png}
+	\caption{Região Norte.}
+	\end{subfigure}
+	\vfill
 	
-	\subfloat[Região Nordeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_2_dataset_1_6_timeseries_sragnofever.png}}%
+	\begin{subfigure}{.95\columnwidth}
+  \includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_2_dataset_1_6_timeseries_sragnofever.png}%
+  \caption{Região Nordeste.}
+  \end{subfigure}
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de apresentar febre, por semana de primeiros sintomas. Casos (esquerda) e óbitos de SRAG (esquerda). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st_reg1}}
 \end{figure}
 
@@ -159,11 +193,24 @@ A Fig.~\ref{fig:st_reg1} apresenta a incidência de casos e óbitos de SRAG nas 
 A Fig.~\ref{fig:st_reg2} apresenta a incidência de casos e óbitos de SRAG nas regiões Centro-oeste, Sudeste e Sul do país, bem como os canais endêmicos e limiares de atividade correspondentes.
 \begin{figure}[h]
 	\centering
-	\subfloat[Região Centro-oeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_5_dataset_1_6_timeseries_sragnofever.png}}\\
+	\begin{subfigure}{.95\columnwidth}
+	\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_5_dataset_1_6_timeseries_sragnofever.png}
+	\caption{Região Centro-oeste.}
+	\end{subfigure}
 	
-	\subfloat[Região Sudeste.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_3_dataset_1_6_timeseries_sragnofever.png}}\\
+	\vfill
 	
-	\subfloat[Região Sul.]{\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_4_dataset_1_6_timeseries_sragnofever.png}}%
+	\begin{subfigure}{.95\columnwidth}
+	\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_3_dataset_1_6_timeseries_sragnofever.png}
+	\caption{Região Sudeste.}
+	\end{subfigure}
+	
+	\vfill
+	
+	\begin{subfigure}{.95\columnwidth}
+	\includegraphics[width=.925\columnwidth, keepaspectratio=true]{Figs/Territory_4_dataset_1_6_timeseries_sragnofever.png}
+	\caption{Região Sul.}
+	\end{subfigure}
 	\caption{Séries temporais de síndrome respiratória aguda grave (SRAG) no país independente de apresentar febre, por semana de primeiros sintomas. Casos (esquerda) e óbitos de SRAG (esquerda). As estimativa de casos recentes foi feita com base nos dados até a semana epidemiológica $\Sexpr{sprintf('%02d', args$epiweek)}$ de $\Sexpr{args$epiyear}$.\label{fig:st_reg2}}
 \end{figure}
 
@@ -256,12 +303,17 @@ Os mapas nas Figuras \ref{fig:srag} e \ref{fig:obito} apresentam os níveis de a
 
 \begin{figure}[!h]
 	\centering
-	\subfloat{\includegraphics[width=\textwidth]{Figs/srag-activity_sragnofever.png}}
+	\begin{subfigure}{\columnwidth}
+	\includegraphics[width=\textwidth]{Figs/srag-activity_sragnofever.png}
+	\end{subfigure}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/sragflu-activity_sragnofever.png}}
-	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/sragcovid-activity_sragnofever.png}}
-	
+	\begin{subfigure}{\columnwidth}
+  \includegraphics[width=\textwidth]{Figs/sragflu-activity_sragnofever.png}
+	\end{subfigure}
+
+  \begin{subfigure}{\columnwidth}
+  \includegraphics[width=\textwidth]{Figs/sragcovid-activity_sragnofever.png}
+	\end{subfigure}
 	\caption{Nível de atividade de SRAG, independente de apresentar febre, para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita). Mapas para casos de SRAG (superior), casos de SRAG por influenza (centro), e SRAG por COVID-19 (inferior).}\label{fig:srag}
 \end{figure}
 
@@ -269,11 +321,17 @@ Os mapas nas Figuras \ref{fig:srag} e \ref{fig:obito} apresentam os níveis de a
 
 \begin{figure}[!h]
 	\centering
-	\subfloat{\includegraphics[width=\textwidth]{Figs/obito-activity_sragnofever.png}}
+		\begin{subfigure}{\columnwidth}
+    \includegraphics[width=\textwidth]{Figs/obito-activity_sragnofever.png}
+    \end{subfigure}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/obitoflu-activity_sragnofever.png}}
+		\begin{subfigure}{\columnwidth}
+    \includegraphics[width=\textwidth]{Figs/obitoflu-activity_sragnofever.png}
+    \end{subfigure}
 	
-	\subfloat{\includegraphics[width=\textwidth]{Figs/obitocovid-activity_sragnofever.png}}
+		\begin{subfigure}{\columnwidth}
+	  \includegraphics[width=\textwidth]{Figs/obitocovid-activity_sragnofever.png}
+	  \end{subfigure}
 	
 	\caption{Nível de atividade de óbitos SRAG, independente de apresentar febre, para dados agregados por regiões geopolíticas (esquerda), com base na similaridade do perfil de atividade de SRAG (centro), e por Unidade da Federação (direita). Mapas para óbitos de SRAG (superior), óbitos de SRAG por influenza (centro), e óbitos de SRAG por COVID-19 (inferior).}\label{fig:obito}
 \end{figure}
@@ -833,164 +891,29 @@ reg.label <- c('Região Norte',
                'Região Sudeste',
                'Região Sul',
                'Região Centro-Oeste')
-cat("\\hypertarget{ufreg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
+cat("\\hypertarget{ufreg", reg, "}{\\heading{", reg.label[reg], "}{4pt}} \n", sep='')
 
-cat('\\begin{multicols}{2}\n')
+#cat('\\begin{multicols}{2}\n')
 reg.old <- reg
 for(k in 1:nrow(tblCADMUN.uf)){
   reg <- tblCADMUN.uf$CO_REGIAO[k]
   if (reg != reg.old){
-    cat('\\end{multicols}\n')
+    #cat('\\end{multicols}\n')
     cat('\\clearpage\n')
-    cat("\\hypertarget{ufreg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
-    cat('\\begin{multicols}{2}\n')
+    cat("\\hypertarget{ufreg", reg, "}{\\heading{", reg.label[reg], "}{4pt}} \n", sep='')
+    #cat('\\begin{multicols}{2} \n')
     reg.old <- reg
   }
   
+  cat("\\begin{center}\n")
   file <- paste0("../nowcasting_capitais/Figs/UF/fig_", tblCADMUN.uf$DS_UF_SIGLA[k],".png")
-  cat("\\begin{Figure}\n")
-  cat("\\centering\n")
-  cat("\\includegraphics[width=\\linewidth]{", file, "}\n", sep="")
-  cat("\\end{Figure}\n\n")
+  cat("\\includegraphics[align=c,width=.495\\textwidth]{", file, "}", sep="")
+  file <- paste0("../nowcasting_capitais/Figs/UF/fig_", tblCADMUN.uf$DS_UF_SIGLA[k],"_fx_etaria.png")
+  cat(" ")
+  cat("\\includegraphics[align=c,width=.495\\textwidth]{", file, "}\n", sep="")
+  cat("\\end{center}\n\n")
 }
 @
-  \end{multicols}
-
-  
-%   \begin{figure*}[!ht]
-%   	\centering
-%   	\includegraphics[width=.8\textwidth]{Figs/Territory_11_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-%   
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_12_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_13_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_14_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_15_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_16_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_17_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_21_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_22_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_23_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_24_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_25_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_26_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_27_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_28_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_29_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_31_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_32_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_33_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_35_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_41_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_42_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_43_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_50_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_51_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_52_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
-% 
-%   \begin{figure*}[!ht]
-% 	\centering
-% 	\includegraphics[width=.8\textwidth]{Figs/Territory_53_dataset_1_timeseries_sragnofever.png}
-%   \end{figure*}
 
   \clearpage
   
@@ -1035,26 +958,32 @@ reg.label <- c('Região Norte',
                'Região Centro-Oeste')
 cat("\\hypertarget{reg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
 
-cat('\\begin{multicols}{2}\n')
+#cat('\\begin{multicols}{2}\n')
 reg.old <- reg
 for(k in 1:nrow(tblCADMUN.capital)){
   reg <- tblCADMUN.capital$CO_REGIAO[k]
   if (reg != reg.old){
-    cat('\\end{multicols}\n')
+    #cat('\\end{multicols}\n')
     cat('\\clearpage\n')
     cat("\\hypertarget{reg", reg, "}{\\heading{", reg.label[reg], "}{4pt}}\n", sep='')
-    cat('\\begin{multicols}{2}\n')
+    #cat('\\begin{multicols}{2}\n')
     reg.old <- reg
   }
   
+  cat("\\begin{center}\n")
   file <- paste0("../nowcasting_capitais/Figs/Capitais/fig_", tblCADMUN.capital$DS_UF_SIGLA[k], '_', str_replace_all(tblCADMUN.capital$DS_NOMEPAD_municip[k], ' ', '_'),".png")
-  cat("\\begin{Figure}\n")
-  cat("\\centering\n")
-  cat("\\includegraphics[width=\\linewidth]{", file, "}\n", sep="")
-  cat("\\end{Figure}\n\n")
+  cat("\\includegraphics[align=c,width=.495\\textwidth]{", file, "}", sep="")
+  file <- paste0("../nowcasting_capitais/Figs/Capitais/fig_", tblCADMUN.capital$DS_UF_SIGLA[k], '_', str_replace_all(tblCADMUN.capital$DS_NOMEPAD_municip[k], ' ', '_'),"_fx_etaria.png")
+  cat(" ")
+  cat("\\includegraphics[align=c,width=.495\\textwidth]{", file, "}\n", sep="")
+  cat("\\end{center}\n\n")
+  # cat("\\begin{Figure}\n")
+  # cat("\\centering\n")
+  # cat("\\includegraphics[width=\\linewidth]{", file, "}\n", sep="")
+  # cat("\\end{Figure}\n\n")
 }
 @
-  \end{multicols}
+  %\end{multicols}
 
   \clearpage
 

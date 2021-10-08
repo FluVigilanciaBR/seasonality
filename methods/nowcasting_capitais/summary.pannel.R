@@ -12,6 +12,19 @@ pred.macros %>%
   group_by(nivel) %>%
   tally()
 
+pred.macros %>%
+  filter(Date == max(Date)) %>%
+  group_by(nivel) %>%
+  tally()
+
+pred.macros %>%
+  filter(Date == max(Date)) %>%
+  group_by(DS_UF_SIGLA) %>%
+  summarise(nivel = max(nivel)) %>%
+  ungroup() %>%
+  arrange(nivel, DS_UF_SIGLA) %>%
+  View()
+
 # UF: tendencias -----
 pred.ufs %>%
   filter(grupo_jur == 0, Date >= max(Date) - 5, CO_UF != 0) %>%
@@ -30,7 +43,7 @@ pred.ufs %>%
   left_join(pred.ufs %>% filter(grupo_jur == 0), by='CO_UF') %>%
   filter((tendencia.6s < 0) &
            Date == max(Date)) %>%
-  arrange(-tendencia.6s, DS_UF_SIGLA) %>%
+  arrange(DS_UF_SIGLA) %>%
   select(Date, total.cresc, tendencia.6s, tendencia.3s, DS_UF_SIGLA, CO_UF)
 
 pred.ufs %>%

@@ -7,9 +7,9 @@ suppressWarnings(suppressPackageStartupMessages(library(grid)))
 suppressWarnings(suppressPackageStartupMessages(library(cowplot)))
 options(dplyr.summarise.inform=F) 
 source("../data_filter/episem.R")
-source("nowcasting_v2.R")
-source("slope.estimate.quant.R")
+source("generate.estimate.R")
 source("mapas_macsaud.R")
+source('plot.ts.tendencia.R')
 source('calc.transmission.thresholds.R')
 source('run.regsaud.am.R')
 source('run.regsaud.sc.R')
@@ -43,26 +43,24 @@ parser$add_argument("-d", "--date", type="character", default=format(Sys.Date(),
                     help="Date to use as base, in format YYYY-MM-DD [default Sys.Date()]")
 parser$add_argument("-g", "--graphs", action='store_true', default=FALSE,
                     help="If argument passed, generate graphs")
+parser$add_argument("-q", "--qthreshold", type='double', default=0.95,
+                    help="Quantile for calculating local Dmax")
 parser$add_argument('--dmax', type='integer', default=15,
                     help="Maximum delay. Default %(default)s")
 parser$add_argument('--window', type='integer', default=NULL,
-                    help="Maximum delay. Default 2*Dmax")
+                    help="Maximum delay. Default 2.25*dmax")
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults,
 args <- parser$parse_args()
-
-if (args$graphs){
-  suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))
-  source('../report/theme.publication.R')
-}
 
 if (!(args$filtertype %in% c('srag', 'sragnofever', 'hospdeath'))){
   stop(paste0('Invalid filter type', args$filtertype))
 }
 
 if (is.null(args$window)){
-  args$window = as.integer(round(2*args$dmax))
+  args$window = as.integer(round(2.25*args$dmax))
 }
+qthres.probs <- args$qthreshold
 
 # Latest week with closed counts on DT_DIGITA is actualy the previous one
 if (args$date == 'max'){
@@ -106,7 +104,8 @@ path_file <- paste0("../clean_data/clean_data_", args$type, suff, "_epiweek.csv"
 # RegionalSaude <- st_read("~/Git/PROCC /covid-19/malha/regional_saude_2019.gpkg" )
 dados_full <- read.csv( path_file, stringsAsFactors = F) %>%
   filter(DT_SIN_PRI_epiyear >= 2020) %>%
-  select(CO_MUN_RES,
+  select(NU_NOTIFIC,
+         CO_MUN_RES,
          CO_MUN_NOT,
          CO_UNI_NOT,
          CO_UN_INTE,
@@ -179,6 +178,7 @@ dados_full %>%
 dados_full <- dados_full %>%
   select(SG_UF,
          SG_UF_NOT,
+         NU_NOTIFIC,
          CO_MUN_NOT,
          CO_MUN_RES,
          CO_UNI_NOT,
@@ -186,12 +186,22 @@ dados_full <- dados_full %>%
          DT_SIN_PRI,
          DT_SIN_PRI_epiweek,
          DT_SIN_PRI_epiyear,
+         DT_NOTIFIC,
          DT_DIGITA,
          DT_DIGITA_epiweek,
          DT_DIGITA_epiyear,
+         idade_em_anos,
          SinPri2Digita_DelayWeeks) %>%
+  distinct(NU_NOTIFIC, CO_MUN_NOT, DT_NOTIFIC, .keep_all = T) %>%
   mutate(DT_SIN_PRI = ymd(DT_SIN_PRI),
-         DT_DIGITA = ymd(DT_DIGITA)) %>%
+         DT_DIGITA = ymd(DT_DIGITA),
+         fx_etaria = as.character(cut(idade_em_anos,
+                                      breaks=c(seq(0, 80, 10), 140),
+                                      right=F,
+                                      labels=as.character(seq(1,9))
+         )
+         )
+  ) %>%
   left_join(tblCADMUN %>% select(CO_MUNICIP, CO_MACSAUD), by=c('CO_MUN_NOT' = 'CO_MUNICIP')) 
 # dados_full <- read.csv2("~/Downloads/INFLUD_09-06-2020.csv", stringsAsFactors = F)
 # dados_full2 <- read.csv2("~/Downloads/INFLUD-07-07-2020.csv", stringsAsFactors = F)
@@ -228,159 +238,9 @@ xlimits <- c(1, dados_full %>%
                filter(DT_SIN_PRI_epiyear == lyear) %>%
                select(DT_SIN_PRI_epiweek) %>% max())
 
-# Função para gerar as estimativas:
-generate.estimate <- function(dadosBR, Inicio=Inicio, today.week=today.week, Dmax=10, wdw=40, zero.inflated=TRUE, ...){
-  dadosBR <- dadosBR %>% 
-    filter(DT_SIN_PRI_epiweek >= 1, DT_SIN_PRI_epiweek <= today.week) %>% 
-    mutate(
-      DelayWeeks = SinPri2Digita_DelayWeeks,
-      DelayWeeks = ifelse(DelayWeeks < 0, NA, DelayWeeks)
-    ) 
-  
-  # Atraso em semanas 
-  # Dmax = 10
-  dados.srag.ag <- dadosBR %>%
-    filter(DT_SIN_PRI_epiweek >= today.week - (wdw-1)) %>%
-    mutate(
-      DelayWeeks = ifelse(DelayWeeks > Dmax, NA, DelayWeeks)
-    ) %>% 
-    drop_na(DelayWeeks) %>% 
-    group_by(DT_SIN_PRI_epiweek, DelayWeeks) %>% 
-    dplyr::summarise(
-      Casos = n()
-    ) %>%  # View()
-    # Passando para o formato wide
-    spread(key = DelayWeeks, value = Casos) %>% #  View()
-    # Adicianoando todas as data, alguns dias nao houveram casos com primeiros sintomas
-    # e dias apos "Hoje" serão incluídos para previsão 
-    full_join( 
-      y = tibble(DT_SIN_PRI_epiweek = seq(epiweek(Inicio), today.week)), 
-      by = "DT_SIN_PRI_epiweek" ) %>% # View() 
-    # Voltando para o formato longo
-    gather(key = DelayWeeks, value = Casos, -DT_SIN_PRI_epiweek) %>% 
-    mutate(
-      DelayWeeks = as.numeric(DelayWeeks),
-      # Preparing the run-off triangle
-      Casos = ifelse( 
-        test = (DT_SIN_PRI_epiweek + DelayWeeks) <= today.week, 
-        yes = replace_na(Casos, 0), 
-        no = NA)
-    ) %>% dplyr::rename( Date = DT_SIN_PRI_epiweek) %>%  ungroup() %>% 
-    # Sorting by date
-    dplyr::arrange(Date) %>% 
-    # Creating Time and Delay indexes
-    mutate( 
-      Time = as.numeric(Date - min(Date) + 1)
-    ) %>% 
-    dplyr::rename( Delay = DelayWeeks)
-  
-  # Model equation
-  model.srag <- Casos ~ 1 + 
-    f(Time, model = "rw2", constr = T,
-      hyper = list("prec" = list(prior = "loggamma", param = c(0.01, 0.01)))
-      #hyper = list("prec" = list(prior = half_normal_sd(.1) ))
-    ) +
-    f(Delay, model = "rw1", constr = T,
-      hyper = list("prec" = list(prior = "loggamma", param = c(0.01, 0.01)))
-      #hyper = list("prec" = list(prior = half_normal_sd(.1) ))
-    ) #+ 
-    # Efeito tempo-atraso
-    #f(TimeDelay, model = "iid", constr = T)
-  
-  
-  output.srag <- nowcast.INLA(
-    model.day = model.srag,
-    dados.ag = dados.srag.ag %>%
-      mutate(TimeDelay = paste(Time, Delay)),
-    zero.inflated = zero.inflated,
-    ...
-  )
-  
-  dados.srag.ag.day.plot <- dadosBR %>%
-    group_by(DT_SIN_PRI_epiweek) %>%
-    dplyr::summarise( Casos = n()) %>%
-    rename(Date = DT_SIN_PRI_epiweek) %>%
-    ungroup() %>%
-    right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
-    replace_na(list(Casos = 0))
-  
-  
-  pred.srag <- nowcasting(output.srag, dados.srag.ag, Fim=today.week, Dm=Dmax, zero.inflated=zero.inflated)
-
-  # Add previous weeks
-  pred.srag.var <-dados.srag.ag.day.plot %>%
-    filter(Date < today.week - Dmax)
-  slist <- sort(rep(seq(1, 500), nrow(pred.srag.var)))
-  pred.srag.var <- tibble(sample=slist, Date=rep(as.integer(pred.srag.var$Date), 500)) %>%
-    left_join(pred.srag.var, by='Date') %>%
-    rbind(pred.srag) %>%
-    arrange(sample, Date)
-
-  # Tendência via modelo linear com janela móvel
-  weeks.level <- pred.srag.var$Date %>%
-    unique()
-  variation.lvl.3s <- weeks.level[weeks.level >= max(pred.srag.var$Date) - 8] %>%
-    map(slope.estimate.quant, pred.srag=pred.srag.var, w=3) %>%
-    unlist() %>%
-    as_tibble_col(column_name = 'tendencia.3s') %>%
-    cbind(Date = weeks.level[weeks.level >= max(pred.srag.var$Date) - 8])
-  # variation.lvl.3s <- pred.srag.var %>%
-  #   filter(Date >= max(Date) - 8) %>%
-  #   select(Date) %>%
-  #   distinct() %>%
-  #   mutate(tendencia.3s = slope.estimate.quant(end.week = Date, pred.srag=pred.srag.var, w=3))
-  # print(variation.lvl.3s)
-  # variation.lvl <- pred.srag.var$Date %>%
-  #   unique() %>%
-  #   map(slope.estimate.quant, pred.srag=pred.srag.var, w=6) %>%
-  #   unlist() %>%
-  #   as_tibble_col(column_name = 'tendencia.6s') %>%
-  #   cbind(Date = unique(pred.srag.var$Date)) %>%
-  #   left_join(variation.lvl.3s, by='Date')
-  variation.lvl <- weeks.level[weeks.level >= max(pred.srag.var$Date) - 16] %>%
-    map(slope.estimate.quant, pred.srag=pred.srag.var, w=6) %>%
-    unlist() %>%
-    as_tibble_col(column_name = 'tendencia.6s') %>%
-    cbind(Date = weeks.level[weeks.level >= max(pred.srag.var$Date) - 16]) %>%
-    left_join(variation.lvl.3s, by='Date')
-  rm(pred.srag.var)
-  
-  pred.srag.summy <- pred.srag %>% group_by(Date) %>% 
-    dplyr::summarise( #Mean = mean(Casos),
-      Median = replace_na(round(median(Casos, na.rm=T)), 0), 
-      Q1 = round(quantile(Casos, probs = 0.25, na.rm=T)),
-      Q3 = round(quantile(Casos, probs = 0.75, na.rm=T)),
-      IC80I = round(quantile(Casos, probs = 0.1, na.rm=T)),
-      IC80S = round(quantile(Casos, probs = 0.9, na.rm=T)),
-      IC90I = round(quantile(Casos, probs = 0.05, na.rm=T)),
-      IC90S = round(quantile(Casos, probs = 0.95, na.rm=T)),
-      LI = round(quantile(Casos, probs = 0.025, na.rm=T)),
-      LS = round(quantile(Casos, probs = 0.975, na.rm=T))
-    ) %>%
-    mutate(LS = case_when(
-      LS > 30 ~ pmin(3*Median, LS),
-      TRUE ~ LS
-    ),
-    IC90S = case_when(
-      IC90S > 30 ~ pmin(3*Median, IC90S),
-      TRUE ~ LS
-    )) %>%
-    right_join(dados.srag.ag.day.plot, by='Date') %>%
-    arrange(Date) %>%
-    mutate(full_estimate = case_when(
-      is.na(Median) ~ Casos,
-      TRUE ~ Median),
-      Casos.cut = case_when(
-        Date <= today.week - 2 ~ Casos,
-        TRUE ~ NA_real_),
-      rolling_average = round(zoo::rollmean(full_estimate, k=3, fill=NA))) %>%
-    left_join(variation.lvl, by='Date')
-  
-  return(pred.srag.summy)
-}
 
 try.estimate <- function(nivel, uf, dadosBR, Inicio=Inicio, today.week=today.week, Dmax=10, wdw=40, zero.inflated=TRUE, ...){
-  tryCatch(generate.estimate(dadosBR, Inicio=Inicio, today.week=today.week, Dmax=10, wdw=40, zero.inflated=TRUE, ...),
+  tryCatch(generate.estimate(dadosBR, Inicio=Inicio, today.week=today.week, Dmax=Dmax, wdw=wdw, zero.inflated=zero.inflated, ...),
            error=function(e) {
              message=paste('Erro no processamento. Nivel:', nivel, 'local:', uf)
              e}
@@ -388,49 +248,14 @@ try.estimate <- function(nivel, uf, dadosBR, Inicio=Inicio, today.week=today.wee
 }
 
 
-# Function for trend plot
-plot.ts.tendencia <- function(df, xbreaks=c(1, seq(4, 52, 4)), xlbls=c(1, seq(4, 52, 4)), xlimits=c(1, 53)){
-  plt <- df %>%
-    select(Date, tendencia.3s, tendencia.6s) %>%
-    mutate(tendencia.3s = case_when(
-      Date < today.week - 2 ~ NA_real_,
-      TRUE ~ tendencia.3s
-    )) %>%
-    rename('curto prazo'=tendencia.3s, 'longo prazo'=tendencia.6s) %>%
-    pivot_longer(-Date, names_to = 'janela', values_to = 'tendencia') %>%
-    arrange(desc(janela)) %>%
-    ggplot(aes(x=Date, y=tendencia, color=janela)) +
-    geom_hline(yintercept = 0, color='grey', size=1.5, linetype=2) +
-    geom_line() +
-    geom_point() +
-    scale_y_continuous(breaks = seq(-1,1,.5),
-                       labels=c('Prob. queda\n> 95%', 'Prob. queda\n> 75%', 'Estabilidade./\noscilação', 'Prob. cresc.\n> 75%', 'Prob. cresc.\n> 95%'),
-                       limits = c(-1,1),
-                       name=NULL) +
-    scale_x_continuous(breaks = xbreaks, labels = xlbls, limits = xlimits, name=NULL) +
-    scale_color_discrete(name=NULL) +
-    theme_Publication() +
-    theme(plot.margin=unit(c(1,0,5,5), units='pt'),
-          axis.text.y = element_text(size = rel(.8), angle=30),
-          legend.margin = margin(0,0,0,0, unit='pt'),
-          legend.justification=c(0,1), 
-          legend.position=c(0.015, 1.05),
-          legend.background = element_blank(),
-          legend.key = element_blank(),
-          legend.key.size = unit(14, 'pt'),
-          legend.text = element_text(family = 'Roboto', size = rel(.8))
-    )
-  
-  return(plt)
-}
-
 # Read CNES data
-cnes <- read.csv2('../data/tbEstabelecimento_atual.csv', stringsAsFactors = F) %>%
+cnes <- read.csv2('../data/tbEstabelecimento_atual_clean.csv', stringsAsFactors = F) %>%
   select(CO_CNES, CO_NATUREZA_JUR)
 dados_full <- dados_full %>%
   left_join(cnes, by=c('CO_UNI_NOT' = 'CO_CNES')) %>%
   mutate(grupo_jur = as.integer(CO_NATUREZA_JUR/1000))
 rm(cnes)
+gc(verbose=F)
 
 ttl.xtra <- c('', ' - ADM PÚBLICA', ' - ENT. EMPRESARIAS', ' - ENT. SEM FINS LUCR.')
 suff.xtra <- c('', '_admpub', '_entempr', '_entsflucr')
@@ -451,15 +276,15 @@ qthreshold <- dados_full %>%
       (DT_DIGITA_epiyear == lyear)
   ) %>%
   group_by(SG_UF_NOT) %>%
-  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
   mutate(dmax = dmax + 2,
          dmax = case_when(
     dmax > args$dmax ~ as.numeric(args$dmax),
     dmax < 4 ~ 4,
     TRUE ~ as.numeric(dmax)),
     wdw = case_when(
-      2*dmax > args$window ~ as.numeric(args$window),
-      TRUE ~ as.numeric(2*dmax))
+      ceiling(2.25*dmax) > args$window ~ as.numeric(args$window),
+      TRUE ~ as.numeric(ceiling(2.25*dmax)))
     )
 qthreshold <- dados_full %>%
   filter(
@@ -467,7 +292,7 @@ qthreshold <- dados_full %>%
       (DT_DIGITA_epiyear == lyear)
   ) %>%
   select(SinPri2Digita_DelayWeeks) %>%
-  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
   mutate(SG_UF_NOT = 0,
          dmax = dmax + 2,
          dmax = case_when(
@@ -475,60 +300,147 @@ qthreshold <- dados_full %>%
            dmax < 4 ~ 4,
            TRUE ~ as.numeric(dmax)),
          wdw = case_when(
-           2*dmax > args$window ~ as.numeric(args$window),
-           TRUE ~ as.numeric(2*dmax))
+           ceiling(2.25*dmax) > args$window ~ as.numeric(args$window),
+           TRUE ~ as.numeric(ceiling(2.25*dmax)))
   ) %>%
   rbind(qthreshold)
 
+# Faixa etária UF --------------
+dados.obs <- dados_full %>%
+  filter(SinPri2Digita_DelayWeeks <= args$dmax,
+         !is.na(fx_etaria)) %>%
+  group_by(DT_SIN_PRI_epiweek, fx_etaria, SinPri2Digita_DelayWeeks) %>%
+  summarise(Y = n()) %>%
+  ungroup() %>%
+  complete(DT_SIN_PRI_epiweek=1:today.week, fx_etaria, SinPri2Digita_DelayWeeks=0:args$dmax, fill=list(Y=0)) %>%
+  mutate(dt.mais.delay = DT_SIN_PRI_epiweek + SinPri2Digita_DelayWeeks,
+         Y = ifelse(dt.mais.delay<=today.week, Y, NA),
+         SG_UF_NOT = 0,
+         dt_event=DT_SIN_PRI_epiweek,
+         delay=SinPri2Digita_DelayWeeks,
+         Time=dt_event)
+dados.obs <- dados_full %>%
+  filter(SinPri2Digita_DelayWeeks <= args$dmax,
+         !is.na(SG_UF_NOT),
+         !is.na(fx_etaria)) %>%
+  group_by(SG_UF_NOT, DT_SIN_PRI_epiweek, fx_etaria, SinPri2Digita_DelayWeeks) %>%
+  summarise(Y = n()) %>%
+  ungroup() %>%
+  complete(SG_UF_NOT, DT_SIN_PRI_epiweek=1:today.week, fx_etaria, SinPri2Digita_DelayWeeks=0:args$dmax, fill=list(Y=0)) %>%
+  mutate(dt.mais.delay = DT_SIN_PRI_epiweek + SinPri2Digita_DelayWeeks,
+         Y = ifelse(dt.mais.delay<=today.week, Y, NA),
+         dt_event=DT_SIN_PRI_epiweek,
+         delay=SinPri2Digita_DelayWeeks,
+         Time=dt_event) %>%
+  bind_rows(dados.obs)
+
+df.uf.age <- c()
 pred.ufs <- c()
-pred.warning <- c()
-pred.failed <- c()
-for(uf in uf.list$CO_UF){
-  dmax <- qthreshold %>%
-    filter(SG_UF_NOT == uf) %>%
-    select(dmax) %>%
-    as.integer()
-  wdw <- qthreshold %>%
-    filter(SG_UF_NOT == uf) %>%
-    select(wdw) %>%
-    as.integer()
-  
-  gpj <- 0
+
+for (uf in uf.list$CO_UF){
   uf.name <- uf.list$DS_UF_SIGLA[uf.list$CO_UF == uf]
   pop <- uf.list$Populacao[uf.list$CO_UF == uf]
-  dadosBR <- dados_full %>%
-    filter(DT_SIN_PRI_epiyear >= 2020)
-  if (uf != 0){
-    dadosBR <- dadosBR %>%
-      filter(SG_UF_NOT == uf)
+  gpj <- 0
+  
+  age.BR.h.srag.pred <- nowcasting_age(dados.obs %>% filter(
+    SG_UF_NOT == uf,
+    delay <= qthreshold$dmax[qthreshold$SG_UF_NOT==uf],
+    Time >= today.week - (qthreshold$wdw[qthreshold$SG_UF_NOT==uf])-1))
+  age.BR.h.srag.pred <- nowcasting.summary(age.BR.h.srag.pred, age = T)
+  
+  if (uf == 0){
+    age.BR.h.srag.pred$age <- dados_full %>%
+      filter(!is.na(fx_etaria)) %>%
+      group_by(DT_SIN_PRI_epiweek, fx_etaria) %>%
+      summarise(n = n()) %>%
+      ungroup() %>%
+      complete(DT_SIN_PRI_epiweek, fx_etaria, fill=list(n=0)) %>%
+      rename(dt_event=DT_SIN_PRI_epiweek) %>%
+      left_join(age.BR.h.srag.pred$age, by=c('dt_event', 'fx_etaria')) %>%
+      mutate(fx_etaria=factor(fx_etaria,
+                              levels=as.character(1:9),
+                              labels=c(paste0((0:7)*10, " - ",(0:7)*10+9), "80+")),
+             Y = ifelse(is.na(Median), n, Median),
+             n = ifelse(dt_event >= today.week-4, NA, n))
+  } else {
+    age.BR.h.srag.pred$age <- dados_full %>%
+      filter(!is.na(fx_etaria),
+             SG_UF_NOT == uf) %>%
+      group_by(DT_SIN_PRI_epiweek, fx_etaria) %>%
+      summarise(n = n()) %>%
+      ungroup() %>%
+      complete(DT_SIN_PRI_epiweek, fx_etaria, fill=list(n=0)) %>%
+      rename(dt_event=DT_SIN_PRI_epiweek) %>%
+      left_join(age.BR.h.srag.pred$age, by=c('dt_event', 'fx_etaria')) %>%
+      mutate(fx_etaria=factor(fx_etaria,
+                              levels=as.character(1:9),
+                              labels=c(paste0((0:7)*10, " - ",(0:7)*10+9), "80+")),
+             Y = ifelse(is.na(Median), n, Median),
+             n = ifelse(dt_event >= today.week-4, NA, n))
+    
   }
   
-  Inicio <- min(dadosBR$DT_SIN_PRI)
+  plt <- age.BR.h.srag.pred$age %>%
+    ggplot(aes(x=dt_event, y=Y, color = fx_etaria,
+               ymin = LI, ymax = LS, fill = fx_etaria)) +
+    geom_line(show.legend = F) +
+    geom_ribbon(aes(ymin=LI, ymax=LS), color = NA, alpha = 0.4, show.legend = F) +
+    geom_ribbon(aes(ymin=Q1, ymax=Q3), color = NA, alpha = 0.6, show.legend = F) +
+    scale_fill_manual(values=colorRampPalette(colorblind_pal()(8))(9)) +
+    scale_color_manual(values=colorRampPalette(colorblind_pal()(8))(9)) +
+    scale_x_continuous(breaks = xbreaks[seq(1,length(xbreaks), 2)],
+                       labels = xlbls[seq(1,length(xbreaks), 2)],
+                       minor_breaks = waiver(),
+                       limits = xlimits) +
+    theme_Publication(base_size = 14, base_family='Roboto') +
+    facet_wrap(~fx_etaria, nrow = 3, scales = "free_y") +
+    labs(
+      x = "Semana de primeiros sintomas",
+      y = "Casos de SRAG",
+      color = "Faixa Etária", 
+      title = uf.name,
+      subtitle = paste0("Novos casos semanais por faixa etária. Dados até a semana ", today.week.ori, ' ', lyear)) +
+    theme(panel.grid.minor.x = element_line(colour="#f0f0f0",
+                                            linetype=2)
+    )
+  png(filename = paste0(preff,"/Figs/UF/fig_", uf.name, "_fx_etaria.png"),
+      width=9, height=6, units='in', res=200)
+  print(plt)
+  grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1, 'inches'))
+  dev.off()
   
-  # Semana epidemiologica termina no Sabado, entao vou excluir os dados mais recentes caso a semana nao comece no sábado.
-  Fim.sat <- today.week
-  
-  pred.srag.summy <- try.estimate('UF', uf, dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
-  if (inherits(pred.srag.summy, 'error')){
-    dmax <- dmax + 1
-    wdw <- wdw + 2
-    pred.warning <- c(pred.warning, uf)
-    pred.srag.summy <- try.estimate('UF', uf, dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
-    if (inherits(pred.srag.summy, 'error')){
-      pred.failed <- c(pred.failed, uf)
-      message(paste('Não foi possível executar. Pulando o local', uf))
-      pred.srag.summy <- readRDS(paste0(preff,'/ufs_', lyear, '_', today.week-1, '.rds')) %>%
-        filter(CO_UF == uf) %>%
-        select(-epiweek, -epiyear) %>%
-        right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
-        fill(CO_UF, DS_UF_SIGLA, populacao, grupo_jur, .direction='down')
-      pred.ufs <- pred.ufs %>%
-        bind_rows(pred.srag.summy)
-      
-      next
-    }
+  df.uf.age <- df.uf.age %>%
+    bind_rows(age.BR.h.srag.pred$age %>%
+                mutate(SG_UF_NOT = uf,
+                       DS_UF_SIGLA = uf.name))
+
+  if (uf == 0){
+    dadosBR <- dados_full %>%
+      select(DT_SIN_PRI_epiweek, SG_UF_NOT) %>%
+      group_by(DT_SIN_PRI_epiweek) %>%
+      dplyr::summarise( Casos = n()) %>%
+      rename(Date = DT_SIN_PRI_epiweek) %>%
+      ungroup() %>%
+      right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
+      replace_na(list(Casos = 0))
+  } else {
+    dadosBR <- dados_full %>%
+      filter(SG_UF_NOT == uf) %>%
+      select(DT_SIN_PRI_epiweek, SG_UF_NOT) %>%
+      group_by(DT_SIN_PRI_epiweek) %>%
+      dplyr::summarise( Casos = n()) %>%
+      rename(Date = DT_SIN_PRI_epiweek) %>%
+      ungroup() %>%
+      right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
+      replace_na(list(Casos = 0))
   }
-  pred.srag.summy <- pred.srag.summy %>%
+  gc(verbose=F)
+  pred.srag.summy <- generate.slope(dadosBR,
+                                    age.BR.h.srag.pred$total.samples %>%
+                                      ungroup() %>%
+                                      transmute(Date=dt_event, sample=sample, Casos=Y),
+                                    today.week=today.week,
+                                    Dmax=qthreshold$dmax[qthreshold$SG_UF_NOT==uf]) %>%
     mutate_at(vars(-("Date"), -starts_with("tendencia")), ~ .*100000/pop) %>%
     mutate(CO_UF = uf,
            DS_UF_SIGLA = uf.name,
@@ -561,17 +473,25 @@ for(uf in uf.list$CO_UF){
   png(filename = paste0(preff,"/Figs/UF/fig_", uf.name, ".png"),
       width=8, height=6, units='in', res=200)
   print(plot_grid(p.now.srag, p.nivel, align='v', axis='l', nrow=2, ncol=1, rel_heights=c(2.5, 1)))
-  grid::grid.raster(logo, x = 0.999, y = 0.95, just = c('right', 'top'), width = unit(1, 'inches'))
+  grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1, 'inches'))
   dev.off()
 }
-pred.warning <- as.data.frame(list('warning'=pred.warning))
-pred.failed <- as.data.frame(list('failed'=pred.failed))
-print('Error list:')
-print(pred.failed)
-pred.warning %>%
-  write.csv('uf.warning.csv', row.names=F)
-pred.failed %>%
-  write.csv('uf.failed.csv', row.names=F)
+
+df.uf.age <- df.uf.age %>%
+  rename(DT_SIN_PRI_epiweek=dt_event,
+         casos_notificados=n,
+         mediana_da_estimativa=Median) %>%
+  left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek'))
+df.uf.age %>%
+  saveRDS(file='uf.estimativas.fx.etaria.rds')
+df.uf.age %>%
+  mutate(mediana_da_estimativa=round(mediana_da_estimativa),
+         LI=round(LI),
+         LS=round(LS),
+         Q1=round(Q1),
+         Q3=round(Q3)) %>%
+  select(-DT_SIN_PRI_epiweek, -fx_etaria.num, -Time, -Y) %>%
+  write_csv2(file='estados_e_pais_serie_estimativas_fx_etaria_sem_filtro_febre.csv', na='')
 
 pred.ufs <- pred.ufs %>%
   left_join(epiweek.table, by=c('Date' = 'DT_SIN_PRI_epiweek'))
@@ -626,6 +546,7 @@ pred.ufs %>%
   select(-Median, -Casos, -epiweek, -epiyear) %>%
   write_csv2(paste0(preff,'/estados_e_pais_serie_estimativas_tendencia_sem_filtro_febre.csv'), na = '')
 rm(pred.ufs)
+gc(verbose=F)
 
 # Capitais -----
 tblCADMUN.capital <- tblCADMUN %>% filter(IN_CAPITAL %in% c('E', 'F'))
@@ -638,15 +559,15 @@ qthreshold <- dados_full %>%
               (DT_DIGITA_epiyear == lyear))
   ) %>%
   group_by(CO_MUN_RES, grupo_jur) %>%
-  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
   mutate(dmax = dmax + 2,
          dmax = case_when(
            dmax > args$dmax ~ as.numeric(args$dmax),
            dmax < 4 ~ 4,
            TRUE ~ as.numeric(dmax)),
          wdw = case_when(
-           2*dmax > args$window ~ as.numeric(args$window),
-           TRUE ~ as.numeric(2*dmax))
+           ceiling(2.25*dmax) > args$window ~ as.numeric(args$window),
+           TRUE ~ as.numeric(ceiling(2.25*dmax)))
   )
 qthreshold <- dados_full %>%
   filter(CO_MUN_RES %in% bsb_ras &
@@ -655,7 +576,7 @@ qthreshold <- dados_full %>%
   ) %>%
   select(grupo_jur, SinPri2Digita_DelayWeeks) %>%
   group_by(grupo_jur) %>%
-  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
   mutate(CO_MUN_RES = 530010,
          dmax = dmax + 2,
          dmax = case_when(
@@ -663,8 +584,8 @@ qthreshold <- dados_full %>%
            dmax < 4 ~ 4,
            TRUE ~ as.numeric(dmax)),
          wdw = case_when(
-           2*dmax > args$window ~ as.numeric(args$window),
-           TRUE ~ as.numeric(2*dmax))
+           ceiling(2.25*dmax) > args$window ~ as.numeric(args$window),
+           TRUE ~ as.numeric(ceiling(2.25*dmax)))
   ) %>%
   rbind(qthreshold)
 qthreshold <- dados_full %>%
@@ -675,15 +596,15 @@ qthreshold <- dados_full %>%
               (DT_DIGITA_epiyear == lyear))
   ) %>%
   group_by(CO_MUN_RES) %>%
-  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
   mutate(dmax = dmax + 2,
          dmax = case_when(
            dmax > args$dmax ~ as.numeric(args$dmax),
            dmax < 4 ~ 4,
            TRUE ~ as.numeric(dmax)),
          wdw = case_when(
-           2*dmax > args$window ~ as.numeric(args$window),
-           TRUE ~ as.numeric(2*dmax)),
+           ceiling(2.25*dmax) > args$window ~ as.numeric(args$window),
+           TRUE ~ as.numeric(ceiling(2.25*dmax))),
          grupo_jur = 0
   ) %>%
   rbind(qthreshold)
@@ -693,7 +614,7 @@ qthreshold <- dados_full %>%
               (DT_DIGITA_epiyear == lyear))
   ) %>%
   select(SinPri2Digita_DelayWeeks) %>%
-  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
   mutate(CO_MUN_RES = 530010,
          dmax = dmax + 2,
          dmax = case_when(
@@ -701,8 +622,8 @@ qthreshold <- dados_full %>%
            dmax < 4 ~ 4,
            TRUE ~ as.numeric(dmax)),
          wdw = case_when(
-           2*dmax > args$window ~ as.numeric(args$window),
-           TRUE ~ as.numeric(2*dmax)),
+           ceiling(2.25*dmax) > args$window ~ as.numeric(args$window),
+           TRUE ~ as.numeric(ceiling(2.25*dmax))),
          grupo_jur = 0
   ) %>%
   rbind(qthreshold)
@@ -710,6 +631,7 @@ qthreshold <- dados_full %>%
 pred.capitais <- c()
 pred.warning <- c()
 pred.failed <- c()
+df.uf.age <- c()
 for(k in 1:nrow(tblCADMUN.capital)){
   co_mun <- tblCADMUN.capital$CO_MUNICIP[k]
   co_uf <- tblCADMUN.capital$CO_UF[k]
@@ -753,7 +675,7 @@ for(k in 1:nrow(tblCADMUN.capital)){
       dadosBR <- dadosBR0
     }
     
-    if (nrow(dadosBR[dadosBR$DT_SIN_PRI_epiweek >= today.week - 10,]) > 10){
+    if (gpj == 0 | nrow(dadosBR[dadosBR$DT_SIN_PRI_epiweek >= today.week - 10,]) > 10){
       dmax <- qthreshold %>%
         filter(CO_MUN_RES == tblCADMUN.capital$CO_MUNICIP[k],
                grupo_jur == gpj) %>%
@@ -768,28 +690,119 @@ for(k in 1:nrow(tblCADMUN.capital)){
       Inicio <- min(dadosBR$DT_SIN_PRI)
 
       warn.lbl <- paste(mun.id, 'gpj=', gpj)
-      pred.srag.summy <- try.estimate('Capital', warn.lbl,
-                                      dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
-      if (inherits(pred.srag.summy, 'error')){
-        dmax <- dmax + 1
-        wdw <- wdw + 2
-        pred.warning <- c(pred.warning, warn.lbl)
+      if (gpj > 0){
         pred.srag.summy <- try.estimate('Capital', warn.lbl,
                                         dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
         if (inherits(pred.srag.summy, 'error')){
-          message(paste('Não foi possível executar. Pulando o local', warn.lbl))
-          pred.failed <- c(pred.failed, warn.lbl)
-          pred.srag.summy <- readRDS(paste0(preff,'/capitais_', lyear, '_', today.week-1, '.rds')) %>%
-            filter(CO_MUN_RES == as.integer(mun.id),
-                   grupo_jur == gpj) %>%
-            select(-epiweek, -epiyear) %>%
-            right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
-            fill(CO_MUN_RES, CO_MUN_RES_nome, CO_UF, DS_UF_SIGLA, populacao, grupo_jur, .direction='down')
-          pred.capitais <- pred.capitais %>%
-            bind_rows(pred.srag.summy)
-          next
+          dmax <- dmax + 1
+          wdw <- wdw + 2
+          pred.warning <- c(pred.warning, warn.lbl)
+          
+          pred.srag.summy <- try.estimate('Capital', warn.lbl,
+                                          dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
+          if (inherits(pred.srag.summy, 'error')){
+            message(paste('Não foi possível executar. Pulando o local', warn.lbl))
+            pred.failed <- c(pred.failed, warn.lbl)
+            pred.srag.summy <- readRDS(paste0(preff,'/capitais_', lyear, '_', today.week-1, '.rds')) %>%
+              filter(CO_MUN_RES == as.integer(mun.id),
+                     grupo_jur == gpj) %>%
+              select(-epiweek, -epiyear) %>%
+              right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
+              fill(CO_MUN_RES, CO_MUN_RES_nome, CO_UF, DS_UF_SIGLA, populacao, grupo_jur, .direction='down')
+            pred.capitais <- pred.capitais %>%
+              bind_rows(pred.srag.summy)
+            next
+          }
         }
+      } else {
+        dadosBR <- dadosBR0 %>%
+          filter(SinPri2Digita_DelayWeeks <= args$dmax,
+                 !is.na(fx_etaria)) %>%
+          group_by(DT_SIN_PRI_epiweek, fx_etaria, SinPri2Digita_DelayWeeks) %>%
+          summarise(Y = n()) %>%
+          ungroup() %>%
+          complete(DT_SIN_PRI_epiweek=1:today.week, fx_etaria, SinPri2Digita_DelayWeeks=0:args$dmax, fill=list(Y=0)) %>%
+          mutate(dt.mais.delay = DT_SIN_PRI_epiweek + SinPri2Digita_DelayWeeks,
+                 Y = ifelse(dt.mais.delay<=today.week, Y, NA),
+                 dt_event=DT_SIN_PRI_epiweek,
+                 delay=SinPri2Digita_DelayWeeks,
+                 Time=dt_event)
+        age.BR.h.srag.pred <- nowcasting_age(dadosBR %>% filter(
+          delay <= dmax,
+          Time >= today.week - (wdw-1)))
+        age.BR.h.srag.pred <- nowcasting.summary(age.BR.h.srag.pred, age = T)
+        
+        age.BR.h.srag.pred$age <- dadosBR0 %>%
+          filter(!is.na(fx_etaria)) %>%
+          group_by(DT_SIN_PRI_epiweek, fx_etaria) %>%
+          summarise(n = n()) %>%
+          ungroup() %>%
+          complete(DT_SIN_PRI_epiweek=1:today.week, fx_etaria, fill=list(n=0)) %>%
+          rename(dt_event=DT_SIN_PRI_epiweek) %>%
+          left_join(age.BR.h.srag.pred$age, by=c('dt_event', 'fx_etaria')) %>%
+          mutate(fx_etaria=factor(fx_etaria,
+                                  levels=as.character(1:9),
+                                  labels=c(paste0((0:7)*10, " - ",(0:7)*10+9), "80+")),
+                 Y = ifelse(is.na(Median), n, Median),
+                 n = ifelse(dt_event >= today.week-4, NA, n))
+        
+        plt <- age.BR.h.srag.pred$age %>%
+          ggplot(aes(x=dt_event, y=Y, color = fx_etaria,
+                     ymin = LI, ymax = LS, fill = fx_etaria)) +
+          geom_line(show.legend = F) +
+          geom_ribbon(aes(ymin=LI, ymax=LS), color = NA, alpha = 0.4, show.legend = F) +
+          geom_ribbon(aes(ymin=Q1, ymax=Q3), color = NA, alpha = 0.6, show.legend = F) +
+          scale_fill_manual(values=colorRampPalette(colorblind_pal()(8))(9)) +
+          scale_color_manual(values=colorRampPalette(colorblind_pal()(8))(9)) +
+          scale_x_continuous(breaks = xbreaks[seq(1,length(xbreaks), 2)],
+                             labels = xlbls[seq(1,length(xbreaks), 2)],
+                             minor_breaks = waiver(),
+                             limits = xlimits) +
+          theme_Publication(base_size = 14, base_family='Roboto') +
+          facet_wrap(~fx_etaria, nrow = 3, scales = "free_y") +
+          labs(
+            x = "Semana de primeiros sintomas",
+            y = "Casos de SRAG",
+            color = "Faixa Etária", 
+            title = paste0(tblCADMUN.capital$DS_UF_SIGLA[k], ": ", title),
+            subtitle = paste0("Novos casos semanais por faixa etária. Dados até a semana ", today.week.ori, ' ', lyear)) +
+          theme(panel.grid.minor.x = element_line(colour="#f0f0f0",
+                                                  linetype=2)
+          )
+        png(filename = paste0(preff,"/Figs/Capitais/fig_",
+                              tblCADMUN.capital$DS_UF_SIGLA[k],
+                              '_',
+                              str_replace_all(tblCADMUN.capital$DS_NOMEPAD_municip[k], ' ', '_'),
+                              "_fx_etaria.png"),
+            width=9, height=6, units='in', res=200)
+        print(plt)
+        grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1, 'inches'))
+        dev.off()
+        
+        df.uf.age <- df.uf.age %>%
+          bind_rows(age.BR.h.srag.pred$age %>%
+                      mutate(CO_MUN_RES = as.integer(mun.id),
+                             CO_MUN_RES_nome = title,
+                             CO_UF = co_uf,
+                             DS_UF_SIGLA = co_uf.name))
+        
+        dadosBR <- dadosBR0 %>%
+          group_by(DT_SIN_PRI_epiweek) %>%
+          dplyr::summarise( Casos = n()) %>%
+          rename(Date = DT_SIN_PRI_epiweek) %>%
+          ungroup() %>%
+          right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
+          replace_na(list(Casos = 0))
+        gc(verbose = F)
+
+        pred.srag.summy <- generate.slope(dadosBR,
+                                          age.BR.h.srag.pred$total.samples %>%
+                                            ungroup() %>%
+                                            transmute(Date=dt_event, sample=sample, Casos=Y),
+                                          today.week=today.week,
+                                          Dmax=dmax)
       }
+      
       if (co_mun != 530010){
         pred.srag.summy <- pred.srag.summy %>%
           mutate_at(vars(-("Date"), -starts_with("tendencia")), ~ .*100000/pop)
@@ -829,7 +842,6 @@ for(k in 1:nrow(tblCADMUN.capital)){
                                     xlbls = xlbls,
                                     xlimits = xlimits)
       
-      
       png(filename = paste0(preff,
                             "/Figs/Capitais/fig_",
                             tblCADMUN.capital$DS_UF_SIGLA[k],
@@ -839,7 +851,7 @@ for(k in 1:nrow(tblCADMUN.capital)){
                             ".png"),
           width=8, height=6, units='in', res=200)
       print(plot_grid(p.now.srag, p.nivel, align='v', axis='l', nrow=2, ncol=1, rel_heights=c(2.5, 1)))
-      grid::grid.raster(logo, x = 0.999, y = 0.95, just = c('right', 'top'), width = unit(1, 'inches'))
+      grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1, 'inches'))
       dev.off()
     }
   }
@@ -855,7 +867,7 @@ pred.failed %>%
 
 pred.capitais <- pred.capitais %>%
   left_join(epiweek.table, by=c('Date' = 'DT_SIN_PRI_epiweek'))
-      saveRDS(pred.capitais, paste0(preff,'/capitais_', lyear, '_', today.week, '.rds'))
+saveRDS(pred.capitais, paste0(preff,'/capitais_', lyear, '_', today.week, '.rds'))
 saveRDS(pred.capitais, paste0(preff,'/capitais_current.rds'))
 saveRDS(pred.capitais, '../../data/data/capitais_current.rds')
 
@@ -908,6 +920,23 @@ pred.capitais %>%
   select(-Median, -Casos, -epiweek, -epiyear) %>%
   write_csv2(paste0(preff,'/capitais_serie_estimativas_tendencia_sem_filtro_febre.csv'), na = '')
 rm(pred.capitais)
+gc(verbose=F)
+
+df.uf.age <- df.uf.age %>%
+  rename(DT_SIN_PRI_epiweek=dt_event,
+         casos_notificados=n,
+         mediana_da_estimativa=Median) %>%
+  left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek'))
+df.uf.age %>%
+  saveRDS(file='capitais.estimativas.fx.etaria.rds')
+df.uf.age %>%
+  mutate(mediana_da_estimativa=round(mediana_da_estimativa),
+         LI=round(LI),
+         LS=round(LS),
+         Q1=round(Q1),
+         Q3=round(Q3)) %>%
+  select(-DT_SIN_PRI_epiweek, -fx_etaria.num, -Time, -Y) %>%
+  write_csv2(file='capitais_serie_estimativas_fx_etaria_sem_filtro_febre.csv', na='')
 
 # Macrorregionais de saúde: ----
 tblMACSAUD <- tblCADMUN %>%
@@ -927,15 +956,15 @@ qthreshold <- dados_full %>%
               (DT_DIGITA_epiyear == lyear))
   ) %>%
   group_by(CO_MACSAUD) %>%
-  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+  summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
   mutate(dmax = dmax + 2,
          dmax = case_when(
            dmax > args$dmax ~ as.numeric(args$dmax),
            dmax < 4 ~ 4,
            TRUE ~ as.numeric(dmax)),
          wdw = case_when(
-           2*dmax > args$window ~ as.numeric(args$window),
-           TRUE ~ as.numeric(2*dmax))
+           ceiling(2.25*dmax) > args$window ~ as.numeric(args$window),
+           TRUE ~ as.numeric(ceiling(2.25*dmax)))
   )
 
 pred.macros <- c()
@@ -1042,7 +1071,7 @@ for(k in 1:nrow(tblMACSAUD)){
       png(filename = paste0(preff,"/Figs/MACSAUD/fig_", tblMACSAUD$DS_UF_SIGLA[k], '_', tblMACSAUD$CO_MACSAUD[k], suff.xtra[gpj + 1], ".png"),
           width=8, height=6, units='in', res=200)
       print(plot_grid(p.now.srag, p.nivel, align='v', axis='l', nrow=2, ncol=1, rel_heights=c(2.5, 1)))
-      grid::grid.raster(logo, x = 0.999, y = 0.95, just = c('right', 'top'), width = unit(1, 'inches'))
+      grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1, 'inches'))
       dev.off()
     }
   }
@@ -1125,9 +1154,11 @@ pred.macros %>%
   select(-Median, -Casos, -epiweek, -epiyear) %>%
   write_csv2(paste0(preff,'/macsaud_serie_estimativas_tendencia_sem_filtro_febre.csv'), na = '')
 rm(pred.macros)
+gc(verbose=F)
 
 # Regionais de saúde do AM ------------
 run.regsaud.am()
+gc(verbose=F)
 
 # Regionais de saúde do SC ------------
 run.regsaud.sc()

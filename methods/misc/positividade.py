@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-df = pd.read_csv('../../data/data/clean_data_epiweek-weekly-incidence_w_situation_sragnofever.csv')
+df = pd.read_csv('data/data/clean_data_epiweek-weekly-incidence_w_situation_sragnofever.csv')
 dfs = df[['UF',
           'epiyear',
           'epiweek',
@@ -79,7 +79,7 @@ dftmpplt = dftmpplt.append(dftmp.melt(id_vars=['UF', 'epiweek', 'dado', 'normali
 dftmpplt.rename(columns={'variable': 'Vírus', 'dado': 'Dado'}, inplace=True)
 dftmpplt.loc[dftmpplt.Dado == 'srag', 'Dado'] = 'Casos'
 dftmpplt.loc[dftmpplt.Dado == 'obito', 'Dado'] = 'Óbitos'
-dfid = pd.read_csv('../report/territorios.csv')
+dfid = pd.read_csv('methods/report/territorios.csv')
 dfid.loc[dfid.UF == 'SE', 'sigla'] = 'Região Sudeste'
 dfid.loc[dfid.UF == 'S', 'sigla'] = 'Região Sul'
 dfid.loc[dfid.UF == 'NE', 'sigla'] = 'Região Nordeste'
@@ -110,7 +110,7 @@ for uf in dftmpplt.UF.unique():
         plt.xlim([1, xmax])
         plt.yticks(fontfamily='Roboto', fontsize='large')
         ax.set_title('%s: %s' % (sigla, title[n]), fontfamily='Roboto', fontsize='x-large')
-        plt.savefig('positividade/positividade_%s_%s.png' % (uf, n), bbox_to_inches='tight')
+        plt.savefig('methods/misc/positividade/positividade_%s_%s.png' % (uf, n), bbox_to_inches='tight')
 
 for uf in dftmpplt.UF.unique():
     for n in ['testados', 'positivos']:
@@ -132,4 +132,4 @@ for uf in dftmpplt.UF.unique():
         plt.xlim([1, xmax])
         plt.yticks(fontfamily='Roboto', fontsize='large')
         ax.set_title('%s: %s' % (sigla, title[n]), fontfamily='Roboto', fontsize='x-large')
-        plt.savefig('positividade/positividade_%s_%s_sem_sars2.png' % (uf, n), bbox_to_inches='tight')
+        plt.savefig('methods/misc/positividade/positividade_%s_%s_sem_sars2.png' % (uf, n), bbox_to_inches='tight')
