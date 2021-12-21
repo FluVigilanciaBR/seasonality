@@ -500,7 +500,7 @@ def recalc_incidence(x, popnorm):
 
 
 def main(fname, plot_curves=False, sep=',', uflist='all', out_pref=''):
-    pref = ('.'.join(fname.replace('-incidence', '').split('.')[:-1])).split('/')[-1]
+    pref = ('.'.join(fname.replace('-incidence', '').split('.csv')[:-1])).split('/')[-1]
     fname = fname.replace('covid', 'flu')
     df = pd.read_csv(fname, sep=sep, encoding='utf-8')
     dfinset = pd.read_csv(fname.replace('-incidence', ''), sep=sep, encoding='utf-8')

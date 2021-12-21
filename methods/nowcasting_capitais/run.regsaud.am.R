@@ -1,6 +1,6 @@
 #' Auxiliary function for nowcastingCapitaisMacrosaude.R
 
-run.regsaud.am <- function(){
+run.regsaud.am <- function(qthres.probs=0.95){
   # Reginais de saúde AM ---------
   # Regionais de saúde do AM
   tblamazonas <- read.csv('../misc/Amazonas/Tab_munregsaud_manaus.csv', stringsAsFactors = FALSE)  %>%
@@ -37,7 +37,7 @@ run.regsaud.am <- function(){
         (DT_DIGITA_epiyear == lyear)
     ) %>%
     group_by(co_regsaud_am, grupo_jur) %>%
-    summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+    summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
     mutate(dmax = dmax + 2,
            dmax = case_when(
              dmax > args$dmax ~ as.numeric(args$dmax),
@@ -55,7 +55,7 @@ run.regsaud.am <- function(){
         (DT_DIGITA_epiyear == lyear)
     ) %>%
     group_by(co_regsaud_am) %>%
-    summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+    summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
     mutate(dmax = dmax + 2,
            dmax = case_when(
              dmax > args$dmax ~ as.numeric(args$dmax),

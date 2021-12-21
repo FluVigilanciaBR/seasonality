@@ -92,6 +92,7 @@ dados_full <- read.csv('../clean_data/clean_data_srag_hospdeath_epiweek.csv') %>
       TRUE ~ as.numeric(CO_MUN_NOT)
     )
   )
+gc()
 
 plot.oportunidade <- function(dados_full,
                               p=c(.8, .9, .95),
@@ -153,10 +154,13 @@ plot.oportunidade <- function(dados_full,
       ylab(ytitle) +
       xlab(xtitle) +
       scale_x_continuous(breaks = xbreaks, labels = xlbls, limits = c(xmin, xmax)) +
-      theme_Publication(base_size = 16, base_family = 'Roboto') +
+      theme_Publication(base_size = 22, base_family = 'Roboto') +
       geofacet::facet_geo(~DS_UF_SIGLA, grid='br_states_grid1', scale='free_y') +
-      theme(legend.position = c(.9, .1), legend.text=element_text(family='Roboto', size=rel(1)),
-            legend.title = element_text(face='bold'))
+      theme(legend.position = c(.9, .1),
+            legend.text=element_text(family='Roboto', size=rel(1)),
+            legend.title = element_text(face='bold'),
+            legend.key.width = unit(22, units = 'pt'),
+            axis.text.x = element_text(angle=45, hjust=1))
     if (is.null(subtitle)){
       p.opor <- p.opor +
         ggtitle(title)

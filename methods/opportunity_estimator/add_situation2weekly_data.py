@@ -22,20 +22,20 @@ def main(preflist, filtertype='srag'):
         suff = '_%s' % filtertype
 
     for pref in preflist:
-        df_est = pd.read_csv('../clean_data/%s%s_current_estimated_incidence.csv' % (pref, suff), low_memory=False,
+        df_est = pd.read_csv('../clean_data/%s%s_current_estimated_incidence.csv.gz' % (pref, suff), low_memory=False,
                              encoding='utf-8')
-        df_age = pd.read_csv('../clean_data/clean_data_%s%s_epiweek-weekly-incidence.csv' % (pref, suff),
+        df_age = pd.read_csv('../clean_data/clean_data_%s%s_epiweek-weekly-incidence.csv.gz' % (pref, suff),
                              low_memory=False, encoding='utf-8')
-        df_age_cases = pd.read_csv('../clean_data/clean_data_%s%s_epiweek-weekly.csv' % (pref, suff), low_memory=False,
+        df_age_cases = pd.read_csv('../clean_data/clean_data_%s%s_epiweek-weekly.csv.gz' % (pref, suff), low_memory=False,
                                    encoding='utf-8')
         df_est_simp = df_est[['UF', 'epiyear', 'epiweek', 'Situation']]
         df_age = mergesituation(df_age, df_est_simp)
         df_age_cases = mergesituation(df_age_cases, df_est_simp)
 
-        df_age.to_csv('../clean_data/clean_data_%s%s_epiweek-weekly-incidence_w_situation.csv' % (pref, suff),
+        df_age.to_csv('../clean_data/clean_data_%s%s_epiweek-weekly-incidence_w_situation.csv.gz' % (pref, suff),
                       index=False,
                       encoding='utf-8')
-        df_age_cases.to_csv('../clean_data/clean_data_%s%s_epiweek-weekly_w_situation.csv' % (pref, suff),
+        df_age_cases.to_csv('../clean_data/clean_data_%s%s_epiweek-weekly_w_situation.csv.gz' % (pref, suff),
                             index=False,
                             encoding='utf-8')
 

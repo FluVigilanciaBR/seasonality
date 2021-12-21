@@ -132,17 +132,17 @@ Caro(a),
 Segue o resumo do boletim semanal gerado pelo InfoGripe, com base nos dados do Sivep-gripe até a SE %s 
 %02d.
 Esta é uma mensagem automática, não é necessário responder o e-mail.
-** ALERTA ** Alguns estados e capitais que até então apresentavam queda dão sinais de possível estabilização em 
-patamares significativamente elevados. Pedimos atenção aos destaques apresentados no pdf contendo o resumo do boletim,
- nas sessões referentes aos dados de notificações nos estados e aos dados referentes a residentes das capitais.  
 
 Em função do tamanho do documento completo, o mesmo não será enviado por e-mail, mas pode ser feito o download do 
-arquivo através do endereço usual: https://bit.ly/mave-infogripe-boletim-atual . No repositório de gráficos 
-referentes às capitais (https://bit.ly/infogripe-capitais e http://bit.ly/mave-infogripe-dados-capitais) estão 
-incluídas também as análises estratificadas por grupo jurídico da unidade de notificação, permitindo avaliação de 
-eventuais subnotificações, aumento no atraso de notificação/digitação, ou fluxo de atendimento distinto em cada rede.
-Disponibilizamos também imagem com mapa de tendências para as Unidades Federativas, capitais e macorregiões de saúde 
-em arquivo único no endereço http://bit.ly/infogripe-mapa-tendencias
+arquivo através do endereço usual: https://bit.ly/mave-infogripe-boletim-atual-fiocruz .
+Links relevantes (atualizados):
+Repositório: http://bit.ly/mave-repo-fiocruz
+Boletins: http://bit.ly/mave-infogripe-fiocruz
+Dados: https://bit.ly/infogripe-dados-fiocruz
+Resumo: bit.ly/mave-infrogripe-resumo-fiocruz
+Boletim completo: bit.ly/mave-infrogripe-boletim-atual-fiocruz
+Pasta com gráficos para o país e estados, com estratificação por faixa etária: bit.ly/infogripe-estados-fiocruz
+Pasta com gráficos das capitais, com estratificação por faixa etária: bit.ly/infogripe-capitais-fiocruz
 
 *** ATENÇÃO ***
 Como os dados aqui analisados se referem a notificações de hospitalizações ou óbitos, a superlotação da rede 
@@ -161,8 +161,8 @@ http://info.gripe.fiocruz.br
 Atenciosamente,
 Equipe InfoGripe
 InfoGripe - http://info.gripe.fiocruz.br
-Dados abertos - http://bit.ly/mave-infogripe-dados
-Boletins do InfoGripe - http://bit.ly/mave-infogripe
+Dados abertos - http://bit.ly/mave-infogripe-dados-fiocruz
+Boletins do InfoGripe - http://bit.ly/mave-infogripe-fiocruz
 MAVE: Grupo de Métodos Analíticos em Vigilância Epidemiológica (PROCC/Fiocruz e EMAp/FGV), em parceria com o 
 GT-Influenza da Secretaria de Vigilância em Saúde do Ministério da Saúde.
 """ % (epiyear, epiweek),
@@ -291,8 +291,8 @@ def add_epiweek(filtertype='srag'):
     if filtertype != 'srag':
         suff = '_%s' % filtertype
     
-    flist = ['clean_data_srag%s.csv' % suff, 'clean_data_sragflu%s.csv' % suff, 'clean_data_obitoflu%s.csv' % suff, 
-             'clean_data_sragcovid%s.csv' % suff, 'clean_data_obitocovid%s.csv' % suff, 'clean_data_obito%s.csv' % suff]
+    flist = ['clean_data_srag%s.csv.gz' % suff, 'clean_data_sragflu%s.csv.gz' % suff, 'clean_data_obitoflu%s.csv.gz' % suff,
+             'clean_data_sragcovid%s.csv.gz' % suff, 'clean_data_obitocovid%s.csv.gz' % suff, 'clean_data_obito%s.csv.gz' % suff]
     for fname in flist:
         logger.info('Inserting epiweek on file %s' % fname)
         try:
@@ -319,12 +319,12 @@ def convert2mem(filtertype='srag'):
     if filtertype != 'srag':
         suff = '_%s' % filtertype
 
-    flist = ['../clean_data/clean_data_srag%s_epiweek.csv' % suff,
-             '../clean_data/clean_data_sragflu%s_epiweek.csv' % suff,
-             '../clean_data/clean_data_obitoflu%s_epiweek.csv' % suff,
-             '../clean_data/clean_data_sragcovid%s_epiweek.csv' % suff,
-             '../clean_data/clean_data_obitocovid%s_epiweek.csv' % suff,
-             '../clean_data/clean_data_obito%s_epiweek.csv' % suff]
+    flist = ['../clean_data/clean_data_srag%s_epiweek.csv.gz' % suff,
+             '../clean_data/clean_data_sragflu%s_epiweek.csv.gz' % suff,
+             '../clean_data/clean_data_obitoflu%s_epiweek.csv.gz' % suff,
+             '../clean_data/clean_data_sragcovid%s_epiweek.csv.gz' % suff,
+             '../clean_data/clean_data_obitocovid%s_epiweek.csv.gz' % suff,
+             '../clean_data/clean_data_obito%s_epiweek.csv.gz' % suff]
     for fname in flist:
         logger.info('Converting to MEM structure: %s' % fname)
         try:
@@ -353,7 +353,7 @@ def apply_mem(filtertype='srag'):
 
     dataset = ['srag', 'sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']
     for data in dataset:
-        fname = '../clean_data/clean_data_%s%s_epiweek4mem-incidence.csv' % (data, suff)
+        fname = '../clean_data/clean_data_%s%s_epiweek4mem-incidence.csv.gz' % (data, suff)
         logger.info('Calculating MEM thresholds for dataset: %s %s' % (data, filtertype))
         try:
             sinan_mem_inset_thresholds.main(fname, out_pref='%s%s_' % (data, suff))
@@ -390,7 +390,7 @@ def apply_opportunities(filtertype='srag'):
 
     module_name = delay_table.__name__
     try:
-        fname = os.path.join(data_folder, 'delay_table%s.csv' % suff)
+        fname = os.path.join(data_folder, 'delay_table%s.csv.gz' % suff)
         delay_table.main(fname, filtertype)
     except Exception as err:
         logger.exception(module_name)
@@ -673,7 +673,7 @@ def generate_public_datasets(filtertype='srag'):
         dftypical[tgt_cols].rename(columns=rename_cols).to_csv(fname, sep=';', index=False, decimal=',')
 
         #time series
-        fname = os.path.join(data_folder, 'current_estimated_values%s.csv' % suff)
+        fname = os.path.join(data_folder, 'current_estimated_values%s.csv.gz' % suff)
         df = pd.read_csv(fname)
         run_date = df['Run date'].unique()[0]
         tgt_cols = ['Run date', 'UF', 'dado', 'escala', 'epiyear', 'epiweek', 'Situation', 'SRAG', '2.5%', '50%',
@@ -749,9 +749,9 @@ def generate_public_datasets(filtertype='srag'):
         df.dado = pd.Categorical(df.dado, ['srag', 'sragflu', 'sragcovid', 'obito', 'obitoflu', 'obitocovid'])
         df = df.sort_values(by=['Ano epidemiológico', 'escala', 'dado', 'UF', 'Semana epidemiológica']).reset_index(
             drop=True)
-        fname = os.path.join(data_folder, 'serie_temporal_com_estimativas_recentes%s.csv' % suff_out[filtertype])
+        fname = os.path.join(data_folder, 'serie_temporal_com_estimativas_recentes%s.csv.gz' % suff_out[filtertype])
         df.to_csv(fname, sep=';', index=False, decimal=',')
-        fname = os.path.join(public_data_folder, 'serie_temporal_com_estimativas_recentes%s.csv' % suff_out[filtertype])
+        fname = os.path.join(public_data_folder, 'serie_temporal_com_estimativas_recentes%s.csv.gz' % suff_out[filtertype])
         df.to_csv(fname, sep=';', index=False, decimal=',')
 
         # tabela:
@@ -776,7 +776,7 @@ def generate_public_datasets(filtertype='srag'):
         df.to_csv(fname, sep=';', index=False, decimal=',')
 
         # Data by age, gender, and virus:
-        fname = os.path.join(data_folder, 'clean_data_epiweek-weekly-incidence_w_situation%s.csv' % suff)
+        fname = os.path.join(data_folder, 'clean_data_epiweek-weekly-incidence_w_situation%s.csv.gz' % suff)
         df = pd.read_csv(fname)
         df.Situation = df.Situation.map(situation_dict)
         df['Run date'] = run_date
@@ -805,9 +805,9 @@ def generate_public_datasets(filtertype='srag'):
                     'Parainfluenza 1', 'Parainfluenza 2', 'Parainfluenza 3', 'Parainfluenza 4', 'Adenovirus',
                     'Rinovirus', 'Bocavirus', 'Metapneumovirus', 'Outros virus'
                     ]
-        fname = os.path.join(data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv' % suff_out[filtertype])
+        fname = os.path.join(data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv.gz' % suff_out[filtertype])
         df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
-        fname = os.path.join(public_data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv' % suff_out[filtertype])
+        fname = os.path.join(public_data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv.gz' % suff_out[filtertype])
         df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
 
         run(['cp --force ./report/Figs/Territory_*_dataset_1_timeseries%s.png %s/.' % (suff, public_figs_folder)],

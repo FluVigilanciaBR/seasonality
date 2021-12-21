@@ -115,7 +115,7 @@ nowcast.INLA <- function(dados.ag, model.day, zero.inflated = TRUE, ...){
                  data = dados.ag,
                  num.threads = 4,
                  control.predictor = list(link = 1, compute = T),
-                 control.compute = list( config = T),
+                 control.compute = list(config = T, waic=F, dic=F, openmp.strategy='huge'),
                  control.family = control.family,
                  control.inla = list(h = h.value),
                  ...
@@ -181,7 +181,7 @@ plot.nowcast <- function(pred.summy, Fim, nowcast = T){
 }
 
 # Nowcasting_age ----------------
-nowcasting_age <- function(dados.age, n.samples=1000){
+nowcasting_age <- function(dados.age, n.samples=1000, ...){
   
   index.missing <- which(is.na(dados.age$Y))
   
@@ -215,7 +215,7 @@ nowcasting_age <- function(dados.age, n.samples=1000){
     # Running the Negative Binomial model in INLA
     output0 <- inla(model, family = "nbinomial", data = dados.age,
                     control.predictor = list(link = 1, compute = T),
-                    control.compute = list( config = T, waic=F, dic=F),
+                    control.compute = list(config = T, waic=F, dic=F, openmp.strategy='huge'),
                     control.family = list(
                       hyper = list("theta" = list(prior = "loggamma", 
                                                   param = c(0.001, 0.001))
@@ -223,6 +223,7 @@ nowcasting_age <- function(dados.age, n.samples=1000){
                     ),
                     num.threads = 4,
                     control.inla = list(h = h.value),
+                    ...
                     
     )
     hess.start <- which(output0$logfile == 'Eigenvalues of the Hessian')

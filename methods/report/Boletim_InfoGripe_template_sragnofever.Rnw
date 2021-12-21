@@ -52,7 +52,7 @@
 \begin{itemize}
 \item \hyperlink{Serie nacional}{Situação nacional}
 \item \hyperlink{Casos e obitos}{Casos e óbitos por região}
-\item \hyperlink{Nivel transmissao}{Nível de transmissão comunitária nas macrorregiões de saúde}
+\item \hyperlink{Nivel transmissao}{Nível de dos casos de SRAG nas macrorregiões de saúde}
 \item \hyperlink{Mapas contingencia}{Mapas de situação para o plano de contingência}
 \item \hyperlink{Mapas atividade}{Mapas de alerta de atividade semanal}
 \item \hyperlink{Tabelas}{Tabelas de níveis de atenção e canal endêmico para cada nível territorial}
@@ -216,31 +216,29 @@ A Fig.~\ref{fig:st_reg2} apresenta a incidência de casos e óbitos de SRAG nas 
 
 \clearpage
 
-\hypertarget{Nivel transmissao}{\heading{Nível de transmissão comunitária de vírus respiratório segundo SRAG, durante a epidemia de COVID-19}{6pt}}
-Indicadores de transmissão comunitária durante a atual epidemia de COVID-19 no Brasil a partir da incidência semanal de SRAG nas macrorregiões de saúde de cada estado e do distrito federal, conforme descrito em \href{https://bit.ly/mave-infogripe-nota-transmissao}{nota técnica} do Observatório Covid-19 da Fiocruz e equipe InfoGripe.
+\hypertarget{Nivel transmissao}{\heading{Nível de casos semanais de SRAG, durante a epidemia de COVID-19}{6pt}}
+Indicadores de nível dos casos semanais de SRAG durante a atual epidemia de COVID-19 no Brasil para as macrorregiões de saúde de cada estado e do distrito federal, conforme descrito em \href{https://bit.ly/mave-infogripe-nota-transmissao-fiocruz}{nota técnica} do Observatório Covid-19 da Fiocruz e equipe InfoGripe.
 
 A Tabela~\ref{tab:transm} apresenta o total de macrorregiões de saúde em cada nível. As Figuras \ref{fig:transm} e \ref{fig:transmserie} apresentam o mapa do país com o nível de cada macrorregião de saúde para a semana epidemiológica mais recente e a evolução desse indicador nas últimas 30 semanas epidemiológicas, respectivamente.
-
-\textbf{Atenção:} dados referentes às Macrorregiões Litoral do Piauí, e Sul do Espírito Santo, estão subestimados em razão de subnotificação no sistema SIVEP-Gripe dos casos de SRAG em unidades de saúde dessas regiões e, portanto, não devem ser utilizados para tomada de decisão.
 
 \begin{table}[!h]
 \centering
 \settowidth\tymin{Alta}
 {\renewcommand{\arraystretch}{2.5}
 	\begin{tabulary}{1.0\textwidth}{l|C|C|C|C|C}
-	& \cellcolor[HTML]{e0f3f8}Pré-epidêmica & \cellcolor[HTML]{ffffbf}Epidêmica & \cellcolor[HTML]{fee090}Alta & \cellcolor[HTML]{fc8d59}Muito Alta & \cellcolor[HTML]{d73027}Extremamente Alta \\
+	& \cellcolor[HTML]{e0f3f8}Pré-epidêmico & \cellcolor[HTML]{ffffbf}Epidêmico & \cellcolor[HTML]{fee090}Alto & \cellcolor[HTML]{fc8d59}Muito Alto & \cellcolor[HTML]{d73027}Extremamente Alto \\
 	\hline
 	\parbox{15em}{Total de novos casos de SRAG por 100 mil habitantes na última semana} & $<0.5$ & $0.5$ a $1.0$ & $1.0$ a $5.0$ & $5.0$ a $10.0$ & $10.0$ ou mais \\
 	\hline
 	\parbox{15em}{Total de macrorregiões} & $\Sexpr{pred.macros$n[pred.macros$nivel == 0]}$ & $\Sexpr{pred.macros$n[pred.macros$nivel == 1]}$ & $\Sexpr{pred.macros$n[pred.macros$nivel == 2]}$ & $\Sexpr{pred.macros$n[pred.macros$nivel == 3]}$ & $\Sexpr{pred.macros$n[pred.macros$nivel == 4]}$
 \end{tabulary}}
-	\caption{Níveis estimados para transmissão comunitária durante a epidemia de COVID-19 no Brasil, com base na média móvel das últimas três semanas epidemiológicas calculada sobre as estimativas de casos recentes de SRAG independentemente da presença de febre.}\label{tab:transm}
+	\caption{Níveis estimados para os casos semanais de SRAG durante a epidemia de COVID-19 no Brasil, com base na média móvel das últimas três semanas epidemiológicas calculada sobre as estimativas de casos recentes de SRAG independentemente da presença de febre.}\label{tab:transm}
 \end{table}
 
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.75\textwidth]{../nowcasting_capitais/Figs/MACSAUD/Mapa_transmissao.png}
-	\caption{Mapa do país com nível estimado para transmissão comunitária durante a epidemia de COVID-19 no Brasil, para cada uma das 118 macrorregiões de saúde, com base na média móvel das últimas três semanas epidemiológicas calculada sobre as estimativas de casos recentes de SRAG independentemente da presença de febre.}\label{fig:transm}
+	\caption{Mapa do país com nível estimado para os casos semanais de SRAG durante a epidemia de COVID-19 no Brasil, para cada uma das 118 macrorregiões de saúde, com base na média móvel das últimas três semanas epidemiológicas calculada sobre as estimativas de casos recentes de SRAG independentemente da presença de febre.}\label{fig:transm}
 \end{figure}
 
 \clearpage
@@ -248,7 +246,7 @@ A Tabela~\ref{tab:transm} apresenta o total de macrorregiões de saúde em cada 
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.75\textwidth]{../nowcasting_capitais/Figs/MACSAUD/Mapa_transmissao_serie.png}
-	\caption{Evolução do indicador de nível de transmissão comunitária em cada macrorregião de saúde nas últimas 30 semanas epidemiológicas. As datas referem-se ao sábado correspondente ao encerramento de cada semana. O nível estimado para transmissão comunitária durante a epidemia de COVID-19 no Brasil, para cada uma das 118 macrorregiões de saúde, usa como base as estimativas de casos recentes de SRAG independentemente da presença de febre.}\label{fig:transmserie}
+	\caption{Evolução do indicador de nível de casos semanais de SRAG em cada macrorregião de saúde nas últimas 30 semanas epidemiológicas. As datas referem-se ao sábado correspondente ao encerramento de cada semana. O nível estimado para os casos de SRAG durante a epidemia de COVID-19 no Brasil, para cada uma das 118 macrorregiões de saúde, usa como base as estimativas de casos recentes de SRAG independentemente da presença de febre.}\label{fig:transmserie}
 \end{figure}
 
 \clearpage

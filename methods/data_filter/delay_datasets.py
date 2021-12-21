@@ -61,12 +61,12 @@ def main(filtertype='srag'):
     dataset = ['srag', 'sragflu', 'obitoflu', 'sragcovid', 'obitocovid', 'obito']
     dataset_name = dataset[0]
     module_logger.info('Processing dataset: %s', dataset_name)
-    df = readtable('../clean_data/clean_data_%s%s_epiweek.csv' % (dataset_name, suff))
+    df = readtable('../clean_data/clean_data_%s%s_epiweek.csv.gz' % (dataset_name, suff))
     df['dado'] = dataset_name
     module_logger.info('... DONE')
     for dataset_name in dataset[1:]:
         module_logger.info('Processing dataset: %s', dataset_name)
-        dftmp = readtable('../clean_data/clean_data_%s%s_epiweek.csv' % (dataset_name, suff))
+        dftmp = readtable('../clean_data/clean_data_%s%s_epiweek.csv.gz' % (dataset_name, suff))
         dftmp['dado'] = dataset_name
         df = df.append(dftmp, sort=True)
         module_logger.info('... DONE')
@@ -79,7 +79,7 @@ def main(filtertype='srag'):
     df = df.merge(df_reg, on='UF')
     df['Pais'] = 'BR'
 
-    df.to_csv('../../data/data/delay_table%s.csv' % suff, index=False)
+    df.to_csv('../../data/data/delay_table%s.csv.gz' % suff, index=False)
 
 
 if __name__ == '__main__':

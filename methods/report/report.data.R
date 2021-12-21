@@ -1,3 +1,4 @@
+suppressWarnings(suppressPackageStartupMessages(library(data.table)))
 suppressWarnings(suppressPackageStartupMessages(library(tidyverse)))
 suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))
 suppressWarnings(suppressPackageStartupMessages(library(lemon)))
@@ -371,7 +372,8 @@ if (args$plot){
 }
 
 #### Prepare data for timeseries and tables ####
-df.current <- read.csv(paste0(data.folder, 'current_estimated_values', suff_out, '.csv'), stringsAsFactors = F)
+df.current <- fread(paste0(data.folder, 'current_estimated_values', suff_out, '.csv.gz'), stringsAsFactors = F,
+                    data.table=F)
 df.typical <- read.csv(paste0(data.folder, 'mem-typical', suff_out, '.csv'), stringsAsFactors = F)
 df.report <- read.csv(paste0(data.folder, 'mem-report', suff_out, '.csv'), stringsAsFactors = F)
 
@@ -621,7 +623,9 @@ br.report <- df.table %>%
 # df.lab.orig <- read.csv(paste0(data.folder, 'clean_data_epiweek-weekly-incidence_w_situation', suff_out, '.csv'), stringsAsFactors = F) %>%
 #   filter(epiyear == args$epiyear & escala == 'casos' & sexo == 'Total' & UF == 'BR') %>%
 #   select(dado, FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek)
-df.lab.orig <- read.csv(paste0(data.folder, 'clean_data_epiweek-weekly-incidence_w_situation', suff_out, '.csv'), stringsAsFactors = F) %>%
+df.lab.orig <- fread(paste0(data.folder, 'clean_data_epiweek-weekly-incidence_w_situation', suff_out, '.csv.gz'),
+                     stringsAsFactors = F,
+                     data.table=F) %>%
   filter(epiyear >= 2020 & escala == 'casos' & sexo == 'Total' & UF == 'BR') %>%
   select(dado, FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek, epiyear)
 

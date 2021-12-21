@@ -215,12 +215,12 @@ def main(fname, sep=','):
     dfpopcurrent.to_csv('../data/populacao_uf_regional_atual.csv', index=False, encoding='utf-8')
 
     # Write output to file:
-    fnameout = '.'.join(fname.split('.')[:-1]) + '4mem-incidence.csv'
+    fnameout = '.'.join(fname.split('.csv')[:-1]) + '4mem-incidence.csv.gz'
     dfinc4mem.to_csv(fnameout, index=False, encoding='utf-8')
-    fnameout = '.'.join(fname.split('.')[:-1]) + '4mem.csv'
+    fnameout = '.'.join(fname.split('.csv')[:-1]) + '4mem.csv.gz'
     df4mem.to_csv(fnameout, index=False, encoding='utf-8')
 
-    fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly-incidence.csv'
+    fnameout = '.'.join(fname.split('.csv')[:-1]) + '-weekly-incidence.csv.gz'
     dfinc['Tipo'] = 'Estado'
     dfinc.loc[dfinc['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
     dfinc.loc[dfinc['UF'].isin(['N', 'S', 'NE', 'SE', 'CO']), 'Tipo'] = 'Região'
@@ -229,7 +229,7 @@ def main(fname, sep=','):
                               axis=0).reset_index().drop('index', axis=1)
     dfinc.to_csv(fnameout, index=False, encoding='utf-8')
 
-    fnameout = '.'.join(fname.split('.')[:-1]) + '-weekly.csv'
+    fnameout = '.'.join(fname.split('.csv')[:-1]) + '-weekly.csv.gz'
     df['Tipo'] = 'Estado'
     df.loc[df['UF'].isin(['RegN', 'RegL', 'RegC', 'RegS']) ,'Tipo'] = 'Regional'
     df.loc[df['UF'].isin(['N', 'S', 'NE', 'SE', 'CO']), 'Tipo'] = 'Região'

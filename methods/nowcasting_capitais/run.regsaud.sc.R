@@ -1,6 +1,6 @@
 #' Auxiliary function for nowcastingCapitaisMacrosaude.R
 
-run.regsaud.sc <- function(){
+run.regsaud.sc <- function(qthres.probs=0.95){
   # Reginais de saúde SC ---------
   # Regionais de saúde do SC
   tblsc <- read_csv('../data/base_territorial/rl_municip_regsaud_sc.csv') %>%
@@ -36,7 +36,7 @@ run.regsaud.sc <- function(){
         (DT_DIGITA_epiyear == lyear)
     ) %>%
     group_by(co_regsaud_sc) %>%
-    summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=.9, na.rm=TRUE)) %>%
+    summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
     mutate(dmax = dmax + 2,
            dmax = case_when(
              dmax > args$dmax ~ as.numeric(args$dmax),

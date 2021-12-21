@@ -22,6 +22,7 @@ source('./generate.estimates.R')
 source('./post.thresholds.R')
 source('./post.sum.R')
 source('./insert.na.triangle.R')
+require('data.table')
 suppressWarnings(suppressPackageStartupMessages(library("tidyverse")))
 
 ## Read command line arguments
@@ -83,9 +84,9 @@ print(paste0('Database reference epiweek: ', today))
 
 
 # Check if previous weeks have been processed yet:
-fname <- file.path('../clean_data/', paste0(args$type, suff, '_historical_estimated_incidence.csv'))
+fname <- file.path('../clean_data/', paste0(args$type, suff, '_historical_estimated_incidence.csv.gz'))
 if (file.exists(fname)){
-  historical <- read.csv(fname, stringsAsFactors=FALSE)
+  historical <- fread(fname, stringsAsFactors=FALSE, data.table=FALSE)
   histo.base_epiyearweek <- historical$base_epiyearweek %>%
     max()
 
@@ -355,30 +356,31 @@ for (today in epiweek.list){
   d_weekly <- d_weekly[,c('UF', 'epiyear', 'epiweek', 'Tipo', 'SRAG', 'Situation',
                           new.vars, 'L0', 'L1', 'L2', 'L3')]
   d_weekly[,'Run date'] <- Sys.Date()
-  con<-file(file.path('../clean_data/',paste0(args$type, suff,'_', today, 'estimated_incidence.csv')), encoding="UTF-8")
-  write.csv(d_weekly, file=con, na='', row.names = F)
+  con<-file(file.path('../clean_data/',paste0(args$type, suff,'_', today, 'estimated_incidence.csv.gz')),
+  encoding="UTF-8")
+  fwrite(d_weekly, file=con, na='')
   
-  con<-file(file.path(paste0('../clean_data/', args$type, suff, '_current_estimated_incidence.csv')), encoding="UTF-8")
-  write.csv(d_weekly, file=con, na='', row.names = F)
+  con<-file(file.path(paste0('../clean_data/', args$type, suff, '_current_estimated_incidence.csv.gz')), encoding="UTF-8")
+  fwrite(d_weekly, file=con, na='')
   
   df.Dmax <- dquantile %>%
     rename(Dmax = delayweeks)
   df.Dmax$Execution <- Sys.Date()
   fname <- file.path('../clean_data/', paste0(args$type, suff, '_Dmax.csv'))
-  ifelse(file.exists(fname), print.col.names <- FALSE, print.col.names <- TRUE)
-  write.table(df.Dmax, file=fname, sep=',', quote=F, na='', row.names = F, col.names = print.col.names,
-              append=T, fileEncoding='UTF-8')
+  ifelse(file.exists(fname), append <- FALSE, append <- TRUE)
+  fwrite(df.Dmax, file=fname, sep=',', quote=F, na='',
+              append=append, fileEncoding='UTF-8')
   
-  fname <- file.path('../clean_data/', paste0(args$type, suff, '_historical_estimated_incidence.csv'))
+  fname <- file.path('../clean_data/', paste0(args$type, suff, '_historical_estimated_incidence.csv.gz'))
   if (file.exists(fname)){
-    print.col.names <- FALSE
+    append <- FALSE
     file.copy(from=fname, to=paste0(fname, '.', today, '.bkp'))
   } else {
-    print.col.names <- TRUE
+    append <- TRUE
   }
   d_weekly['base_epiyearweek'] <- today
   d_weekly['base_epiyear'] <- strsplit(today, 'W')[[1]][1]
   d_weekly['base_epiweek'] <- strsplit(today, 'W')[[1]][2]
-  write.table(d_weekly[d_weekly$Situation != 'stable', ], file=fname, sep=',', quote=F, na='', row.names = F,
-              col.names = print.col.names, append=T, fileEncoding='UTF-8')
+  fwrite(d_weekly[d_weekly$Situation != 'stable', ], file=fname, sep=',', quote=F, na='',
+              append=append, fileEncoding='UTF-8')
 }

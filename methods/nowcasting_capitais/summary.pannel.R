@@ -134,9 +134,9 @@ pred.macros %>%
   left_join(pred.macros, by='CO_MACSAUD') %>%
   filter((tendencia.6s > 0 | tendencia.3s > 0) &
            Date == max(Date)) %>%
-  arrange(DS_UF_SIGLA) %>%
+  arrange(floor(CO_UF/10), DS_UF_SIGLA) %>%
   select(CO_UF, DS_UF_SIGLA) %>%
-  distinct()
+  distinct() %>% View()
 
 pred.macros %>%
   filter(Date == max(Date)) %>%

@@ -1,4 +1,5 @@
 library(tidyverse)
+library(data.table)
 library(lubridate)
 require(DescTools)
 source("../data_filter/episem.R")
@@ -41,7 +42,7 @@ tbl.ufs <- tbl.ufs %>%
   rbind(tbl.ufs)
 
 
-dadosBR <- read.csv("../clean_data/clean_data_srag_hospdeath_epiweek.csv") %>%  
+dadosBR <- fread("../clean_data/clean_data_srag_hospdeath_epiweek.csv.gz", data.table=F) %>%  
   filter(DT_SIN_PRI_epiyear >= 2020) %>%
   select(SG_UF,
          SG_UF_NOT,
@@ -104,6 +105,7 @@ dadosBR <- dadosBR %>%
            TRUE ~ DT_SIN_PRI_epiweek)
          ) %>%
   filter(DT_DIGITA_epiweek <= today.week)
+gc()
 
 epiweek.table <- dadosBR %>%
   select(DT_SIN_PRI_epiweek, epiweek, epiyear) %>%

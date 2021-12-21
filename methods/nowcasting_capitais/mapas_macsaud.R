@@ -106,8 +106,8 @@ plot.tendencia <- function(i, geom.tendencia, subtitle=element_blank()){
 }
 
 plot.transmission.threshold <- function(geom.thres, subtitle=element_blank()){
-  fill.lbl <- c('Pré-epidêmica', 'Epidêmica', 'Alta', 'Muito Alta', 'Extremamente Alta')
-  plot.title <- 'Transmissão comunitária de vírus respiratórios segundo SRAG'
+  fill.lbl <- c('Pré-epidêmico', 'Epidêmico', 'Alto', 'Muito Alto', 'Extremamente Alto')
+  plot.title <- 'Nível dos casos semanais de SRAG'
   plot.subtitle <- subtitle
   p <-  geom.thres %>%
     ggplot() +
@@ -242,7 +242,9 @@ plot.macsaude.nivel <- function(df){
   
   plt.height = 10
   plt.width = 8
-  p <- plot.transmission.threshold(geomacsaud.tendencia %>% filter(Date >= maxdate-30), subtitle=paste('Dados até a semana epi.', epi.week, epi.year, sep=' ')) + facet_wrap(~sabado, nrow=5)
+  p <- plot.transmission.threshold(geomacsaud.tendencia %>% filter(Date >= maxdate-30),
+                                   subtitle=paste('Dados até a semana epi.', epi.week, epi.year, sep=' ')) +
+    facet_wrap(~sabado, nrow=5)
   png('./Figs/MACSAUD/Mapa_transmissao_serie.png', height = plt.height, width = plt.width, units='in', res=100)
   print(p)
   grid::grid.raster(info.logo, x = 0.999, y = 0.001, just = c('right', 'bottom'), width = unit(.8, 'inches'))

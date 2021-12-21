@@ -1,6 +1,7 @@
 suppressWarnings(suppressPackageStartupMessages(library(lubridate)))
 suppressWarnings(suppressPackageStartupMessages(library(foreign)))
 suppressWarnings(suppressPackageStartupMessages(library(INLA)))
+suppressWarnings(suppressPackageStartupMessages(library(data.table)))
 suppressWarnings(suppressPackageStartupMessages(library("tidyverse")))
 suppressWarnings(suppressPackageStartupMessages(library(magick)))
 suppressWarnings(suppressPackageStartupMessages(library(grid)))
@@ -98,11 +99,11 @@ preff_list <- list(srag = 'srag', sragnofever = '.', hospdeath = 'hospdeath')
 preff <- as.character(preff_list[args$filtertype])
 
 # Read dataset
-path_file <- paste0("../clean_data/clean_data_", args$type, suff, "_epiweek.csv")
+path_file <- paste0("../clean_data/clean_data_", args$type, suff, "_epiweek.csv.gz")
 
 
 # RegionalSaude <- st_read("~/Git/PROCC /covid-19/malha/regional_saude_2019.gpkg" )
-dados_full <- read.csv( path_file, stringsAsFactors = F) %>%
+dados_full <- fread( path_file, stringsAsFactors = F, data.table=F) %>%
   filter(DT_SIN_PRI_epiyear >= 2020) %>%
   select(NU_NOTIFIC,
          CO_MUN_RES,
@@ -203,6 +204,7 @@ dados_full <- dados_full %>%
          )
   ) %>%
   left_join(tblCADMUN %>% select(CO_MUNICIP, CO_MACSAUD), by=c('CO_MUN_NOT' = 'CO_MUNICIP')) 
+gc(verbose=FALSE)
 # dados_full <- read.csv2("~/Downloads/INFLUD_09-06-2020.csv", stringsAsFactors = F)
 # dados_full2 <- read.csv2("~/Downloads/INFLUD-07-07-2020.csv", stringsAsFactors = F)
 
@@ -481,7 +483,8 @@ df.uf.age <- df.uf.age %>%
   rename(DT_SIN_PRI_epiweek=dt_event,
          casos_notificados=n,
          mediana_da_estimativa=Median) %>%
-  left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek'))
+  left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek')) %>%
+  arrange(SG_UF_NOT, DT_SIN_PRI_epiweek, fx_etaria)
 df.uf.age %>%
   saveRDS(file='uf.estimativas.fx.etaria.rds')
 df.uf.age %>%
@@ -627,6 +630,12 @@ qthreshold <- dados_full %>%
          grupo_jur = 0
   ) %>%
   rbind(qthreshold)
+
+codmun.list <- c(110020,
+                 172100)
+qthreshold <- qthreshold %>%
+  mutate(dmax = ifelse(CO_MUN_RES %in% codmun.list, dmax + 2, dmax),
+         wdw = ifelse(CO_MUN_RES %in% codmun.list, round(2.5*dmax), wdw))
 
 pred.capitais <- c()
 pred.warning <- c()
@@ -926,7 +935,8 @@ df.uf.age <- df.uf.age %>%
   rename(DT_SIN_PRI_epiweek=dt_event,
          casos_notificados=n,
          mediana_da_estimativa=Median) %>%
-  left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek'))
+  left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek')) %>%
+  arrange(CO_MUN_RES, DT_SIN_PRI_epiweek, fx_etaria)
 df.uf.age %>%
   saveRDS(file='capitais.estimativas.fx.etaria.rds')
 df.uf.age %>%
@@ -1157,8 +1167,8 @@ rm(pred.macros)
 gc(verbose=F)
 
 # Regionais de saúde do AM ------------
-run.regsaud.am()
+run.regsaud.am(qthres.probs)
 gc(verbose=F)
 
 # Regionais de saúde do SC ------------
-run.regsaud.sc()
+run.regsaud.sc(qthres.probs)

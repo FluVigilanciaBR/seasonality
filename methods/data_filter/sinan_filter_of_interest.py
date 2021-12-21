@@ -246,7 +246,7 @@ dict_dtypes = {
     'DOSE_2_COV': 'str',
     'LOTE_1_COV': 'str',
     'LOTE_2_COV': 'str',
-    'LAB_PR_COV': 'str',
+    'FAB_COV': 'str',
     'VACINA_COV': 'Int8',
     '@VERSION': 'Int64',
     '@TIMESTAMP': 'str'
@@ -467,6 +467,7 @@ def filter_db2019(df, tag=None, filtertype='srag'):
                           'RES_IGA',
                           'RES_IGG',
                           'RES_IGM',
+                          'RES_AN',
                           'LAB_AN',
                           'CO_LAB_AN',
                           'POS_AN_FLU',
@@ -487,7 +488,7 @@ def filter_db2019(df, tag=None, filtertype='srag'):
                           'TOMO_RES',
                           'TOMO_OUT',
                           'DT_TOMO']
-    tgt_cols_vac_covid = ['VACINA_COV', 'DOSE_1_COV', 'DOSE_2_COV', 'LAB_PR_COV', 'FNT_IN_COV']
+    tgt_cols_vac_covid = ['VACINA_COV', 'DOSE_1_COV', 'DOSE_2_COV', 'FAB_COV', 'FNT_IN_COV']
 
     if 'DT_RES_AN' in df.columns:
         table_compatibility(df)
@@ -569,11 +570,12 @@ def filter_db2019(df, tag=None, filtertype='srag'):
         else:
             return 0
 
-    mask = (df[['TP_FLU_PCR', 'TP_FLU_IF']].notna().sum(axis=1) >= 1)
-    df.loc[mask, 'FLU_A'] = df.loc[mask, 'FLU_A'] = (
+    mask = ((eq_notna(df.POS_IF_FLU, 1)) |
+            (eq_notna(df.POS_PCRFLU, 1)))
+    df.loc[mask, 'FLU_A'] = (
             eq_notna(df.TP_FLU_PCR[mask], 1) | eq_notna(df.TP_FLU_IF[mask], 1)
     ).astype('Int8')
-    df.loc[mask, 'FLU_B'] = df.loc[mask, 'FLU_A'] = (
+    df.loc[mask, 'FLU_B'] = (
             eq_notna(df.TP_FLU_PCR[mask], 2) | eq_notna(df.TP_FLU_IF[mask], 2)
     ).astype('Int8')
     
@@ -1026,7 +1028,7 @@ def delays_dist(df_in=pd.DataFrame(), filtertype='srag', append_file=None, dfapp
         df_out = tmp.append(df_out[out_cols], ignore_index=True, sort=False)
 
     for k, suffix in filtro_dict.items():
-        df_out.loc[(df_out.filtro >= k), out_cols].to_csv('../../data/data/delay_table%s.csv' % suffix, index=False)
+        df_out.loc[(df_out.filtro >= k), out_cols].to_csv('../../data/data/delay_table%s.csv.gz' % suffix, index=False)
 
     #### Opportunities estimation
     tgt_cols = ['UF', 'Regional', 'Regiao', 'Pais', 'dado', 'filtro', 'DT_SIN_PRI_epiyearweek', 'DT_SIN_PRI_epiyear',
@@ -1142,15 +1144,18 @@ def main(flist, sep=',', yearmax=None, filtertype='srag', append_cases=None, app
     mask_obitocovid = mask_covid & mask_obito
 
     for k, suffix in filtro_dict.items():
-        dfout[dfout.filtro >= k].to_csv('../clean_data/clean_data_srag%s_epiweek.csv' % suffix, index=False)
-        dfout[(dfout.filtro >= k) & mask_flu].to_csv('../clean_data/clean_data_sragflu%s_epiweek.csv' % suffix, index=False)
-        dfout[(dfout.filtro >= k) & mask_obitoflu].to_csv('../clean_data/clean_data_obitoflu%s_epiweek.csv' % suffix,
+        dfout[dfout.filtro >= k].to_csv('../clean_data/clean_data_srag%s_epiweek.csv.gz' % suffix, index=False)
+        dfout[(dfout.filtro >= k) & mask_flu].to_csv('../clean_data/clean_data_sragflu%s_epiweek.csv.gz' % suffix,
+                                                     index=False)
+        dfout[(dfout.filtro >= k) & mask_obitoflu].to_csv('../clean_data/clean_data_obitoflu%s_epiweek.csv.gz' % suffix,
                                                     index=False)
-        dfout[(dfout.filtro >= k) & mask_covid].to_csv('../clean_data/clean_data_sragcovid%s_epiweek.csv' % suffix,
+        dfout[(dfout.filtro >= k) & mask_covid].to_csv('../clean_data/clean_data_sragcovid%s_epiweek.csv.gz' % suffix,
                                                  index=False)
-        dfout[(dfout.filtro >= k) & mask_obitocovid].to_csv('../clean_data/clean_data_obitocovid%s_epiweek.csv' % suffix,
+        dfout[(dfout.filtro >= k) & mask_obitocovid].to_csv('../clean_data/clean_data_obitocovid%s_epiweek.csv.gz' %
+                                                            suffix,
                                                       index=False)
-        dfout[(dfout.filtro >= k) & mask_obito].to_csv('../clean_data/clean_data_obito%s_epiweek.csv' % suffix, index=False)
+        dfout[(dfout.filtro >= k) & mask_obito].to_csv('../clean_data/clean_data_obito%s_epiweek.csv.gz' % suffix,
+                                                       index=False)
     del dfout
 
     def masks(dfin: pd.DataFrame):
@@ -1186,6 +1191,8 @@ if __name__ == '__main__':
     parser.add_argument('--year', help='Maximum year', default=None)
     parser.add_argument('--filtertype', help='Default=srag. Which filter should be used? [srag, sragnofever, '
                                              'hospdeath]', default='srag')
+    parser.add_argument('--appendcases', help='Historical case file to append', default=None)
+    parser.add_argument('--appenddelay', help='Historical delay profile to append', default=None)
     args = parser.parse_args()
     print(args)
-    main(args.path[0], args.sep, args.year, args.filtertype)
+    main(args.path[0], args.sep, args.year, args.filtertype, args.appendcases, args.appenddelay)

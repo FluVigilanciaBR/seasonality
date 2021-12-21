@@ -97,11 +97,11 @@ def convert_typical(pref, suff):
 
 
 def clean_data_merge(pref, suff):
-    df = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly-incidence_w_situation.csv' % (pref + suff),
+    df = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly-incidence_w_situation.csv.gz' % (pref + suff),
                      encoding='utf-8',
                      low_memory=False)
     df['dado'] = pref
-    df_cases = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly_w_situation.csv' % (pref + suff),
+    df_cases = pd.read_csv(basedir + 'clean_data_%s_epiweek-weekly_w_situation.csv.gz' % (pref + suff),
                            encoding='utf-8', low_memory=False)
     df_cases['dado'] = pref
     df = mergedata_scale(df, df_cases)
@@ -142,12 +142,12 @@ def main(update_db=False, filtertype='srag'):
     for estimate_file in ['current_estimated', 'historical_estimated']:
         # Files current_estimated_values
         pref = preflist[0]
-        df = pd.read_csv(basedir + '%s%s_%s_incidence.csv' % (pref, suff, estimate_file), encoding='utf-8',
+        df = pd.read_csv(basedir + '%s%s_%s_incidence.csv.gz' % (pref, suff, estimate_file), encoding='utf-8',
                          low_memory=False)
         df['dado'] = pref
         df_new = convert_estimates(df, dfpop.loc[(dfpop.Sexo == 'Total'), ['UF', 'Ano', 'Total']])
         for pref in preflist[1:]:
-            df = pd.read_csv(basedir + '%s%s_%s_incidence.csv' % (pref, suff, estimate_file), encoding='utf-8',
+            df = pd.read_csv(basedir + '%s%s_%s_incidence.csv.gz' % (pref, suff, estimate_file), encoding='utf-8',
                              low_memory=False)
             df['dado'] = pref
             df = convert_estimates(df, dfpop_tot)
@@ -157,7 +157,7 @@ def main(update_db=False, filtertype='srag'):
             df_new = rolling_average(df_new)
 
         fname = '%s_values' % estimate_file + suff
-        df_new.to_csv(outdir + fname + '.csv', index=False)
+        df_new.to_csv(outdir + fname + '.csv.gz', index=False)
         if update_db:
             dfdict[fname] = df_new
 
@@ -184,7 +184,7 @@ def main(update_db=False, filtertype='srag'):
         df = clean_data_merge(pref, suff)
         df_new = df_new.append(df, ignore_index=True, sort=True)
     fname = 'clean_data_epiweek-weekly-incidence_w_situation' + suff
-    df_new.to_csv(outdir + fname + '.csv', index=False)
+    df_new.to_csv(outdir + fname + '.csv.gz', index=False)
     if update_db:
         dfdict[fname] = df_new
         migrate_from_csv_to_psql(dfs=dfdict, suff=suff)
@@ -209,7 +209,7 @@ def main(update_db=False, filtertype='srag'):
     if update_db:
         dfdict[fname] = df_new
         fname = 'delay_table' + suff
-        dfdict[fname] = pd.read_csv(outdir + fname + '.csv')
+        dfdict[fname] = pd.read_csv(outdir + fname + '.csv.gz')
         migrate_from_csv_to_psql(dfs=dfdict, basic_tables=False, suff=suff)
 
     return
