@@ -135,23 +135,25 @@ def apply_filter_alert_by_epiweek(year: int, territory_id: int, filtertype: str=
 
     df = pd.DataFrame()
     for dataset_id in range(1, 7):
-        df = df.append(
-            db.get_data(
-                dataset_id=dataset_id, scale_id=1, year=year, territory_id=territory_id, filter_type=filtertype
-            )[['dataset_id', 'territory_id', 'epiyear', 'epiweek', 'low_level', 'epidemic_level', 'high_level',
-               'very_high_level', 'situation_id']],
-            ignore_index=True
-        )
+        df = pd.concat([df,
+                        db.get_data(
+                            dataset_id=dataset_id, scale_id=1, year=year, territory_id=territory_id, filter_type=filtertype
+                        )[['dataset_id', 'territory_id', 'epiyear', 'epiweek', 'low_level', 'epidemic_level', 'high_level',
+                           'very_high_level', 'situation_id']]
+                        ],
+                       ignore_index=True
+                       )
         if year > 2009:
-            df = df.append(
-                db.get_data(
-                    dataset_id=dataset_id, scale_id=1, year=year-1, territory_id=territory_id, filter_type=filtertype
-                ).loc[lambda df: df.epiweek == max(df.epiweek[~df.situation_id.isin([1, 4])]),
-                      ['dataset_id', 'territory_id', 'epiyear', 'epiweek',
-                       'low_level', 'epidemic_level', 'high_level',
-                       'very_high_level', 'situation_id']],
-                ignore_index=True
-            )
+            df = pd.concat([df,
+                            db.get_data(
+                                dataset_id=dataset_id, scale_id=1, year=year-1, territory_id=territory_id, filter_type=filtertype
+                            ).loc[lambda df: df.epiweek == max(df.epiweek[~df.situation_id.isin([1, 4])]),
+                                  ['dataset_id', 'territory_id', 'epiyear', 'epiweek',
+                                   'low_level', 'epidemic_level', 'high_level',
+                                   'very_high_level', 'situation_id']]
+                            ],
+                           ignore_index=True
+                           )
 
     epiweek = max(df.epiweek[~df.situation_id.isin([1, 4]) & (df.epiyear == year)])
     df.loc[(df.situation_id.isin([1, 4])) & (df.epiweek > epiweek - 2) & (df.epiyear == year),
@@ -171,9 +173,11 @@ def weekly_alert_table_all(df, filtertype: str='srag'):
 
     for territory_id in sorted(df.territory_id.unique()):
         for epiyear in sorted(df.epiyear.unique()):
-            df_alert = df_alert.append(apply_filter_alert_by_epiweek(year=epiyear, territory_id=territory_id,
-                                                                     filtertype=filtertype),
-                                       ignore_index=True)
+            df_alert = pd.concat([df_alert,
+                                  apply_filter_alert_by_epiweek(year=epiyear, territory_id=territory_id,
+                                                                filtertype=filtertype)
+                                  ],
+                                 ignore_index=True)
 
     return df_alert
 

@@ -57,7 +57,7 @@ dfgrp['pool'] = 8
 dftmp = dfgrp.copy()
 dftmp.pool = 5
 
-dftmp = dfgrp.append(dftmp, ignore_index=True)
+dftmp = pd.concat([dfgrp, dftmp], ignore_index=True)
 dftmp = dftmp[(dftmp.DT_SIN_PRI_epiyear == 2020)].copy()
 
 compdfgrp = (1 - dftmp[tgt_cols]).pow(dftmp.pool, axis='index')

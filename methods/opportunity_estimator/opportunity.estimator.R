@@ -103,11 +103,14 @@ if (file.exists(fname)){
     }
     
     # Fill missing epiweeks:
-    for (y in seq(histo.base_epiyear+1, lyear)){
+    epiweek.list <- c()
+    for (y in seq(histo.base_epiyear, lyear)){
       w.start <- ifelse(y>histo.base_epiyear, 1, histo.base_epiweek+1)
       w.end <- ifelse(y<lyear, as.integer(lastepiweek(histo.base_epiyear)), today.week)
-      epiweek.list <-sapply(seq.int(w.start, w.end),
-                            FUN=function(x) paste0(histo.base_epiyear, 'W', sprintf('%02d', x)))
+      epiweek.list <-c(epiweek.list,
+                       sapply(seq.int(w.start, w.end),
+                            FUN=function(x) paste0(y, 'W', sprintf('%02d', x)))
+                       )
     }
     
   } else {
@@ -356,20 +359,19 @@ for (today in epiweek.list){
   d_weekly <- d_weekly[,c('UF', 'epiyear', 'epiweek', 'Tipo', 'SRAG', 'Situation',
                           new.vars, 'L0', 'L1', 'L2', 'L3')]
   d_weekly[,'Run date'] <- Sys.Date()
-  con<-file(file.path('../clean_data/',paste0(args$type, suff,'_', today, 'estimated_incidence.csv.gz')),
-  encoding="UTF-8")
+  con<-file.path('../clean_data/',paste0(args$type, suff,'_', today, 'estimated_incidence.csv.gz'))
   fwrite(d_weekly, file=con, na='')
   
-  con<-file(file.path(paste0('../clean_data/', args$type, suff, '_current_estimated_incidence.csv.gz')), encoding="UTF-8")
+  con<-file.path(paste0('../clean_data/', args$type, suff, '_current_estimated_incidence.csv.gz'))
   fwrite(d_weekly, file=con, na='')
   
   df.Dmax <- dquantile %>%
     rename(Dmax = delayweeks)
   df.Dmax$Execution <- Sys.Date()
   fname <- file.path('../clean_data/', paste0(args$type, suff, '_Dmax.csv'))
-  ifelse(file.exists(fname), append <- FALSE, append <- TRUE)
+  append <- file.exists(fname)
   fwrite(df.Dmax, file=fname, sep=',', quote=F, na='',
-              append=append, fileEncoding='UTF-8')
+              append=append)
   
   fname <- file.path('../clean_data/', paste0(args$type, suff, '_historical_estimated_incidence.csv.gz'))
   if (file.exists(fname)){
@@ -382,5 +384,5 @@ for (today in epiweek.list){
   d_weekly['base_epiyear'] <- strsplit(today, 'W')[[1]][1]
   d_weekly['base_epiweek'] <- strsplit(today, 'W')[[1]][2]
   fwrite(d_weekly[d_weekly$Situation != 'stable', ], file=fname, sep=',', quote=F, na='',
-              append=append, fileEncoding='UTF-8')
+              append=append)
 }

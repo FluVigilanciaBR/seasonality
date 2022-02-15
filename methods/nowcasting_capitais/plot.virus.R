@@ -10,7 +10,14 @@ options(dplyr.summarise.inform=F)
 source("../data_filter/episem.R")
 source('plot.ts.tendencia.R')
 
-int_breaks_rounded <- function(x, n = 5)  pretty(x, n)[round(pretty(x, n),1) %% 1 == 0]
+int_breaks_rounded <- function(n = 5, min.n=2, ...){
+  fxn <- function(x){
+    breaks <- round(pretty(x, n, min.n, ...),0)
+    names(breaks) <- attr(breaks, "labels")
+    breaks
+  }
+  return(fxn)
+}
 
 logo <- image_read('../report/Figs/infogripe.png')
 
@@ -95,6 +102,10 @@ suff_list <- list('srag' = '', 'sragnofever' = '_sragnofever', 'hospdeath' = '_h
 suff <- suff_list[args$filtertype]
 preff_list <- list(srag = 'srag', sragnofever = '.', hospdeath = 'hospdeath')
 preff <- as.character(preff_list[args$filtertype])
+fx.breaks=c(0, 5, 12, 18, seq(30, 80, 10), 140)
+fx.labels=c('0-4', '5-11', '12-17','18-29', '30-39', '40-49', '50-59',
+            '60-69', '70-79',
+            '80+')
 
 path_file <- paste0("../clean_data/clean_data_", args$type, suff, "_epiweek.csv.gz")
 dados_full <- fread( path_file, stringsAsFactors = F, data.table=F) %>%
@@ -130,24 +141,30 @@ dados_full <- dados_full %>%
   distinct(NU_NOTIFIC, CO_MUN_NOT, DT_NOTIFIC, .keep_all = T) %>%
   mutate(DT_SIN_PRI = ymd(DT_SIN_PRI),
          fx_etaria = as.character(cut(idade_em_anos,
-                                      breaks=c(seq(0, 80, 10), 140),
+                                      breaks=fx.breaks,
                                       right=F,
-                                      labels=as.character(seq(1,9))
+                                      labels=fx.labels
          )
          )
   )
-epiweekmax <- as.integer(lastepiweek(2020))
+
+epiweekmax <- ifelse(lyear==2020, 0, as.integer(lastepiweek(lyear-1)))
+l.addepiweek <- list('2020'=0, '2021'=53, '2022'=52)                        
+epiweek.shift <- sum(unlist(l.addepiweek[as.character(seq(2020, lyear-1))]))
 today.week.ori <- today.week
 if (lyear > 2020){
   today.week.ori <- today.week
-  today.week <- today.week + epiweekmax
+  today.week <- today.week + epiweekmax + epiweek.shift
 }
 dados_full <- dados_full %>%
   mutate(epiyear = DT_SIN_PRI_epiyear,
          epiweek = DT_SIN_PRI_epiweek,
          DT_SIN_PRI_epiweek = case_when(
-           DT_SIN_PRI_epiyear > 2020 ~ DT_SIN_PRI_epiweek + epiweekmax,
-           TRUE ~ DT_SIN_PRI_epiweek)) %>%
+           epiyear == 2020 ~ as.integer(epiweek),
+           epiyear == 2021 ~ as.integer(epiweek) + as.integer(l.addepiweek['2021']),
+           epiyear == 2022 ~ as.integer(epiweek) + as.integer(l.addepiweek['2021']) + as.integer(l.addepiweek['2022'])
+         )
+  ) %>%
   filter(DT_SIN_PRI_epiweek <= today.week) %>%
   mutate(postv = case_when(
     if_any(c(SARS2,
@@ -176,11 +193,9 @@ epiweek.table <- dados_full %>%
   arrange(DT_SIN_PRI_epiweek)
 
 epilbls <- c(1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52)
-xbreaks <- c(epilbls, epilbls + epiweekmax)
+xbreaks <- c(epilbls + epiweek.shift, epilbls + epiweekmax + epiweek.shift)
 xlbls <- c(epilbls, epilbls)
-xlimits <- c(1, dados_full %>% 
-               filter(DT_SIN_PRI_epiyear == lyear) %>%
-               select(DT_SIN_PRI_epiweek) %>% max())
+xlimits <- c(today.week-15, today.week)
   
 dados.ag <- dados_full %>%
   group_by(DT_SIN_PRI_epiweek) %>%
@@ -266,7 +281,7 @@ dados.ag <- dados_full %>%
             positivos=sum(postv, na.rm=T)) %>%
   ungroup() %>%
   bind_rows(dados.ag) %>%
-  complete(SG_UF_NOT, DT_SIN_PRI_epiweek=1:today.week, fx_etaria=as.character(1:9),
+  complete(SG_UF_NOT, DT_SIN_PRI_epiweek=1:today.week, fx_etaria,
            fill=list(SRAG=0,
                      SARS2=0,
                      VSR=0,
@@ -285,18 +300,9 @@ dados.ag <- dados_full %>%
                      positivos=0))
 dados.ag <- dados.ag %>%
   mutate(fx_etaria=factor(fx_etaria,
-                          levels = c(as.character(seq(1,9)), 'Total'),
-                          labels=c('0-9',
-                                   '10-19',
-                                   '20-29',
-                                   '30-39',
-                                   '40-49',
-                                   '50-59',
-                                   '60-69',
-                                   '70-79',
-                                   '80+',
-                                   'Total'
-                          ))) %>%
+                          levels = c(fx.labels, 'Total')
+                          )
+         ) %>%
   left_join(uf.list %>% select(CO_UF, DS_UF_SIGLA),
             by=c('SG_UF_NOT'='CO_UF'))
 rm(dados_full)
@@ -314,7 +320,7 @@ plt.age.virus <- function(uf, df=dados.ag){
     filter(CO_UF == uf) %>%
     select(DS_UF_NOME, DS_UF_SIGLA)
   plt <- df %>%
-    filter(SG_UF_NOT==uf, fx_etaria!='Total') %>%
+    filter(SG_UF_NOT==uf, fx_etaria!='Total', DT_SIN_PRI_epiweek > today.week-16) %>%
     mutate(OUTROS=BOCA+
              METAP+
              PARA1+
@@ -323,33 +329,34 @@ plt.age.virus <- function(uf, df=dados.ag){
              PARA4+
              OUTROS
     ) %>%
-    pivot_longer(cols=c(SRAG, SARS2, VSR, FLU, RINO, ADNO, OUTROS, positivos),
+    pivot_longer(cols=c(SRAG, SARS2, VSR, FLU_A, FLU_B, RINO, ADNO, OUTROS),
                  names_to='dado',
                  values_to='Casos') %>%
     mutate(dado=factor(dado, levels=c('SRAG',
-                                      'positivos',
                                       'SARS2',
                                       'VSR',
-                                      'FLU',
+                                      'FLU_A',
+                                      'FLU_B',
                                       'RINO',
                                       'ADNO',
                                       'OUTROS'),
                        labels=c('SRAG em geral',
-                                'Lab. positivo\npara vírus resp.',
                                 'SARS-CoV-2',
                                 'VSR',
-                                'FLU',
+                                'FLU A',
+                                'FLU B',
                                 'RINO',
                                 'ADENO',
                                 'OUTROS'))) %>%
     ggplot(aes(x=DT_SIN_PRI_epiweek, y=Casos, color=dado)) +
     geom_rect(aes(xmin=today.week-4, xmax=today.week, ymin=0, ymax=Inf), fill='lightgray', size=0, alpha=.5, inherit.aes=F) +
-    geom_line() +
+    geom_line(size=1.2) +
     scale_color_colorblind(name='') +
-    scale_x_continuous(breaks = xbreaks[seq(1,length(xbreaks), 2)],
-                       labels = xlbls[seq(1,length(xbreaks), 2)],
+    scale_x_continuous(breaks = xbreaks,
+                       labels = xlbls,
                        minor_breaks = waiver(),
                        limits = xlimits) +
+    scale_y_continuous(breaks = int_breaks_rounded()) +
     theme_Publication(base_size = 14, base_family='Roboto') +
     facet_wrap(~fx_etaria, scales = "free_y") +
     labs(
@@ -377,7 +384,7 @@ plt.age.virus <- function(uf, df=dados.ag){
 map(uf.list$CO_UF, plt.age.virus)
 
 plt <- dados.ag %>%
-  filter(SG_UF_NOT!=0, fx_etaria=='0-9') %>%
+  filter(SG_UF_NOT!=0, fx_etaria=='0-4', DT_SIN_PRI_epiweek > today.week-16) %>%
   mutate(OUTROS=BOCA+
            METAP+
            PARA1+
@@ -386,43 +393,44 @@ plt <- dados.ag %>%
            PARA4+
            OUTROS
   ) %>%
-  pivot_longer(cols=c(SRAG, SARS2, VSR, FLU, RINO, ADNO, OUTROS, positivos),
+  pivot_longer(cols=c(SRAG, SARS2, VSR, FLU_A, FLU_B, RINO, ADNO, OUTROS),
                names_to='dado',
                values_to='Casos') %>%
   mutate(dado=factor(dado, levels=c('SRAG',
-                                    'positivos',
                                     'SARS2',
                                     'VSR',
-                                    'FLU',
+                                    'FLU_A',
+                                    'FLU_B',
                                     'RINO',
                                     'ADNO',
                                     'OUTROS'),
                      labels=c('SRAG em geral',
-                              'Lab. positivo\npara vírus resp.',
                               'SARS-CoV-2',
                               'VSR',
-                              'FLU',
+                              'FLU A',
+                              'FLU B',
                               'RINO',
                               'ADENO',
                               'OUTROS'))) %>%
   ggplot(aes(x=DT_SIN_PRI_epiweek, y=Casos, color=dado)) +
   geom_rect(aes(xmin=today.week-4, xmax=today.week, ymin=0, ymax=Inf), fill='lightgray', size=0, alpha=.5, inherit.aes=F) +
-  geom_line() +
+  geom_line(size=1.2) +
   scale_color_colorblind(name='') +
-  scale_x_continuous(breaks = xbreaks[seq(1,length(xbreaks), 2)],
-                     labels = xlbls[seq(1,length(xbreaks), 2)],
+  scale_x_continuous(breaks = xbreaks,
+                     labels = xlbls,
                      minor_breaks = waiver(),
                      limits = xlimits) +
+  scale_y_continuous(breaks=int_breaks_rounded()) +
   theme_Publication(base_size = 22, base_family='Roboto') +
   facet_geo(~DS_UF_SIGLA, grid='br_states_grid1', scales = "free_y") +
   labs(
     x = "Semana de primeiros sintomas",
     y = "Casos de SRAG",
-    subtitle = paste0("Novos casos semanais em crianças 0-9 anos. Dados até a semana ",
+    subtitle = paste0("Novos casos semanais em crianças 0-4 anos. Dados até a semana ",
                       today.week.ori,
                       ' ',
                       lyear,
-                      '. Para semanas recentes os dados são parciais (área cinza).')) +
+                      '.\nPara semanas recentes os dados são parciais (área cinza).')) +
   theme(panel.grid.minor.x = element_line(colour="#f0f0f0",
                                           linetype=2),
         legend.position = c(.92,.2),
@@ -430,14 +438,14 @@ plt <- dados.ag %>%
         legend.text=element_text(family='Roboto', size=rel(1)),
         axis.text.x = element_text(angle=45, hjust=1)
   )
-png(filename = paste0(preff,"/Figs/UF/fig_UFs_virus_lab_0_9.png"),
-    width=27, height=18, units='in', res=100)
+png(filename = paste0(preff,"/Figs/UF/fig_UFs_virus_lab_0_4.png"),
+    width=18, height=26, units='in', res=100)
 print(plt)
-grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1, 'inches'))
+grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1.5, 'inches'))
 dev.off()
 
 plt <- dados.ag %>%
-  filter(SG_UF_NOT!=0, fx_etaria=='Total') %>%
+  filter(SG_UF_NOT!=0, fx_etaria=='Total', DT_SIN_PRI_epiweek>today.week-16) %>%
   mutate(OUTROS=BOCA+
            METAP+
            PARA1+
@@ -446,34 +454,34 @@ plt <- dados.ag %>%
            PARA4+
            OUTROS
   ) %>%
-  pivot_longer(cols=c(SRAG, SARS2, VSR, FLU, RINO, ADNO, OUTROS, positivos),
+  pivot_longer(cols=c(SRAG, SARS2, VSR, FLU_A, FLU_B, RINO, ADNO, OUTROS),
                names_to='dado',
                values_to='Casos') %>%
   mutate(dado=factor(dado, levels=c('SRAG',
-                                    'positivos',
                                     'SARS2',
                                     'VSR',
-                                    'FLU',
+                                    'FLU_A',
+                                    'FLU_B',
                                     'RINO',
                                     'ADNO',
                                     'OUTROS'),
                      labels=c('SRAG em geral',
-                              'Lab. positivo\npara vírus resp.',
                               'SARS-CoV-2',
                               'VSR',
-                              'FLU',
+                              'FLU A',
+                              'FLU B',
                               'RINO',
                               'ADENO',
                               'OUTROS'))) %>%
   ggplot(aes(x=DT_SIN_PRI_epiweek, y=Casos, color=dado)) +
   geom_rect(aes(xmin=today.week-4, xmax=today.week, ymin=0, ymax=Inf), fill='lightgray', size=0, alpha=.5, inherit.aes=F) +
-  geom_line() +
+  geom_line(size=1.2) +
   scale_color_colorblind(name='') +
-  scale_x_continuous(breaks = xbreaks[seq(1,length(xbreaks), 2)],
-                     labels = xlbls[seq(1,length(xbreaks), 2)],
+  scale_x_continuous(breaks = xbreaks,
+                     labels = xlbls,
                      minor_breaks = waiver(),
-                     limits = xlimits) +
-  theme_Publication(base_size = 22, base_family='Roboto') +
+                     limits=xlimits) +
+  theme_Publication(base_size = 24, base_family='Roboto') +
   facet_geo(~DS_UF_SIGLA, grid='br_states_grid1', scales = "free_y") +
   labs(
     x = "Semana de primeiros sintomas",
@@ -482,7 +490,7 @@ plt <- dados.ag %>%
                       today.week.ori,
                       ' ',
                       lyear,
-                      '. Para semanas recentes os dados são parciais (área cinza).')) +
+                      '.\nPara semanas recentes os dados são parciais (área cinza).')) +
   theme(panel.grid.minor.x = element_line(colour="#f0f0f0",
                                           linetype=2),
         legend.position = c(.92,.2),
@@ -491,7 +499,8 @@ plt <- dados.ag %>%
         axis.text.x = element_text(angle=45, hjust=1)
   )
 png(filename = paste0(preff,"/Figs/UF/fig_UFs_virus_lab.png"),
-    width=27, height=18, units='in', res=100)
+    width=18, height=26, units='in', res=100)
 print(plt)
-grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1, 'inches'))
+grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1.5, 'inches'))
 dev.off()
+

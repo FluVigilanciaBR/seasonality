@@ -19,7 +19,7 @@ def mergedata_scale(df, df_cases):
     df['escala'] = 'incidência'
     df_cases['escala'] = 'casos'
 
-    df = df.append(df_cases, ignore_index=True, sort=True)
+    df = pd.concat([df, df_cases], ignore_index=True, sort=True)
 
     return df
 
@@ -151,7 +151,7 @@ def main(update_db=False, filtertype='srag'):
                              low_memory=False)
             df['dado'] = pref
             df = convert_estimates(df, dfpop_tot)
-            df_new = df_new.append(df, ignore_index=True, sort=True)
+            df_new = pd.concat([df_new, df], ignore_index=True, sort=True)
 
         if estimate_file == 'current_estimated':
             df_new = rolling_average(df_new)
@@ -164,7 +164,7 @@ def main(update_db=False, filtertype='srag'):
     df_new = convert_report(preflist[0], suff)
     for pref in preflist[1:]:
         df = convert_report(pref, suff)
-        df_new = df_new.append(df, ignore_index=True, sort=True)
+        df_new = pd.concat([df_new, df], ignore_index=True, sort=True)
     fname = 'mem-report' + suff
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
@@ -173,7 +173,7 @@ def main(update_db=False, filtertype='srag'):
     df_new = convert_typical(preflist[0], suff)
     for pref in preflist[1:]:
         df = convert_typical(pref, suff)
-        df_new = df_new.append(df, ignore_index=True, sort=True)
+        df_new = pd.concat([df_new, df], ignore_index=True, sort=True)
     fname = 'mem-typical' + suff
     df_new.to_csv(outdir + fname + '.csv', index=False)
     if update_db:
@@ -182,7 +182,7 @@ def main(update_db=False, filtertype='srag'):
     df_new = clean_data_merge(preflist[0], suff)
     for pref in preflist[1:]:
         df = clean_data_merge(pref, suff)
-        df_new = df_new.append(df, ignore_index=True, sort=True)
+        df_new = pd.concat([df_new, df], ignore_index=True, sort=True)
     fname = 'clean_data_epiweek-weekly-incidence_w_situation' + suff
     df_new.to_csv(outdir + fname + '.csv.gz', index=False)
     if update_db:

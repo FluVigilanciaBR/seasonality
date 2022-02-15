@@ -373,7 +373,7 @@ if (args$plot){
 
 #### Prepare data for timeseries and tables ####
 df.current <- fread(paste0(data.folder, 'current_estimated_values', suff_out, '.csv.gz'), stringsAsFactors = F,
-                    data.table=F)
+                    data.table=F, check.names = T)
 df.typical <- read.csv(paste0(data.folder, 'mem-typical', suff_out, '.csv'), stringsAsFactors = F)
 df.report <- read.csv(paste0(data.folder, 'mem-report', suff_out, '.csv'), stringsAsFactors = F)
 
@@ -465,13 +465,13 @@ if (args$plot){
     print(t.id)
     df.plot.ts <- df.current2plot %>%
       select(-Tipo) %>%
-      filter(territory_id == t.id, epiyear >= min(2020, args$epiyear)) %>%
+      filter(territory_id == t.id, epiyear >= min(2021, args$epiyear)) %>%
       right_join(df.typical %>% filter(territory_id == t.id))
     df.plot.ts <- df.report %>%
       select(territory_id, dataset_id, scale_id, limiar.pré.epidêmico, intensidade.alta, intensidade.muito.alta) %>%
       right_join(df.plot.ts) %>%
       mutate(epiweek.plot = case_when(
-        epiyear == 2020 ~ epiweek,
+        epiyear == 2021 ~ epiweek,
         TRUE ~ epiweek + last.year.maxweek
       ))
     plot.timeseries(df.plot.ts, ifelse(t.id == 0, 2, 1), last.year.maxweek)
@@ -625,7 +625,7 @@ br.report <- df.table %>%
 #   select(dado, FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek)
 df.lab.orig <- fread(paste0(data.folder, 'clean_data_epiweek-weekly-incidence_w_situation', suff_out, '.csv.gz'),
                      stringsAsFactors = F,
-                     data.table=F) %>%
+                     data.table=F, check.names = T) %>%
   filter(epiyear >= 2020 & escala == 'casos' & sexo == 'Total' & UF == 'BR') %>%
   select(dado, FLU_A, FLU_B, VSR, SARS2, DELAYED, POSITIVE_CASES, NEGATIVE, SRAG, epiweek, epiyear)
 
@@ -654,10 +654,7 @@ df.lab <- df.lab.orig %>%
          dado = 'obito',
          ano = args$epiyear) %>%
   rbind(df.lab)
-for (y in df.lab.orig %>%
-     filter(epiyear < args$epiyear) %>%
-     select(epiyear) %>%
-     unique()){
+for (y in unique(df.lab.orig$epiyear[df.lab.orig$epiyear < args$epiyear])){
   df.lab <- df.lab.orig %>%
     filter(dado == 'srag' & epiyear == y) %>%
     select(-dado, -epiyear) %>%
@@ -685,6 +682,37 @@ for (y in df.lab.orig %>%
            ano = y) %>%
     rbind(df.lab)
 }
+df.lab <- df.lab.orig %>%
+  arrange(epiyear, epiweek) %>%
+  filter(dado == 'srag') %>%
+  tail(4) %>%
+  select(-dado, -epiyear) %>%
+  colSums(na.rm = T) %>%
+  t() %>%
+  as.data.frame() %>%
+  mutate(FLU_A = 100*FLU_A/POSITIVE_CASES,
+         FLU_B = 100*FLU_B/POSITIVE_CASES,
+         VSR = 100*VSR/POSITIVE_CASES,
+         SARS2 = 100*SARS2/POSITIVE_CASES,
+         dado = 'srag',
+         ano = 4) %>%
+  rbind(df.lab)
+df.lab <- df.lab.orig %>%
+  arrange(epiyear, epiweek) %>%
+  filter(dado == 'obito') %>%
+  tail(4) %>%
+  select(-dado, -epiyear) %>%
+  colSums(na.rm = T) %>%
+  t() %>%
+  as.data.frame() %>%
+  mutate(FLU_A = 100*FLU_A/POSITIVE_CASES,
+         FLU_B = 100*FLU_B/POSITIVE_CASES,
+         VSR = 100*VSR/POSITIVE_CASES,
+         SARS2 = 100*SARS2/POSITIVE_CASES,
+         dado = 'obito',
+         ano = 4) %>%
+  rbind(df.lab)
+
 
 if (args$filtertype == 'sragnofever'){
   pred.macros <- readRDS('../nowcasting_capitais/macros_current.rds') %>%

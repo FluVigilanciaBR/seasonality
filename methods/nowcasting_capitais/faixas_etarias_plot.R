@@ -4,6 +4,9 @@ library(tidyverse)
 source('../report/theme.publication.R')
 
 plt.age.prop.pointrange <- function(df, uf=0, sigla='BR'){
+  colorcount=length(unique(df$age_cat))
+  getPalette = colorRampPalette(colorblind_pal()(min(8, colorcount)))
+  
   plt <- df %>% 
     filter(is.finite(age_cat), SG_UF == uf) %>%
     ggplot(aes(x = DT_SIN_PRI_epiweek, fill = age_cat, color=age_cat)) + 
@@ -14,12 +17,13 @@ plt.age.prop.pointrange <- function(df, uf=0, sigla='BR'){
     # geom_line(aes(y=q50i), color='darkgrey', linetype=2) + 
     geom_pointrange(aes(y=prop_median, ymin=prop_li, ymax=prop_ls), fatten=.75) + 
     geom_vline(xintercept = as.Date.character('2020-12-01'), linetype='dashed', size=1.25) + 
-    scale_fill_colorblind() +
-    scale_color_colorblind() +
+    scale_fill_manual(values=getPalette(colorcount), guide=F) +
+    scale_color_manual(values=getPalette(colorcount), guide=F) +
     scale_x_continuous(breaks = xbreaks, labels = xlbls, limits = xlimits, name=NULL) +
+    scale_y_continuous(labels=scales::percent_format(accuracy=1)) +
     labs(x='Semana de primeiros sintomas', y='Proporção', color='Faixa\netária', fill='Faixa\netária') +
     theme_Publication() + 
-    ggtitle(sigla) +
+    ggtitle(sigla, subtitle='Proporção dos casos semanais entre as faixas etárias de interesse.') +
     facet_grid(rows='age_cat', scale='free_y')
   return(plt)
 }
@@ -52,7 +56,7 @@ plt.age.inc <- function(df, facet_cols=c('inc', 'inc.obitos', 'let'), facet_labs
   return(plt)  
 }
 
-plot.nowcast <- function(pred.summy, Fim, nowcast = T){
+plot.nowcast <- function(pred.summy, Fim, nowcast = T, xlimits){
   
   if(!nowcast){
     # Time series
@@ -103,4 +107,27 @@ plot.nowcast <- function(pred.summy, Fim, nowcast = T){
           legend.text = element_text(family = 'Roboto'))
   
   p0.day
+}
+
+plt.age.inc.rows <- function(df, xlabs='Semana de primeiros sintomas',
+                        ylabs='Incidência de SRAG por COVID-19 (por 100mil hab.)',
+                        title,
+                        subtitle){
+  colorcount=length(unique(df$age_cat))
+  getPalette = colorRampPalette(colorblind_pal()(min(8, colorcount)))
+  
+  plt <- df %>%
+    ggplot(aes(x=DT_SIN_PRI_epiweek,
+               y=valor,
+               color=age_cat)) +
+    geom_line() +
+    scale_color_manual(palette=getPalette, guide="none") +
+    scale_x_continuous(breaks = xbreaks, labels = xlbls, limits = xlimits, name=NULL) +
+    labs(y=ylabs,
+         x=xlabs) +
+    theme_Publication() +
+    facet_grid(rows='age_cat', scales='free_y') +
+    ggtitle(title, subtitle=subtitle)
+  
+  return(plt)  
 }

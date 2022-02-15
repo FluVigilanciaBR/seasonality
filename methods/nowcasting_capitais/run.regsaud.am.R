@@ -83,7 +83,7 @@ run.regsaud.am <- function(qthres.probs=0.95){
       )
     title0 <- tblREGSAUDAM$no_regiao_am[k]
     
-    for (gpj in c(0, 1, 2, 3)){
+    for (gpj in c(0)){
       if (gpj > 0){
         dadosBR <- dadosBR0 %>%
           filter(grupo_jur == gpj)
@@ -147,7 +147,9 @@ run.regsaud.am <- function(qthres.probs=0.95){
                  grupo_jur = gpj)
         pred.regsaud.am <- pred.regsaud.am %>%
           bind_rows(pred.srag.summy)
-        p.now.srag <- plot.nowcast(pred.srag.summy, Fim=today.week ) +
+        p.now.srag <- plot.nowcast(pred.srag.summy  %>%
+                                     filter(between(Date, xlimits[1], xlimits[2])),
+                                   Fim=today.week ) +
           ylab("Incidência de SRAG (por 100mil hab.)") +
           xlab("Semana de primeiros sintomas") +
           scale_x_continuous(breaks = xbreaks, labels = xlbls, limits = xlimits) +
@@ -155,6 +157,7 @@ run.regsaud.am <- function(qthres.probs=0.95){
           ggtitle(paste0(tblREGSAUDAM$DS_UF_SIGLA[k], ": ", title)) +
           theme(plot.margin=unit(c(1,0,5,5), units='pt'),
                 axis.text = element_text(size = rel(1)),
+                axis.text.x = element_text(angle=45, hjust=1),
                 legend.margin = margin(0,0,0,0, unit='pt'),
                 legend.justification=c(0,1),
                 legend.position=c(0.015, 1.05),
@@ -162,7 +165,8 @@ run.regsaud.am <- function(qthres.probs=0.95){
                 legend.key = element_blank(),
                 legend.key.size = unit(14, 'pt'),
                 legend.text = element_text(family = 'Roboto', size = rel(1)))
-        p.nivel <- plot.ts.tendencia(df = pred.srag.summy,
+        p.nivel <- plot.ts.tendencia(df = pred.srag.summy  %>%
+                                       filter(between(Date, xlimits[1], xlimits[2])),
                                      xbreaks = xbreaks,
                                      xlbls = xlbls,
                                      xlimits = xlimits)
@@ -186,7 +190,8 @@ run.regsaud.am <- function(qthres.probs=0.95){
     write.csv('regsaudam.failed.csv', row.names=F)
   
   pred.regsaud.am <- pred.regsaud.am %>%
-    left_join(tblREGSAUDAM %>% select(co_regsaud_am, no_regiao_am), by='co_regsaud_am')
+    left_join(tblREGSAUDAM %>% select(co_regsaud_am, no_regiao_am), by='co_regsaud_am') %>%
+    left_join(epiweek.table, by=c('Date' = 'DT_SIN_PRI_epiweek'))
   saveRDS(pred.regsaud.am, paste0(preff,'/estimativas_regsaud_am', lyear, '_', today.week, '.rds'))
   saveRDS(pred.regsaud.am, paste0(preff,'/estimativas_regsaud_am.rds'))
   
@@ -209,16 +214,8 @@ run.regsaud.am <- function(qthres.probs=0.95){
     bind_rows(pred.regsaud.am)
   
   pred.regsaud.am %>%
-    mutate(Epiyear = case_when(
-      Date <= epiweekmax ~ 2020,
-      TRUE ~ 2021
-    ),
-    Date = case_when(
-      Epiyear == 2020 ~ Date,
-      TRUE ~ Date - epiweekmax
-    )) %>%
-    rename('Ano epidemiológico' = Epiyear,
-           'Semana epidemiológica' = Date,
+    rename('Ano epidemiológico' = epiyear,
+           'Semana epidemiológica' = epiweek,
            'casos estimados' = full_estimate,
            IC95I = LI,
            IC95S = LS,
@@ -226,9 +223,9 @@ run.regsaud.am <- function(qthres.probs=0.95){
            'média móvel' = rolling_average,
            'tendência de curto prazo' = tendencia.3s,
            'tendência de longo prazo' = tendencia.6s,
+           'Grupo Jurídico' = grupo_jur,
            'População' = populacao) %>%
-    select(-Median, -Casos) %>%
+    select(-Median, -Casos, -Date) %>%
     write_csv2(paste0(preff,'/regsaud_am_serie_estimativas_tendencia_sem_filtro_febre.csv'), na = '')
-  
   
 }

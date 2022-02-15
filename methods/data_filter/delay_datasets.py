@@ -68,7 +68,7 @@ def main(filtertype='srag'):
         module_logger.info('Processing dataset: %s', dataset_name)
         dftmp = readtable('../clean_data/clean_data_%s%s_epiweek.csv.gz' % (dataset_name, suff))
         dftmp['dado'] = dataset_name
-        df = df.append(dftmp, sort=True)
+        df = pd.concat([df, dftmp], sort=True)
         module_logger.info('... DONE')
 
     df.loc[pd.isnull(df.UF), 'UF'] = 99

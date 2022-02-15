@@ -16,6 +16,7 @@ from settings import EMAIL, SERVER, SERVERNEW, REPORT
 from data_filter.episem import episem, lastepiweek
 
 
+os.environ['MODIN_CPUS'] = "3"
 logger = logging.getLogger('update_system')
 logger.setLevel(logging.DEBUG)
 logger_fname = 'InfoGripe_system_update.log'
@@ -821,7 +822,7 @@ def generate_public_datasets(filtertype='srag'):
             check=True, shell=True)
         run(['cp --force ./report/Boletim_InfoGripe_atual%s.pdf %s/.' % (suff_out[filtertype], public_report_folder)],
             check=True, shell=True)
-        run(['cp --force ./report/Boletim_InfoGripe_SE%s%s%s.pdf %s/boletins_anteriores/.' % (
+        run(['cp --force ./report/Boletim_InfoGripe_SE%s%02d%s.pdf %s/boletins_anteriores/.' % (
             epiweekmax.epiyear.values[0], epiweekmax.epiweek.values[0], suff_out[filtertype], public_report_folder)],
             check=True, shell=True)
 
@@ -831,8 +832,13 @@ def generate_public_datasets(filtertype='srag'):
             run(['cp --force ./nowcasting_capitais/Figs/UF/Mapa_ufs_tendencia.png %s/UF/.' %
                  public_figs_folder],
                 check=True, shell=True)
-            run(['cp --force ./nowcasting_capitais/estados_e_pais_serie_estimativas_tendencia_sem_filtro_febre.csv '
-                 '%s/.' %
+            run(['cp --force ./nowcasting_capitais/estados_e_pais_serie_estimativas_tendencia_sem_filtro_febre.csv %s/.' %
+                 public_data_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/estados_e_pais_serie_estimativas_fx_etaria_sem_filtro_febre.csv %s/.' %
+                 public_data_folder],
+                check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/casos_semanais_fx_etaria_virus_sem_filtro_febre.csv %s/.' %
                  public_data_folder],
                 check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/Figs/Capitais/fig*.png %s/Capitais/.' % public_figs_folder],
@@ -843,17 +849,18 @@ def generate_public_datasets(filtertype='srag'):
             run(['cp --force ./nowcasting_capitais/capitais_serie_estimativas_tendencia_sem_filtro_febre.csv %s/.' %
                  public_data_folder],
                 check=True, shell=True)
+            run(['cp --force ./nowcasting_capitais/capitais_serie_estimativas_fx_etaria_sem_filtro_febre.csv %s/.' %
+                 public_data_folder],
+                check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/fig*.png %s/Macrorregioes_de_saude/.' % public_figs_folder],
                 check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa*tendencia.png %s/Macrorregioes_de_saude/.' %
                  public_figs_folder],
                 check=True, shell=True)
-            run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa*tendencia_horizontal.png '
-                 '%s/Macrorregioes_de_saude/.' %
+            run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa*tendencia_horizontal.png %s/Macrorregioes_de_saude/.' %
                  public_figs_folder],
                 check=True, shell=True)
-            run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa_transmissao*png '
-                 '%s/Macrorregioes_de_saude/.' %
+            run(['cp --force ./nowcasting_capitais/Figs/MACSAUD/Mapa_transmissao*png %s/Macrorregioes_de_saude/.' %
                  public_figs_folder],
                 check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/macsaud_serie_estimativas_tendencia_sem_filtro_febre.csv %s/.' %

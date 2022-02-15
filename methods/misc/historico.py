@@ -53,7 +53,7 @@ def aggepiweek(dfin, col, w, out_pref='SRAG_'):
     dftmpbr.rename(columns={col: 'epiweek', 0: '%ss%s' % (out_pref, w)}, inplace=True)
     dftmpbr['UF'] = 'BR'
 
-    dftmp = dftmp.append(dftmpbr, ignore_index=True, sort=False)
+    dftmp = pd.concat([dftmp, dftmpbr], ignore_index=True, sort=False)
     dftmp.epiweek = dftmp.epiweek.astype(int)
 
     return dftmp

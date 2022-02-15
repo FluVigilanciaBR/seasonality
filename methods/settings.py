@@ -42,6 +42,6 @@ if not os.path.exists(settings_path):
     raise Exception('Please configure your settings file (%s)' % settings_path)
 
 with open(os.path.join(settings_path), 'r') as f:
-    globals().update(yaml.load(f))
+    globals().update(yaml.safe_load(f))
 
 REPORT['CCO'] = ', '.join(mailing_list.lista_de_emails.values)

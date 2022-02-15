@@ -100,13 +100,13 @@ nowcast.INLA <- function(dados.ag, model.day, zero.inflated = TRUE, ...){
   if (zero.inflated){
     family = "zeroinflatednbinomial1"
     control.family = list( 
-      hyper = list("theta1" = list(prior = "loggamma", param = c(0.1, 0.1)),
+      hyper = list("theta1" = list(prior = "loggamma", param = c(0.01, 0.01)),
                    "theta2" = list(prior = "gaussian", param = c(0, 0.4)))
     )
   } else {
     family = 'nbinomial'
     control.family = list( 
-                         hyper = list("theta" = list(prior = "loggamma", param = c(0.1, 0.1)))
+                         hyper = list("theta" = list(prior = "loggamma", param = c(0.01, 0.01)))
                        )
   }
   while (hess.min <= 0 & trials < 50){
@@ -265,6 +265,11 @@ nowcasting_age <- function(dados.age, n.samples=1000, ...){
   # Auxiliar function selecionando um pedaco do dataset
   gg.age <- function(x, dados.gg, idx){
     data.aux <- dados.gg
+    fx_etaria.zero.cases <- dados.gg %>%
+      group_by(fx_etaria.num) %>%
+      dplyr::summarise(n=sum(Y, na.rm=T)) %>%
+      ungroup()
+    fx_etaria.zero.cases <- fx_etaria.zero.cases$fx_etaria.num[fx_etaria.zero.cases$n==0]
     Tmin <- min(dados.gg$Time[idx])
     data.aux$Y[idx] <- x
     data.aggregated <- data.aux %>%
@@ -272,6 +277,7 @@ nowcasting_age <- function(dados.age, n.samples=1000, ...){
       # do domingo da respectiva ultima epiweek
       # com dados faltantes
       filter(Time >= Tmin  ) %>%
+      mutate(Y = ifelse(fx_etaria.num %in% fx_etaria.zero.cases, 0, Y)) %>%
       group_by(Time, dt_event, fx_etaria, fx_etaria.num) %>% 
       dplyr::summarise( 
         Y = sum(Y), .groups = "keep"

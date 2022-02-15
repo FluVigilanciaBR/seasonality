@@ -26,7 +26,7 @@ dfdelays.UF = dfdelays.UF.astype(int).astype(str)
 dftmp = dfdelays[['UF', 'epiweek', 'SRAG', 'delay']].groupby(by=['epiweek', 'delay'], as_index=False).agg(sum)
 dftmp['UF'] = 'BR'
 
-dfdelays = dfdelays.append(dftmp, ignore_index=True, sort=False)
+dfdelays = pd.concat([dfdelays, dftmp], ignore_index=True, sort=False)
 
 dfpop = pd.read_csv('methods/data/populacao_uf_regional_atual.csv')
 dfdelays = dfdelays.merge(dfpop[['Código', 'Total']].rename(columns={'Código': 'UF', 'Total': 'populacao'}),

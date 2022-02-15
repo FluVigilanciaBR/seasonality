@@ -40,7 +40,9 @@ def extract_quantile(dforig=pd.DataFrame, filtertype='srag'):
 
                 dfqtmp = dfqtmp.merge((np.ceil(dftmp[out_cols].groupby(out_cols[0:2]).quantile(.9))).reset_index()[
                     out_cols], on=[tgt_col, 'dado'], how='left').fillna(0)
-                dfquant = dfquant.append(dfqtmp.rename(columns={tgt_col: 'UF'}), ignore_index=True, sort=False)
+                dfquant = pd.concat([dfquant, dfqtmp.rename(columns={tgt_col: 'UF'})],
+                                    ignore_index=True,
+                                    sort=False)
 
     dfquant.sort_values(by=['dado', 'UF', 'epiyearweek'], inplace=True)
     dfquant.to_csv('../clean_data/sinpri2digita_quantiles%s.csv' % suff, index=False)
@@ -162,25 +164,30 @@ def createtable(df_in = pd.DataFrame()):
 
         if len(localitylist) > 1:
             for loc in localitylist[1:]:
-                dftmp = dftmp.append(dfallweeks, ignore_index=True, sort=False).fillna(loc)
+                dftmp = pd.concat([dftmp, dfallweeks], ignore_index=True, sort=False).fillna(loc)
         dftmp.sort_values(by=['dado', locality, 'epiyear', 'epiweek'], inplace=True)
 
         grp_cols = [locality, 'epiyearweek', 'epiyear', 'epiweek', 'dado']
-        delay_table = df[grp_cols].groupby(grp_cols, as_index=False).size().reset_index()
-        delay_table.rename(columns={0: 'Notifications'}, inplace=True)
+        delay_table = df[grp_cols].groupby(grp_cols, as_index=False).size()
+        delay_table.rename(columns={'size': 'Notifications'}, inplace=True)
 
         for k in range(0, 27):
-            aux = df.loc[df.delayweeks == k, ].groupby(grp_cols, as_index=False).size().reset_index()
-            aux.rename(columns={0: 'd%s' % k}, inplace=True)
+            aux = df.loc[df.delayweeks == k, ].groupby(grp_cols, as_index=False).size()
+            aux.rename(columns={'size': 'd%s' % k}, inplace=True)
             delay_table = delay_table.merge(aux, how='left', on=grp_cols).fillna(0)
+
+        if locality == 'UF':
+            delay_table.UF = delay_table.UF.astype(int).astype(str)
+            dftmp.UF = dftmp.UF.astype(int).astype(str)
 
         delay_table = dftmp[grp_cols].merge(delay_table, how='left', on=grp_cols).fillna(0)
         delay_table['Notifications_within_26w'] = delay_table[dcols].sum(axis=1)
-        tbl = tbl.append(delay_table.rename(columns={locality: 'UF'}), ignore_index=True, sort=False)
+        tbl = pd.concat([tbl, delay_table.rename(columns={locality: 'UF'})],
+                        ignore_index=True, sort=False)
 
     tbl['date'] = tbl[['epiyear', 'epiweek']].apply(lambda x: epiweek2date(x[0], x[1]), axis=1)
 
-    return(tbl)
+    return tbl
 
 
 def main(fname, locality='UF'):

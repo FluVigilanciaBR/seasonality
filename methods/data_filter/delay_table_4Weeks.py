@@ -33,7 +33,8 @@ def cumhistfull(x):
     dfcumhist = pd.DataFrame([[a, b] for a, b in zip(range(0, min(xlim, 9)), h[0:min(xlim, 9)])],
                              columns=['Weeks', 'Cumulative'])
     if xlim > 9:
-        dfcumhist = dfcumhist.append(pd.DataFrame([{'Weeks': '> 8', 'Cumulative': 100}]), sort=True)
+        dfcumhist = pd.concat([dfcumhist, pd.DataFrame([{'Weeks': '> 8', 'Cumulative': 100}])],
+                              sort=True)
     return dfcumhist
 
 

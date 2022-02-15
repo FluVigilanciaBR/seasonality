@@ -1,3 +1,4 @@
+require(data.table)
 require(tidyverse)
 require(geofacet)
 require(purrr)
@@ -49,16 +50,13 @@ if (args$date == 'max'){
 lyear <- as.integer(strsplit(today, 'W')[[1]][1])
 today.week <- as.integer(strsplit(today, 'W')[[1]][2])
 
-epiweekmax <- as.integer(lastepiweek(2020))
+epiweekmax <- as.integer(lastepiweek(lyear-1))
 today.week.ori <- today.week
-if (lyear > 2020){
-  today.week.ori <- today.week
-  today.week <- today.week + epiweekmax
-}
+today.week <- today.week + epiweekmax
 epiweek.start <- today.week - 40
 
-dados_full <- read.csv('../clean_data/clean_data_srag_hospdeath_epiweek.csv') %>%
-  filter(DT_SIN_PRI_epiyear >= 2020) %>%
+dados_full <- fread('../clean_data/clean_data_srag_hospdeath_epiweek.csv.gz', data.table=F) %>%
+  filter(DT_SIN_PRI_epiyear >= ifelse(today.week.ori<41, lyear-1, lyear)) %>%
   select(SG_UF_NOT,
          CO_MUN_NOT,
          DT_SIN_PRI_epiweek,
@@ -75,15 +73,15 @@ dados_full <- read.csv('../clean_data/clean_data_srag_hospdeath_epiweek.csv') %>
   distinct(NU_NOTIFIC, DT_NOTIFIC, CO_MUN_NOT, .keep_all = T) %>%
   mutate(
     DT_SIN_PRI_epiweek = case_when(
-      DT_SIN_PRI_epiyear == 2021 ~ as.numeric(DT_SIN_PRI_epiweek) + epiweekmax,
+      DT_SIN_PRI_epiyear == lyear ~ as.numeric(DT_SIN_PRI_epiweek) + epiweekmax,
       TRUE ~ as.numeric(DT_SIN_PRI_epiweek)
     ),
     DT_INTERNA_epiweek = case_when(
-      DT_INTERNA_epiyear == 2021 ~ as.numeric(DT_INTERNA_epiweek) + epiweekmax,
+      DT_INTERNA_epiyear == lyear ~ as.numeric(DT_INTERNA_epiweek) + epiweekmax,
       TRUE ~ as.numeric(DT_INTERNA_epiweek)
     ),
     DT_DIGITA_epiweek = case_when(
-      DT_DIGITA_epiyear == 2021 ~ as.numeric(DT_DIGITA_epiweek) + epiweekmax,
+      DT_DIGITA_epiyear == lyear ~ as.numeric(DT_DIGITA_epiweek) + epiweekmax,
       TRUE ~ as.numeric(DT_DIGITA_epiweek)
     ),
     Interna2Digita_DelayWeeks = DT_DIGITA_epiweek - DT_INTERNA_epiweek,

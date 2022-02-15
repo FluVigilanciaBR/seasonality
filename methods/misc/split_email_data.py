@@ -6,7 +6,6 @@ import os
 import argparse
 import logging
 import re
-import zipfile
 import pandas as pd
 from argparse import RawDescriptionHelpFormatter
 from datetime import date
@@ -16,7 +15,6 @@ from patoolib import extract_archive
 from subprocess import run
 
 module_logger = logging.getLogger('update_system.email_extract')
-
 
 def remove_whitespace(x):
     if isinstance(x, object):
@@ -86,7 +84,7 @@ def write_to_folder(df, year, dir=None, append=False):
 
     output = os.path.join(dir, '..', 'data', 'INFLUD%s.csv' % year)
     if append:
-        df = df.append(pd.read_csv(output, dtype=df.dtypes.to_dict()), ignore_index=True, sort=False)
+        df = pd.concat([df, pd.read_csv(output, dtype=df.dtypes.to_dict())], ignore_index=True, sort=False)
     df.columns = df.columns.str.upper()
     df.to_csv(output, index=False, encoding='utf-8', date_format='%Y-%m-%d')
     output = os.path.join(os.path.expanduser('~'),
@@ -162,7 +160,8 @@ def extract_csv(dir, sep=',', year=None):
         df = date_cleanup(df, dt_cols)
 
         write_to_folder(df[df.DT_SIN_PRI < '2021-01-03'], 2020, cwd)
-        write_to_folder(df[df.DT_SIN_PRI >= '2021-01-03'], 2021, cwd)
+        write_to_folder(df[(df.DT_SIN_PRI >= '2021-01-03') & (df.DT_SIN_PRI <= '2022-01-01')], 2021, cwd)
+        write_to_folder(df[(df.DT_SIN_PRI >= '2022-01-02')], 2022, cwd)
         run(['rm', '-f', dir+file], check=True)
 
     os.chdir(cwd)

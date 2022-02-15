@@ -74,9 +74,9 @@ generate.estimates <- function(delay.tbl.tmp.ori, Dmax, do.plots=F, uf='tmp'){
     # )
     output <- inla(model, family = "zeroinflatednbinomial1", data = delay.inla.trian,
                    control.predictor = list(link = 1, compute = T),
-                   control.compute = list( config = T, waic=TRUE, dic=TRUE),
+                   control.compute = list( config = T, waic=F, dic=F, openmp.strategy='huge'),
                    control.family = list( 
-                     hyper = list("theta1" = list(prior = "loggamma", param = c(0.1, 0.1)),
+                     hyper = list("theta1" = list(prior = "loggamma", param = c(0.01, 0.01)),
                                   "theta2" = list(prior = "gaussian", param = c(0, 0.4)))
                    ),
                    control.inla = list(h = h.value)

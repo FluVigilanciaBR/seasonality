@@ -79,8 +79,8 @@ def create_brackets(fname):
     dfibge_regs_ofi = dfibge_regs_ofi[~(dfibge_regs_ofi['Código'] == 'BR')]
 
     dfibge = dfibge[~(dfibge['Código'] == 0)]
-    dfibge = dfibge.append(dfibge_regs, sort=True)
-    dfibge = dfibge.append(dfibge_regs_ofi, sort=True)
+    dfibge = pd.concat([dfibge, dfibge_regs], sort=True)
+    dfibge = pd.concat([dfibge, dfibge_regs_ofi], sort=True)
 
     dfibge = dfibge[['Código', 'Sigla', 'UF', 'Região', 'Região oficial', 'Ano', 'Sexo', 'Total']+age_cols].copy()
     dfibge = dfibge.sort_values(by=['Código', 'Ano', 'Sexo'], axis=0).reset_index().drop('index', axis=1)

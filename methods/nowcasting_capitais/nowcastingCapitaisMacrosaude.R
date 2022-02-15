@@ -92,6 +92,16 @@ tblCADMUN <- tblmumpop %>%
   transmute(CO_MUNICIP = codmun, Populacao = Total) %>%
   right_join(tblCADMUN)
   
+# fx.breaks=c(seq(0, 80, 10), 140)
+# fx.labels=c('0-9', '10-19','20-29', '30-39', '40-49', '50-59',
+#             '60-69', '70-79', '80+')
+
+fx.breaks=c(0, 5, 12, 18, seq(30, 80, 10), 140)
+fx.labels=c('0-4', '5-11', '12-17','18-29', '30-39', '40-49', '50-59',
+            '60-69', '70-79',
+            '80+')
+fx.labels.num=as.character(seq(1,length(fx.breaks)-1))
+
 # Suffix filter based on filtertype
 suff_list <- list('srag' = '', 'sragnofever' = '_sragnofever', 'hospdeath' = '_hospdeath')
 suff <- suff_list[args$filtertype]
@@ -170,11 +180,13 @@ dados_full <- fread( path_file, stringsAsFactors = F, data.table=F) %>%
          CLASSI_FIN,
          CRITERIO,
          SinPri2Digita_DelayWeeks)
-dados_full %>%
-  filter(SG_UF_NOT == 13) %>%
-  saveRDS(paste0('~/ownCloud/Fiocruz/Influenza/Estados/Amazonas/dados/clean_data_sragnofever_amazonas_',
-                 str_remove_all(args$date, '-'),
-                 '.rds'))
+if (args$filtertype == 'sragnofever'){
+  dados_full %>%
+    filter(SG_UF_NOT == 13) %>%
+    saveRDS(paste0('~/ownCloud/Fiocruz/Influenza/Estados/Amazonas/dados/clean_data_sragnofever_amazonas_',
+                   str_remove_all(args$date, '-'),
+                   '.rds'))
+}
 
 dados_full <- dados_full %>%
   select(SG_UF,
@@ -197,11 +209,11 @@ dados_full <- dados_full %>%
   mutate(DT_SIN_PRI = ymd(DT_SIN_PRI),
          DT_DIGITA = ymd(DT_DIGITA),
          fx_etaria = as.character(cut(idade_em_anos,
-                                      breaks=c(seq(0, 80, 10), 140),
+                                      breaks=fx.breaks,
                                       right=F,
-                                      labels=as.character(seq(1,9))
-         )
-         )
+                                      labels=fx.labels.num
+                                      )
+                                  )
   ) %>%
   left_join(tblCADMUN %>% select(CO_MUNICIP, CO_MACSAUD), by=c('CO_MUN_NOT' = 'CO_MUNICIP')) 
 gc(verbose=FALSE)
@@ -209,22 +221,29 @@ gc(verbose=FALSE)
 # dados_full2 <- read.csv2("~/Downloads/INFLUD-07-07-2020.csv", stringsAsFactors = F)
 
 # Ajustar semana epidemiológica para manter os dados de 2020:
-epiweekmax <- as.integer(lastepiweek(2020))
+
+epiweekmax <- ifelse(lyear==2020, 0, as.integer(lastepiweek(lyear-1)))
+l.addepiweek <- list('2020'=0, '2021'=53, '2022'=52)                        
+epiweek.shift <- sum(unlist(l.addepiweek[as.character(seq(2020, lyear-1))]))
 today.week.ori <- today.week
 if (lyear > 2020){
   today.week.ori <- today.week
-  today.week <- today.week + epiweekmax
+  today.week <- today.week + epiweekmax + epiweek.shift
 }
 dados_full <- dados_full %>%
   mutate(epiyear = DT_SIN_PRI_epiyear,
          epiweek = DT_SIN_PRI_epiweek,
          DT_SIN_PRI_epiweek = case_when(
-           DT_SIN_PRI_epiyear > 2020 ~ DT_SIN_PRI_epiweek + epiweekmax,
-           TRUE ~ DT_SIN_PRI_epiweek),
+           epiyear == 2020 ~ as.integer(epiweek),
+           epiyear == 2021 ~ as.integer(epiweek) + as.integer(l.addepiweek['2021']),
+           epiyear == 2022 ~ as.integer(epiweek) + as.integer(l.addepiweek['2021']) + as.integer(l.addepiweek['2022'])
+         ),
          DT_DIGITA_epiweek = case_when(
-           DT_DIGITA_epiyear > 2020 ~ DT_DIGITA_epiweek + epiweekmax,
-           TRUE ~ DT_DIGITA_epiweek
-         )) %>%
+           DT_DIGITA_epiyear == 2020 ~ as.integer(DT_DIGITA_epiweek),
+           DT_DIGITA_epiyear == 2021 ~ as.integer(DT_DIGITA_epiweek) + as.integer(l.addepiweek['2021']),
+           DT_DIGITA_epiyear == 2022 ~ as.integer(DT_DIGITA_epiweek) + as.integer(l.addepiweek['2021']) + as.integer(l.addepiweek['2022'])
+         )
+  ) %>%
   filter(DT_DIGITA_epiweek <= today.week,
          DT_SIN_PRI_epiweek <= today.week)
 
@@ -234,9 +253,9 @@ epiweek.table <- dados_full %>%
   arrange(DT_SIN_PRI_epiweek)
 
 epilbls <- c(1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52)
-xbreaks <- c(epilbls, epilbls + epiweekmax)
+xbreaks <- c(epilbls + epiweek.shift, epilbls + epiweekmax + epiweek.shift)
 xlbls <- c(epilbls, epilbls)
-xlimits <- c(1, dados_full %>% 
+xlimits <- c(1 + epiweek.shift, dados_full %>% 
                filter(DT_SIN_PRI_epiyear == lyear) %>%
                select(DT_SIN_PRI_epiweek) %>% max())
 
@@ -360,8 +379,8 @@ for (uf in uf.list$CO_UF){
       rename(dt_event=DT_SIN_PRI_epiweek) %>%
       left_join(age.BR.h.srag.pred$age, by=c('dt_event', 'fx_etaria')) %>%
       mutate(fx_etaria=factor(fx_etaria,
-                              levels=as.character(1:9),
-                              labels=c(paste0((0:7)*10, " - ",(0:7)*10+9), "80+")),
+                              levels=fx.labels.num,
+                              labels=fx.labels),
              Y = ifelse(is.na(Median), n, Median),
              n = ifelse(dt_event >= today.week-4, NA, n))
   } else {
@@ -375,21 +394,22 @@ for (uf in uf.list$CO_UF){
       rename(dt_event=DT_SIN_PRI_epiweek) %>%
       left_join(age.BR.h.srag.pred$age, by=c('dt_event', 'fx_etaria')) %>%
       mutate(fx_etaria=factor(fx_etaria,
-                              levels=as.character(1:9),
-                              labels=c(paste0((0:7)*10, " - ",(0:7)*10+9), "80+")),
+                              levels=fx.labels.num,
+                              labels=fx.labels),
              Y = ifelse(is.na(Median), n, Median),
              n = ifelse(dt_event >= today.week-4, NA, n))
     
   }
   
   plt <- age.BR.h.srag.pred$age %>%
+    filter(between(dt_event, xlimits[1], xlimits[2])) %>%
     ggplot(aes(x=dt_event, y=Y, color = fx_etaria,
                ymin = LI, ymax = LS, fill = fx_etaria)) +
     geom_line(show.legend = F) +
     geom_ribbon(aes(ymin=LI, ymax=LS), color = NA, alpha = 0.4, show.legend = F) +
     geom_ribbon(aes(ymin=Q1, ymax=Q3), color = NA, alpha = 0.6, show.legend = F) +
-    scale_fill_manual(values=colorRampPalette(colorblind_pal()(8))(9)) +
-    scale_color_manual(values=colorRampPalette(colorblind_pal()(8))(9)) +
+    scale_fill_manual(values=colorRampPalette(colorblind_pal()(8))(length(fx.labels))) +
+    scale_color_manual(values=colorRampPalette(colorblind_pal()(8))(length(fx.labels))) +
     scale_x_continuous(breaks = xbreaks[seq(1,length(xbreaks), 2)],
                        labels = xlbls[seq(1,length(xbreaks), 2)],
                        minor_breaks = waiver(),
@@ -402,9 +422,9 @@ for (uf in uf.list$CO_UF){
       color = "Faixa Etária", 
       title = uf.name,
       subtitle = paste0("Novos casos semanais por faixa etária. Dados até a semana ", today.week.ori, ' ', lyear)) +
-    theme(panel.grid.minor.x = element_line(colour="#f0f0f0",
-                                            linetype=2)
-    )
+    theme(panel.grid.minor.x = element_line(colour="#f0f0f0", linetype=2),
+          axis.text.x = element_text(angle=45, hjust=1)
+          )
   png(filename = paste0(preff,"/Figs/UF/fig_", uf.name, "_fx_etaria.png"),
       width=9, height=6, units='in', res=200)
   print(plt)
@@ -451,7 +471,9 @@ for (uf in uf.list$CO_UF){
   pred.ufs <- pred.ufs %>%
     bind_rows(pred.srag.summy)
   
-  p.now.srag <- plot.nowcast(pred.srag.summy, Fim=today.week ) +
+  p.now.srag <- plot.nowcast(pred.srag.summy %>%
+                               filter(between(Date, xlimits[1], xlimits[2])),
+                             Fim=today.week) +
     ylab("Incidência de SRAG (por 100mil hab.)") +
     xlab("Semana de primeiros sintomas") +
     scale_x_continuous(breaks = xbreaks, labels = xlbls, limits = xlimits) +
@@ -459,6 +481,7 @@ for (uf in uf.list$CO_UF){
     ggtitle(uf.name) +
     theme(plot.margin=unit(c(1,0,5,5), units='pt'),
           axis.text = element_text(size = rel(1)),
+          axis.text.x = element_text(angle=45, hjust=1),
           legend.margin = margin(0,0,0,0, unit='pt'),
           legend.justification=c(0,1), 
           legend.position=c(0.015, 1.05),
@@ -467,7 +490,8 @@ for (uf in uf.list$CO_UF){
           legend.key.size = unit(14, 'pt'),
           legend.text = element_text(family = 'Roboto', size = rel(1)))
   
-  p.nivel <-  plot.ts.tendencia(df = pred.srag.summy,
+  p.nivel <-  plot.ts.tendencia(df = pred.srag.summy  %>%
+                                  filter(between(Date, xlimits[1], xlimits[2])),
                                 xbreaks = xbreaks,
                                 xlbls = xlbls,
                                 xlimits = xlimits)
@@ -478,7 +502,7 @@ for (uf in uf.list$CO_UF){
   grid::grid.raster(logo, x = 0.999, y = 0.99, just = c('right', 'top'), width = unit(1, 'inches'))
   dev.off()
 }
-
+rm(dados.obs)
 df.uf.age <- df.uf.age %>%
   rename(DT_SIN_PRI_epiweek=dt_event,
          casos_notificados=n,
@@ -486,7 +510,7 @@ df.uf.age <- df.uf.age %>%
   left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek')) %>%
   arrange(SG_UF_NOT, DT_SIN_PRI_epiweek, fx_etaria)
 df.uf.age %>%
-  saveRDS(file='uf.estimativas.fx.etaria.rds')
+  saveRDS(file=paste0(preff,'/uf.estimativas.fx.etaria.rds'))
 df.uf.age %>%
   mutate(mediana_da_estimativa=round(mediana_da_estimativa),
          LI=round(LI),
@@ -494,7 +518,7 @@ df.uf.age %>%
          Q1=round(Q1),
          Q3=round(Q3)) %>%
   select(-DT_SIN_PRI_epiweek, -fx_etaria.num, -Time, -Y) %>%
-  write_csv2(file='estados_e_pais_serie_estimativas_fx_etaria_sem_filtro_febre.csv', na='')
+  write_csv2(file=paste0(preff,'/estados_e_pais_serie_estimativas_fx_etaria_sem_filtro_febre.csv'), na='')
 
 pred.ufs <- pred.ufs %>%
   left_join(epiweek.table, by=c('Date' = 'DT_SIN_PRI_epiweek'))
@@ -527,16 +551,8 @@ pred.ufs <- pred.ufs %>%
   bind_rows(pred.ufs)
 
 pred.ufs %>%
-  mutate(Epiyear = case_when(
-    Date <= epiweekmax ~ 2020,
-    TRUE ~ 2021
-  ),
-  Date = case_when(
-    Epiyear == 2020 ~ Date,
-    TRUE ~ Date - epiweekmax
-  )) %>%
-  rename('Ano epidemiológico' = Epiyear,
-         'Semana epidemiológica' = Date,
+  rename('Ano epidemiológico' = epiyear,
+         'Semana epidemiológica' = epiweek,
          'casos estimados' = full_estimate,
          IC95I = LI,
          IC95S = LS,
@@ -546,7 +562,7 @@ pred.ufs %>%
          'tendência de longo prazo' = tendencia.6s,
          'Grupo Jurídico' = grupo_jur,
          'População' = populacao) %>%
-  select(-Median, -Casos, -epiweek, -epiyear) %>%
+  select(-Median, -Casos, -Date) %>%
   write_csv2(paste0(preff,'/estados_e_pais_serie_estimativas_tendencia_sem_filtro_febre.csv'), na = '')
 rm(pred.ufs)
 gc(verbose=F)
@@ -631,11 +647,23 @@ qthreshold <- dados_full %>%
   ) %>%
   rbind(qthreshold)
 
-codmun.list <- c(110020,
-                 172100)
+codmun.list <- c(110020)
 qthreshold <- qthreshold %>%
   mutate(dmax = ifelse(CO_MUN_RES %in% codmun.list, dmax + 2, dmax),
          wdw = ifelse(CO_MUN_RES %in% codmun.list, round(2.5*dmax), wdw))
+
+fx.breaks=c(seq(0, 80, 10), 140)
+fx.labels=c('0-9', '10-19', '20-29', '30-39', '40-49', '50-59',
+            '60-69', '70-79', '80+')
+fx.labels.num=as.character(seq(1,length(fx.breaks)-1))
+
+dados_full <- dados_full %>%
+  mutate(fx_etaria = as.character(cut(idade_em_anos,
+                                      breaks=fx.breaks,
+                                      right=F,
+                                      labels=fx.labels.num)
+                                  )
+         )
 
 pred.capitais <- c()
 pred.warning <- c()
@@ -676,7 +704,7 @@ for(k in 1:nrow(tblCADMUN.capital)){
   # Semana epidemiologica termina no Sabado, entao vou excluir os dados mais recentes caso a semana nao comece no sábado.
   Fim.sat <- today.week
 
-  for (gpj in c(0, 1, 2, 3)){
+  for (gpj in c(0)){
     if (gpj > 0){
       dadosBR <- dadosBR0 %>%
         filter(grupo_jur == gpj)
@@ -755,7 +783,8 @@ for(k in 1:nrow(tblCADMUN.capital)){
                  Y = ifelse(is.na(Median), n, Median),
                  n = ifelse(dt_event >= today.week-4, NA, n))
         
-        plt <- age.BR.h.srag.pred$age %>%
+        plt <- age.BR.h.srag.pred$age  %>%
+          filter(between(dt_event, xlimits[1], xlimits[2]))%>%
           ggplot(aes(x=dt_event, y=Y, color = fx_etaria,
                      ymin = LI, ymax = LS, fill = fx_etaria)) +
           geom_line(show.legend = F) +
@@ -775,9 +804,8 @@ for(k in 1:nrow(tblCADMUN.capital)){
             color = "Faixa Etária", 
             title = paste0(tblCADMUN.capital$DS_UF_SIGLA[k], ": ", title),
             subtitle = paste0("Novos casos semanais por faixa etária. Dados até a semana ", today.week.ori, ' ', lyear)) +
-          theme(panel.grid.minor.x = element_line(colour="#f0f0f0",
-                                                  linetype=2)
-          )
+          theme(panel.grid.minor.x = element_line(colour="#f0f0f0", linetype=2),
+                axis.text.x = element_text(angle=45, hjust=1))
         png(filename = paste0(preff,"/Figs/Capitais/fig_",
                               tblCADMUN.capital$DS_UF_SIGLA[k],
                               '_',
@@ -830,7 +858,9 @@ for(k in 1:nrow(tblCADMUN.capital)){
       pred.capitais <- pred.capitais %>%
         bind_rows(pred.srag.summy)
       
-      p.now.srag <- plot.nowcast(pred.srag.summy, Fim=today.week ) +
+      p.now.srag <- plot.nowcast(pred.srag.summy  %>%
+                                   filter(between(Date, xlimits[1], xlimits[2])),
+                                 Fim=today.week ) +
         ylab(ylab.lbl) +
         xlab("Semana de primeiros sintomas") +
         scale_x_continuous(breaks = xbreaks, labels = xlbls, limits = xlimits) +
@@ -838,6 +868,7 @@ for(k in 1:nrow(tblCADMUN.capital)){
         ggtitle(paste0(tblCADMUN.capital$DS_UF_SIGLA[k], ": ", title)) +
         theme(plot.margin=unit(c(1,0,5,5), units='pt'),
               axis.text = element_text(size = rel(1)),
+              axis.text.x = element_text(angle=45, hjust=1),
               legend.margin = margin(0,0,0,0, unit='pt'),
               legend.justification=c(0,1), 
               legend.position=c(0.015, 1.05),
@@ -846,7 +877,8 @@ for(k in 1:nrow(tblCADMUN.capital)){
               legend.key.size = unit(14, 'pt'),
               legend.text = element_text(family = 'Roboto', size = rel(1))
         )
-      p.nivel <-  plot.ts.tendencia(df = pred.srag.summy,
+      p.nivel <-  plot.ts.tendencia(df = pred.srag.summy  %>%
+                                      filter(between(Date, xlimits[1], xlimits[2])),
                                     xbreaks = xbreaks,
                                     xlbls = xlbls,
                                     xlimits = xlimits)
@@ -907,16 +939,8 @@ pred.capitais <- pred.capitais %>%
   bind_rows(pred.capitais)
 
 pred.capitais %>%
-  mutate(Epiyear = case_when(
-    Date <= epiweekmax ~ 2020,
-    TRUE ~ 2021
-  ),
-  Date = case_when(
-    Epiyear == 2020 ~ Date,
-    TRUE ~ Date - epiweekmax
-  )) %>%
-  rename('Ano epidemiológico' = Epiyear,
-         'Semana epidemiológica' = Date,
+  rename('Ano epidemiológico' = epiyear,
+         'Semana epidemiológica' = epiweek,
          'casos estimados' = full_estimate,
          IC95I = LI,
          IC95S = LS,
@@ -926,7 +950,7 @@ pred.capitais %>%
          'tendência de longo prazo' = tendencia.6s,
          'Grupo Jurídico' = grupo_jur,
          'População' = populacao) %>%
-  select(-Median, -Casos, -epiweek, -epiyear) %>%
+  select(-Median, -Casos, -Date) %>%
   write_csv2(paste0(preff,'/capitais_serie_estimativas_tendencia_sem_filtro_febre.csv'), na = '')
 rm(pred.capitais)
 gc(verbose=F)
@@ -936,9 +960,9 @@ df.uf.age <- df.uf.age %>%
          casos_notificados=n,
          mediana_da_estimativa=Median) %>%
   left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek')) %>%
-  arrange(CO_MUN_RES, DT_SIN_PRI_epiweek, fx_etaria)
+  arrange(CO_MUN_RES, fx_etaria, DT_SIN_PRI_epiweek)
 df.uf.age %>%
-  saveRDS(file='capitais.estimativas.fx.etaria.rds')
+  saveRDS(file=paste0(preff,'/capitais.estimativas.fx.etaria.rds'))
 df.uf.age %>%
   mutate(mediana_da_estimativa=round(mediana_da_estimativa),
          LI=round(LI),
@@ -946,7 +970,11 @@ df.uf.age %>%
          Q1=round(Q1),
          Q3=round(Q3)) %>%
   select(-DT_SIN_PRI_epiweek, -fx_etaria.num, -Time, -Y) %>%
-  write_csv2(file='capitais_serie_estimativas_fx_etaria_sem_filtro_febre.csv', na='')
+  write_csv2(file=paste0(preff,'/capitais_serie_estimativas_fx_etaria_sem_filtro_febre.csv'), na='')
+
+if (args$filtertype != 'sragnofever'){
+  quit()
+}
 
 # Macrorregionais de saúde: ----
 tblMACSAUD <- tblCADMUN %>%
@@ -1057,7 +1085,9 @@ for(k in 1:nrow(tblMACSAUD)){
       pred.macros <- pred.macros %>%
         bind_rows(pred.srag.summy)
       
-      p.now.srag <- plot.nowcast(pred.srag.summy, Fim=today.week ) +
+      p.now.srag <- plot.nowcast(pred.srag.summy  %>%
+                                   filter(between(Date, xlimits[1], xlimits[2])),
+                                 Fim=today.week ) +
         ylab("Incidência de SRAG (por 100mil hab.)") +
         xlab("Semana de primeiros sintomas") +
         scale_x_continuous(breaks = xbreaks, labels = xlbls, limits = xlimits) +
@@ -1065,6 +1095,7 @@ for(k in 1:nrow(tblMACSAUD)){
         ggtitle(paste0(tblMACSAUD$DS_UF_SIGLA[k], ": ", tblMACSAUD$DS_NOMEPAD_macsaud[k], ttl.xtra[gpj + 1])) +
         theme(plot.margin=unit(c(1,0,5,5), units='pt'),
               axis.text = element_text(size = rel(1)),
+              axis.text.x = element_text(angle=45, hjust=1),
               legend.margin = margin(0,0,0,0, unit='pt'),
               legend.justification=c(0,1), 
               legend.position=c(0.015, 1.05),
@@ -1073,7 +1104,8 @@ for(k in 1:nrow(tblMACSAUD)){
               legend.key.size = unit(14, 'pt'),
               legend.text = element_text(family = 'Roboto', size = rel(1)))
       
-      p.nivel <-  plot.ts.tendencia(df = pred.srag.summy,
+      p.nivel <-  plot.ts.tendencia(df = pred.srag.summy  %>%
+                                      filter(between(Date, xlimits[1], xlimits[2])),
                                     xbreaks = xbreaks,
                                     xlbls = xlbls,
                                     xlimits = xlimits)
@@ -1139,19 +1171,11 @@ pred.macros <- pred.macros %>%
 
 fill.lbl <- c('Pré-epidêmica', 'Epidêmica', 'Alta', 'Muito Alta', 'Extremamente Alta')
 pred.macros %>%
-  mutate(Epiyear = case_when(
-    Date <= epiweekmax ~ 2020,
-    TRUE ~ 2021
-  ),
-  Date = case_when(
-    Epiyear == 2020 ~ Date,
-    TRUE ~ Date - epiweekmax
-  ),
-  nivel = factor(nivel,
+  mutate(nivel = factor(nivel,
                  levels=c(0, 1, 2, 3, 4),
                  labels=fill.lbl)) %>%
-  rename('Ano epidemiológico' = Epiyear,
-         'Semana epidemiológica' = Date,
+  rename('Ano epidemiológico' = epiyear,
+         'Semana epidemiológica' = epiweek,
          'casos estimados' = full_estimate,
          IC95I = LI,
          IC95S = LS,
@@ -1161,7 +1185,7 @@ pred.macros %>%
          'tendência de longo prazo' = tendencia.6s,
          'transmissão comunitária' = nivel,
          'População' = populacao) %>%
-  select(-Median, -Casos, -epiweek, -epiyear) %>%
+  select(-Median, -Casos, -Date) %>%
   write_csv2(paste0(preff,'/macsaud_serie_estimativas_tendencia_sem_filtro_febre.csv'), na = '')
 rm(pred.macros)
 gc(verbose=F)

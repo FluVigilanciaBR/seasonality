@@ -199,11 +199,11 @@ dict_dtypes = {
     '@VERSION': 'int64',
     '@TIMESTAMP': 'str'
 }
-df = (pd.read_csv('../data/INFLUD2020.csv',
-                  dtype=dict_dtypes, low_memory=False)
-      .append(pd.read_csv('../data/INFLUD2021.csv',
-                          dtype=dict_dtypes, low_memory=False),
-              ignore_index=True, sort=False)
+df = (pd.concat([pd.read_csv('../data/INFLUD2020.csv',
+                             dtype=dict_dtypes, low_memory=False),
+                 pd.read_csv('../data/INFLUD2021.csv',
+                             dtype=dict_dtypes, low_memory=False)],
+                ignore_index=True, sort=False)
       )[['NU_NOTIFIC',
          'DT_NOTIFIC',
          'DT_SIN_PRI',

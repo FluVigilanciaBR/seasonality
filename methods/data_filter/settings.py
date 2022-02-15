@@ -49,6 +49,6 @@ if not os.path.exists(settings_path):
 
 # load yaml file
 with open(os.path.join(settings_path), 'r') as f:
-    globals().update(yaml.load(f))
+    globals().update(yaml.safe_load(f))
 
 PATH = os.path.dirname(os.path.abspath(__file__))

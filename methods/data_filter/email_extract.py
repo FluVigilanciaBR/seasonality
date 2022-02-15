@@ -85,7 +85,7 @@ def write_to_folder(df, year, dir=None, append=False):
 
     output = os.path.join(dir, '..', 'data', 'INFLUD%s.csv' % year)
     if append:
-        df = df.append(pd.read_csv(output, dtype=df.dtypes.to_dict()), ignore_index=True, sort=False)
+        df = pd.concat([df, pd.read_csv(output, dtype=df.dtypes.to_dict())], ignore_index=True, sort=False)
     df.columns = df.columns.str.upper()
     df.to_csv(output, index=False, encoding='utf-8', date_format='%Y-%m-%d')
     return

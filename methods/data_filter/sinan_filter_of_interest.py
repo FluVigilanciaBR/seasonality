@@ -1025,7 +1025,7 @@ def delays_dist(df_in=pd.DataFrame(), filtertype='srag', append_file=None, dfapp
     df_out = df_out.reset_index()[out_cols]
     if append_file:
         tmp = pd.read_csv(append_file)
-        df_out = tmp.append(df_out[out_cols], ignore_index=True, sort=False)
+        df_out = pd.concat([tmp, df_out[out_cols]], ignore_index=True, sort=False)
 
     for k, suffix in filtro_dict.items():
         df_out.loc[(df_out.filtro >= k), out_cols].to_csv('../../data/data/delay_table%s.csv.gz' % suffix, index=False)
@@ -1047,7 +1047,7 @@ def delays_dist(df_in=pd.DataFrame(), filtertype='srag', append_file=None, dfapp
     # Impute digitalization date if needed:
     if dfappend is not None:
         dfappend = _cleanup(dfappend)
-        df = dfappend.append(df, ignore_index=True, sort=False)
+        df = pd.concat([dfappend, df], ignore_index=True, sort=False)
 
     opp_cols = list(set(tgt_cols).difference(['dado']).union(['sragflu', 'obitoflu', 'sragcovid', 'obitocovid',
                                                               'obito']))
@@ -1058,6 +1058,7 @@ def delays_dist(df_in=pd.DataFrame(), filtertype='srag', append_file=None, dfapp
 
     df_out = wide2long(df)
 
+    del df
     # Create tables and save to file:
     for k, suffix in filtro_dict.items():
         df_outnew = createtable(df_out[df_out.filtro >= k])
@@ -1086,10 +1087,13 @@ def main(flist, sep=',', yearmax=None, filtertype='srag', append_cases=None, app
         # Check if data file has 2019's database or not:
         if int(re.findall(r'\d+', fname)[0]) < 2019:
             module_logger.info('DB pre-2019')
-            df = df.append(applysinanfilter(dftmp, tag=fname, filtertype=filtertype), ignore_index=True, sort=True)
+            df = pd.concat([df, applysinanfilter(dftmp, tag=fname, filtertype=filtertype)],
+                           ignore_index=True,
+                           sort=True)
         else:
             module_logger.info('DB 2019 onwards')
-            df = df.append(filter_db2019(dftmp, tag=fname, filtertype=filtertype), ignore_index=True, sort=True)
+            df = pd.concat([df, filter_db2019(dftmp, tag=fname, filtertype=filtertype)], ignore_index=True,
+                           sort=True)
 
     del dftmp
 
@@ -1111,8 +1115,8 @@ def main(flist, sep=',', yearmax=None, filtertype='srag', append_cases=None, app
     # Convert date fields to text and leave NaT as empty cell
     regexp = re.compile('^DT')
     target_cols = list(filter(regexp.match, df.columns))
-    df[target_cols] = df[target_cols].applymap(lambda x: str(x.date())).where(lambda x: x != 'NaT', np.nan)
     df = insert_epiweek(df)
+    df[target_cols] = df[target_cols].applymap(lambda x: str(x.date())).where(lambda x: x != 'NaT', np.nan)
 
     if 'ID_UNIDADE' in df.columns:
         df.CO_UNI_NOT.update(df.ID_UNIDADE)
@@ -1131,7 +1135,7 @@ def main(flist, sep=',', yearmax=None, filtertype='srag', append_cases=None, app
 
     if append_cases:
         tmp = readtable(append_cases)
-        dfout = tmp.append(df, ignore_index=True)
+        dfout = pd.concat([tmp, df], ignore_index=True)
     else:
         dfout = df.copy()
 

@@ -72,9 +72,9 @@ dftmpplt = dftmp.melt(id_vars=['UF', 'epiweek', 'dado', 'normalizacao'], value_v
 dftmp = dfss.copy()
 dftmp[vir_cols] = dftmp[vir_cols].divide(dftmp.POSITIVE_CASES/100, axis=0)
 dftmp['normalizacao'] = 'positivos'
-dftmpplt = dftmpplt.append(dftmp.melt(id_vars=['UF', 'epiweek', 'dado', 'normalizacao'],
-                                      value_vars=vir_cols),
-                           ignore_index=True)
+dftmpplt = pd.concat([dftmpplt, dftmp.melt(id_vars=['UF', 'epiweek', 'dado', 'normalizacao'],
+                                           value_vars=vir_cols)],
+                     ignore_index=True)
 
 dftmpplt.rename(columns={'variable': 'Vírus', 'dado': 'Dado'}, inplace=True)
 dftmpplt.loc[dftmpplt.Dado == 'srag', 'Dado'] = 'Casos'
