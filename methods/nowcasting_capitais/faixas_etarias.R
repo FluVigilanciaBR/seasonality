@@ -328,29 +328,47 @@ df %>%
 for (uf in unique(tbl.ufs$CO_UF)){
   sigla <- as.character(tbl.ufs$DS_UF_SIGLA[tbl.ufs$CO_UF == uf])
   
-  plt <- plt.age.prop.pointrange(tmp, uf, paste0(sigla, ': SRAG'))
-  p.now.srag <- plot.nowcast(srag.uf %>% filter(CO_UF == uf), xlimits=xlimits )
+  plt <- plt.age.prop.pointrange(df=tmp, uf=uf, sigla=paste0(sigla, ': SRAG'),
+                                 xbreaks=xbreaks,
+                                 xlbls=xlbls,
+                                 xlimits=xlimits)
+  p.now.srag <- plot.nowcast(pred.summy=srag.uf %>% filter(CO_UF == uf),
+                             xbreaks=xbreaks,
+                             xlbls=xlbls,
+                             xlimits=xlimits)
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
 
   png(paste0('./Figs/Faixa_etaria/', sigla, '_prop_etaria_srag.png'), height=6, width=9, units='in', res=100)
   print(plot_grid(p[[1]], p[[2]], ncol=1, rel_heights = c(1, .4)))
   dev.off()
   
-  plt <- plt.age.prop.pointrange(tmp.sragcovid, uf, paste0(sigla, ': SRAGCOVID'))
+  plt <- plt.age.prop.pointrange(df=tmp.sragcovid, uf=uf, sigla=paste0(sigla, ': SRAGCOVID'),
+                                 xbreaks=xbreaks,
+                                 xlbls=xlbls,
+                                 xlimits=xlimits)
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
   png(paste0('./Figs/Faixa_etaria/', sigla, '_prop_etaria_sragcovid.png'), height=6, width=9, units='in', res=100)
   print(plot_grid(p[[1]], p[[2]], ncol=1, rel_heights = c(1, .4)))
   dev.off()
   
-  p.now.srag <- plot.nowcast(srag.uf %>% filter(CO_UF == uf), xlimits=xlimits) +
+  p.now.srag <- plot.nowcast(pred.summy=srag.uf %>% filter(CO_UF == uf),
+                             xbreaks=xbreaks,
+                             xlbls=xlbls,
+                             xlimits=xlimits) +
     ggtitle('SRAG em geral')
   if (uf != 0){
-    plt <- plt.age.inc(df %>% filter(CO_UF == uf),
+    plt <- plt.age.inc(df=df %>% filter(CO_UF == uf),
+                       xbreaks=xbreaks,
+                       xlbls=xlbls,
+                       xlimits=xlimits,
                        facet_cols=c('inc', 'inc.obitos'),
                        facet_labs=c('Casos', 'Óbitos'),
                        ylabs='Incidência (por 100mil hab.)')
   } else {
-    plt <- plt.age.inc(df %>% filter(CO_UF == uf))
+    plt <- plt.age.inc(df=df %>% filter(CO_UF == uf),
+                       xbreaks=xbreaks,
+                       xlbls=xlbls,
+                       xlimits=xlimits)
   }
   plt <- plt +
     geom_vline(xintercept=8+53, color='darkgrey', linetype=1) + 
@@ -368,7 +386,10 @@ for (uf in unique(tbl.ufs$CO_UF)){
   print(plot_grid(p[[1]], p[[2]], ncol=1, rel_heights = c(1, .25)))
   dev.off()
   
-  plt <- plt.age.inc(df %>% filter(CO_UF == uf, age_cat %in% c('0-4', '5-9', '10-14', '15-19', '20-29')),
+  plt <- plt.age.inc(df=df %>% filter(CO_UF == uf, age_cat %in% c('0-4', '5-9', '10-14', '15-19', '20-29')),
+                     xbreaks=xbreaks,
+                     xlbls=xlbls,
+                     xlimits=xlimits,
                      facet_cols=c('inc', 'inc.obitos'), facet_labs=c('Casos', 'Óbitos')) +
     theme(legend.key.size=unit(14, 'pt')) +
     ggtitle(paste0(sigla, ': SRAGCOVID'), subtitle=paste('Dados até a semana', today.week.ori, lyear))
@@ -418,8 +439,15 @@ df <- tbl.ufs.pop %>%
 for (uf in unique(tbl.ufs$CO_UF)){
   sigla <- as.character(tbl.ufs$DS_UF_SIGLA[tbl.ufs$CO_UF == uf])
   
-  plt <- plt.age.prop.pointrange(tmp, uf, paste0(sigla, ': SRAG'))
-  p.now.srag <- plot.nowcast(srag.uf %>% filter(CO_UF == uf), xlimits=xlimits ) +
+  plt <- plt.age.prop.pointrange(df=tmp, uf=uf,
+                                 xbreaks=xbreaks,
+                                 xlbls=xlbls,
+                                 xlimits=xlimits,
+                                 sigla=paste0(sigla, ': SRAG'))
+  p.now.srag <- plot.nowcast(pred.summy=srag.uf %>% filter(CO_UF == uf),
+                             xbreaks=xbreaks,
+                             xlbls=xlbls,
+                             xlimits=xlimits) +
     ggtitle('SRAG em geral')
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
   
@@ -427,26 +455,36 @@ for (uf in unique(tbl.ufs$CO_UF)){
   print(plot_grid(p[[1]], p[[2]], ncol=1, rel_heights = c(1, .2)))
   dev.off()
   
-  plt <- plt.age.prop.pointrange(tmp.sragcovid, uf, paste0(sigla, ': SRAGCOVID'))
+  plt <- plt.age.prop.pointrange(df=tmp.sragcovid, uf=uf,
+                                 xbreaks=xbreaks,
+                                 xlbls=xlbls,
+                                 xlimits=xlimits,
+                                 sigla=paste0(sigla, ': SRAGCOVID'))
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
   png(paste0('./Figs/Faixa_etaria/', sigla, '_prop_etaria_sragcovid_v2.png'), height=9, width=9, units='in', res=100)
   print(plot_grid(p[[1]], p[[2]], ncol=1, rel_heights = c(1, .2)))
   dev.off()
   
-  plt <- plt.age.inc.rows(df %>%
+  plt <- plt.age.inc.rows(df=df %>%
                             filter(CO_UF==uf) %>%
                             rename(valor=inc.obitos),
                           ylabs = 'Mortalidade de SRAG por COVID-19 (por 100mil hab.)',
+                          xbreaks=xbreaks,
+                          xlbls=xlbls,
+                          xlimits=xlimits,
                           title=paste0(sigla, ': Óbitos de SRAG por COVID-19'),
                           subtitle=paste('Dados até a semana ', today.week.ori, lyear))
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
   png(paste0('./Figs/Faixa_etaria/', sigla, '_etaria_obitoscovid.png'), height=12, width=10, units='in', res=100)
   print(plot_grid(p[[1]], p[[2]], ncol=1, rel_heights = c(1, .2)))
   dev.off()
-  plt <- plt.age.inc.rows(df %>%
+  plt <- plt.age.inc.rows(df=df %>%
                             filter(CO_UF==uf) %>%
                             rename(valor=inc),
                           xlabs = 'Incidência (por 100mil hab.)',
+                          xbreaks=xbreaks,
+                          xlbls=xlbls,
+                          xlimits=xlimits,
                           title=paste0(sigla, ': SRAG por COVID-19'),
                           subtitle=paste('Dados até a semana ', today.week.ori, lyear))
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
@@ -481,15 +519,26 @@ tmp.sragcovid %>%
 for (uf in unique(tbl.ufs$CO_UF)){
   sigla <- as.character(tbl.ufs$DS_UF_SIGLA[tbl.ufs$CO_UF == uf])
   
-  plt <- plt.age.prop.pointrange(tmp, uf, paste0(sigla, ': SRAG')) +
+  plt <- plt.age.prop.pointrange(df=tmp, uf=uf,
+                                 xbreaks=xbreaks,
+                                 xlbls=xlbls,
+                                 xlimits=xlimits,
+                                 sigla=paste0(sigla, ': SRAG')) +
     labs(subtitle='Proporção restrita a pacientes com 40 anos ou mais')
-  p.now.srag <- plot.nowcast(srag.uf %>% filter(CO_UF == uf), xlimits=xlimits )
+  p.now.srag <- plot.nowcast(pred.summy=srag.uf %>% filter(CO_UF == uf),
+                             xbreaks=xbreaks,
+                             xlbls=xlbls,
+                             xlimits=xlimits)
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
   png(paste0('./Figs/Faixa_etaria/', sigla, '_prop_etaria_srag_40mais.png'), height=6, width=9, units='in', res=100)
   print(plot_grid(p[[1]], p[[2]], ncol=1, rel_heights = c(1, .4)))
   dev.off()
   
-  plt <- plt.age.prop.pointrange(tmp.sragcovid, uf, paste0(sigla, ': SRAGCOVID')) +
+  plt <- plt.age.prop.pointrange(df=tmp.sragcovid, uf=uf,
+                                 xbreaks=xbreaks,
+                                 xlbls=xlbls,
+                                 xlimits=xlimits,
+                                 sigla=paste0(sigla, ': SRAGCOVID')) +
     labs(subtitle='Proporção restrita a pacientes com 40 anos ou mais')
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
   png(paste0('./Figs/Faixa_etaria/', sigla, '_prop_etaria_sragcovid_40mais.png'), height=6, width=9, units='in', res=100)
@@ -522,15 +571,26 @@ tmp.sragcovid %>%
 for (uf in unique(tbl.ufs$CO_UF)){
   sigla <- as.character(tbl.ufs$DS_UF_SIGLA[tbl.ufs$CO_UF == uf])
   
-  plt <- plt.age.prop.pointrange(tmp, uf, paste0(sigla, ': SRAG')) +
+  plt <- plt.age.prop.pointrange(df=tmp, uf=uf,
+                                 xbreaks=xbreaks,
+                                 xlbls=xlbls,
+                                 xlimits=xlimits,
+                                 sigla=paste0(sigla, ': SRAG')) +
     labs(subtitle='Proporção restrita a pacientes com 60 anos ou mais')
-  p.now.srag <- plot.nowcast(srag.uf %>% filter(CO_UF == uf), xlimits=xlimits )
+  p.now.srag <- plot.nowcast(pred.summy=srag.uf %>% filter(CO_UF == uf),
+                             xbreaks=xbreaks,
+                             xlbls=xlbls,
+                             xlimits=xlimits)
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
   png(paste0('./Figs/Faixa_etaria/', sigla, '_prop_etaria_srag_60mais.png'), height=6, width=9, units='in', res=100)
   print(plot_grid(p[[1]], p[[2]], ncol=1, rel_heights = c(1, .4)))
   dev.off()
 
-  plt <- plt.age.prop.pointrange(tmp.sragcovid, uf, paste0(sigla, ': SRAGCOVID')) +
+  plt <- plt.age.prop.pointrange(df=tmp.sragcovid, uf=uf,
+                                 xbreaks=xbreaks,
+                                 xlbls=xlbls,
+                                 xlimits=xlimits,
+                                 sigla=paste0(sigla, ': SRAGCOVID')) +
     labs(subtitle='Proporção restrita a pacientes com 60 anos ou mais')
   p <- align_plots(plt, p.now.srag, align='v', axis='lr')
   png(paste0('./Figs/Faixa_etaria/', sigla, '_prop_etaria_sragcovid_60mais.png'), height=6, width=9, units='in', res=100)

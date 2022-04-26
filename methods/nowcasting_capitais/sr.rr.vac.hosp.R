@@ -10,14 +10,13 @@ sr.rr.vac <- function(df){
     return(NULL)
   }
   rr <- df %>%
-    select(-eventos, -pop) %>%
+    select(-starts_with('eventos'), -pop, -reescale, -starts_with('inc')) %>%
     pivot_wider(names_from=dado,
                 values_from = frac) %>%
     mutate(sr.hosp = sragcovid/pop,
            sr.obitocovid = obitocovid/pop)
   rr <- rr %>%
-    filter(!(ano==2022 & mes > 1),
-           !is.na(fx_etaria)) %>%
+    filter(!is.na(fx_etaria)) %>%
     pivot_longer(cols=c(pop, sragcovid, obitocovid), names_to = 'dado',
                  values_to = 'frac') %>%
     mutate(sr = case_when(
@@ -32,62 +31,99 @@ sr.rr.vac <- function(df){
   return(rr)  
 }
 
+rr.vac <- function(df){
+  if (is.null(df)){
+    warning('Empty data')
+    return(NULL)
+  }
+  rr <- df %>%
+    select(-starts_with('eventos'), -inc.ori, -frac, -pop, -reescale) %>%
+    pivot_wider(names_from=vac_completa,
+                values_from = inc) %>%
+    mutate(rr = não/sim)
+  
+  return(rr)  
+}
+
 plot.rr.vac <- function(rr,
                         scale='free_y',
-                        base_size=14,
+                        base_size=16,
                         base_family='Roboto',
+                        color_lbls=c('Óbitos', 'Internações'),
                         sigla='BR',
                         title=paste0(sigla, ': ', 'Risco relativo de SRAG e óbito por COVID-19'),
                         subtitle=paste0('Razão de incidências entre pop. sem e com duas doses ou dose única por faixa etária e mês de início de sintomas.\n',
                                         'Dados do SIVEP-Gripe digitados até a semana ', epiweek, ' de ', lyear, '.')){
-  rr %>%
-    mutate(dt_sinpri = ym(paste0(ano, mes))) %>%
+  plt <- rr %>%
     filter(DS_UF_SIGLA == sigla,
-           !fx_etaria %in% c('0-4', '5-11', 'Total', 'Total(10+)', NA),
-           dado != 'pop',
-           dt_sinpri < '2022-02-01') %>%
+           dado != 'pop') %>%
     ggplot(aes(x=dt_sinpri, y=rr, color=dado)) +
     geom_hline(yintercept = 1, color='gray', linetype=2, size=1.5) +
     geom_line() +
-    scale_color_colorblind(labels=c('Óbitos', 'Internações'), name='') +
-    scale_x_date(date_labels = "%b",date_breaks = "1 month") +
-    labs(x='Mês de início de sintomas',
+    geom_point() +
+    scale_color_colorblind(labels=color_lbls, name='') +
+    scale_x_date(date_labels = "%Y/%b", date_breaks = "1 month") +
+    labs(x='Semana de início de sintomas',
          y='Risco relativo') +
     facet_wrap(~fx_etaria, scale=scale) +
     theme_Publication(base_family=base_family, base_size=base_size)+
     ggtitle(title,
             subtitle=subtitle) +
     theme(legend.position = 'bottom',
-          legend.direction = 'horizontal') %>%
-    return()
+          legend.direction = 'horizontal',
+          plot.background = element_rect(fill = "transparent", color = NA))
+  if (nrow(rr %>%
+           filter(epiyear==2021, between(epiweek, 47, 50))
+           ) > 0
+  ){
+    plt$layers <- c(geom_rect(aes(xmin=epiweek2date(2021, 48)-3.5, xmax=epiweek2date(2021, 50)+3.5, ymin=-Inf, ymax=Inf),
+                              fill='lightgray',
+                              size=0,
+                              alpha=.2,
+                              inherit.aes=F),
+                    plt$layers)
+    plt <- plt +
+      ggtitle(title,
+              subtitle=paste0(subtitle, '\nDados referentes às semanas 47 a 50 sujeitos a perda de informação por conta do apagão da RNDS.'))
+  }
+  return(plt)
 }
 
 plot.sr.vac <- function(rr,
                         scale='free_y',
-                        base_size=14,
+                        base_size=16,
                         base_family='Roboto',
+                        color_lbls=c('Óbitos', 'Internações'),
                         sigla='BR',
                         title=paste0(sigla, ': ', 'Sobrerrisco de SRAG e óbito por COVID-19'),
-                        subtitle=paste0('Comparação entre pop. sem duas doses ou dose única e pop. geral por faixa etária e mês de início de sintomas.\n',
-                                        'Dados do SIVEP-Gripe digitados até a semana 4 de 2022.')){
-  rr %>%
-    mutate(dt_sinpri = ym(paste0(ano, mes))) %>%
+                        subtitle=NULL){
+  plt <- rr %>%
     filter(DS_UF_SIGLA == sigla,
-           !fx_etaria %in% c('0-4', '5-11', 'Total', 'Total(10+)', NA),
-           dado != 'pop',
-           dt_sinpri < '2022-02-01') %>%
+           dado != 'pop') %>%
     ggplot(aes(x=dt_sinpri, y=sr_não, color=dado)) +
     geom_hline(yintercept = 1, color='gray', linetype=2, size=1.5) +
     geom_line() +
-    scale_color_colorblind(labels=c('Óbitos', 'Internações'), name='') +
-    scale_x_date(date_labels = "%b",date_breaks = "1 month") +
-    labs(x='Mês de início de sintomas',
+    geom_point() +
+    scale_color_colorblind(labels=color_lbls, name='') +
+    scale_x_date(date_labels = "%Y/%b", date_breaks = "1 month") +
+    labs(x='Semana de início de sintomas',
          y='Sobrerrisco\npara indivíduos sem D2 ou DU') +
     facet_wrap(~fx_etaria, scale=scale) +
     theme_Publication(base_family=base_family, base_size=base_size)+
     ggtitle(title,
             subtitle=subtitle) +
     theme(legend.position = 'bottom',
-          legend.direction = 'horizontal') %>%
-    return()
+          legend.direction = 'horizontal',
+          plot.background = element_rect(fill = "transparent", color = NA))
+  
+  if (nrow(rr %>%
+           filter(epiyear==2021, between(epiweek, 47, 50))
+           ) > 0
+  ){
+    plt <- plt +
+      geom_rect(aes(xmin=epiweek2date(2021, 47), xmax=epiweek2date(2021, 50), ymin=-Inf, ymax=Inf), fill='lightgray', size=0, alpha=.5, inherit.aes=F) +
+      ggtitle(title,
+              subtitle=paste0(subtitle, '\nDados referentes às semanas 47 a 50 sujeitos a perda de informação por conta do apagão da RNDS.'))
+  }
+  return(plt)
 }

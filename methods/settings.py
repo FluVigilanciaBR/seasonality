@@ -21,6 +21,10 @@ REPORT = {
     'USER': None,
     'PASSWORD': None,
 }
+SERVERNEW = {
+    'USER': None,
+    'HOST': None
+}
 
 if not os.path.exists(settings_path):
     settings_yaml = {

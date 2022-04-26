@@ -27,3 +27,6 @@ methods/clean_data
 *.png
 # Report LaTeX files
 methods/report/*tex
+# GMail credentials and tokens
+/gmail/credentials.json
+/gmail/token.json

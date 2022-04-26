@@ -3,7 +3,7 @@ require(cowplot)
 library(tidyverse)
 source('../report/theme.publication.R')
 
-plt.age.prop.pointrange <- function(df, uf=0, sigla='BR'){
+plt.age.prop.pointrange <- function(df, uf=0, sigla='BR', xbreaks, xlbls, xlimits){
   colorcount=length(unique(df$age_cat))
   getPalette = colorRampPalette(colorblind_pal()(min(8, colorcount)))
   
@@ -29,7 +29,7 @@ plt.age.prop.pointrange <- function(df, uf=0, sigla='BR'){
 }
 
 plt.age.inc <- function(df, facet_cols=c('inc', 'inc.obitos', 'let'), facet_labs=c('Casos', 'Óbitos', 'Letalidade'),
-                        ylabs='letalidade (%) e incidências (por 100mil hab.)'){
+                        ylabs='letalidade (%) e incidências (por 100mil hab.)', xbreaks, xlbls, xlimits){
   dado.labs <- facet_labs
   names(dado.labs) <- facet_cols
   
@@ -56,7 +56,7 @@ plt.age.inc <- function(df, facet_cols=c('inc', 'inc.obitos', 'let'), facet_labs
   return(plt)  
 }
 
-plot.nowcast <- function(pred.summy, Fim, nowcast = T, xlimits){
+plot.nowcast <- function(pred.summy, Fim, nowcast = T, xbreaks, xlbls, xlimits){
   
   if(!nowcast){
     # Time series
@@ -111,6 +111,9 @@ plot.nowcast <- function(pred.summy, Fim, nowcast = T, xlimits){
 
 plt.age.inc.rows <- function(df, xlabs='Semana de primeiros sintomas',
                         ylabs='Incidência de SRAG por COVID-19 (por 100mil hab.)',
+                        xbreaks,
+                        xlbls,
+                        xlimits,
                         title,
                         subtitle){
   colorcount=length(unique(df$age_cat))

@@ -136,7 +136,8 @@ dados_full <- fread( path_file, stringsAsFactors = F, data.table=F) %>%
          TP_FLU_PCR,
          TP_FLU_AN,
          TESTED,
-         POSITIVE)
+         POSITIVE) %>%
+  as_tibble()
 dados_full <- dados_full %>%
   distinct(NU_NOTIFIC, CO_MUN_NOT, DT_NOTIFIC, .keep_all = T) %>%
   mutate(DT_SIN_PRI = ymd(DT_SIN_PRI),
@@ -147,6 +148,7 @@ dados_full <- dados_full %>%
          )
          )
   )
+gc(verbose=FALSE)
 
 epiweekmax <- ifelse(lyear==2020, 0, as.integer(lastepiweek(lyear-1)))
 l.addepiweek <- list('2020'=0, '2021'=53, '2022'=52)                        

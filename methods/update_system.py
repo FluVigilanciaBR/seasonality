@@ -1,19 +1,24 @@
 __author__ = 'Marcelo Ferreira da Costa Gomes'
 
 import argparse
+import base64
 import datetime
 import glob
 import logging
 import os
+import random
 import smtplib
+import ssl
 from argparse import RawDescriptionHelpFormatter
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.encoders import encode_base64
 from subprocess import run
-from settings import EMAIL, SERVER, SERVERNEW, REPORT
+from settings import EMAILFIOCRUZ, SERVER, SERVERNEW, REPORT
 from data_filter.episem import episem, lastepiweek
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 
 os.environ['MODIN_CPUS'] = "3"
@@ -41,7 +46,7 @@ mail_error = {
     All the best,
     InfoGripe Updater Monitor. 
     """,
-    **EMAIL
+    **EMAILFIOCRUZ
 }
 mail_success = {
     'subject': "InfoGripe Updater -- success",
@@ -52,12 +57,13 @@ mail_success = {
     All the best,
     InfoGripe Updater Monitor. 
     """,
-    **EMAIL
+    **EMAILFIOCRUZ
 }
 
 home_path = os.path.expanduser("~")
 logfile_path = os.path.join(os.getcwd(), logger_fname)
 data_folder = os.path.join(os.getcwd(), '..', 'data', 'data')
+token_path = os.path.join(os.getcwd(), '..', 'gmail', 'token.json')
 public_figs_folder = os.path.join(home_path, 'codes', 'mave', 'repo', 'Boletins\ do\ InfoGripe', 'Imagens')
 public_report_folder = os.path.join(home_path, 'codes', 'mave', 'repo', 'Boletins\ do\ InfoGripe')
 public_report_folder_email = os.path.join(home_path, 'codes', 'mave', 'repo', 'Boletins do InfoGripe')
@@ -73,6 +79,7 @@ modules_list = ['all',
                 'filter',
                 'convert2mem',
                 'estimator',
+                'detailed_estimator',
                 'consolidate',
                 'export',
                 'report',
@@ -95,11 +102,11 @@ convert_region_id = {'NI': 99,
 
 
 def send_email(mail_dict):
+    user_id = '%(NAME)s <%(USER)s>' % mail_dict
     module_name = 'send_email.settings'
     logger.info(module_name)
-
     email_msg = MIMEMultipart()
-    email_msg['From'] = '%(NAME)s <%(USER)s>' % mail_dict
+    email_msg['From'] = user_id
     email_msg['To'] = mail_dict['TO']
     email_msg['Subject'] = mail_dict['subject']
     body = MIMEText(mail_dict['email_body'], 'plain')
@@ -108,10 +115,19 @@ def send_email(mail_dict):
     attachment = MIMEText(fp.read(), 'text/plain')
     attachment.add_header("Content-Disposition", "attachment", filename=logger_fname)
     email_msg.attach(attachment)
+    #message = {'raw': base64.urlsafe_b64encode(email_msg.as_string().encode()).decode()}
     try:
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        # creds = Credentials.from_authorized_user_file(token_path,
+        #                                               ['https://www.googleapis.com/auth/gmail.compose'])
+        # service = build('gmail', 'v1', credentials=creds)
+        # user_id = '%(USER)s' % mail_dict
+        # message = (service.users().messages().send(userId=user_id, body=message).execute())
+
+        context=ssl.create_default_context()
+        server = smtplib.SMTP('smtp.office365.com', 587)
         server.ehlo()
-        server.login(EMAIL['USER'], EMAIL['PASSWORD'])
+        server.starttls(context=context)
+        server.login(EMAILFIOCRUZ['USER'], EMAILFIOCRUZ['PASSWORD'])
         server.send_message(email_msg)
         server.close()
     except Exception as exception:
@@ -122,6 +138,7 @@ def send_email(mail_dict):
 
 
 def send_report_email(epiyear: int, epiweek: int, filtertype: str='srag', extra: str=None):
+    from time import sleep
     module_name = 'send_report_email.settings'
     logger.info(module_name)
 
@@ -130,12 +147,10 @@ def send_report_email(epiyear: int, epiweek: int, filtertype: str='srag', extra:
         'email_body': """
 Caro(a),
       
-Segue o resumo do boletim semanal gerado pelo InfoGripe, com base nos dados do Sivep-gripe até a SE %s 
-%02d.
+Segue o resumo do boletim semanal gerado pelo InfoGripe, com base nos dados do Sivep-gripe até a SE %s %02d.
 Esta é uma mensagem automática, não é necessário responder o e-mail.
 
-Em função do tamanho do documento completo, o mesmo não será enviado por e-mail, mas pode ser feito o download do 
-arquivo através do endereço usual: https://bit.ly/mave-infogripe-boletim-atual-fiocruz .
+Em função do tamanho do documento completo, o mesmo não será enviado por e-mail, mas pode ser feito o download do arquivo através do endereço usual: https://bit.ly/mave-infogripe-boletim-atual-fiocruz .
 Links relevantes (atualizados):
 Repositório: http://bit.ly/mave-repo-fiocruz
 Boletins: http://bit.ly/mave-infogripe-fiocruz
@@ -145,16 +160,7 @@ Boletim completo: bit.ly/mave-infrogripe-boletim-atual-fiocruz
 Pasta com gráficos para o país e estados, com estratificação por faixa etária: bit.ly/infogripe-estados-fiocruz
 Pasta com gráficos das capitais, com estratificação por faixa etária: bit.ly/infogripe-capitais-fiocruz
 
-*** ATENÇÃO ***
-Como os dados aqui analisados se referem a notificações de hospitalizações ou óbitos, a superlotação da rede 
-hospitalar, com formação de lista de espera para disponibilização de leitos, pode gerar subnotificação. Isso ocorre 
-toda vez que pacientes que atendem a definição de SRAG deixam de ser notificados por não ser possível realizar a 
-internação do paciente. Por causa desse risco de subnotificação, é possível que os casos de SRAG notificados na base 
-SIVEP subestimem o total de casos em locais com índice de ocupação de leitos elevado. Portanto, locais com índice de 
-ocupação de leitos elevado devem deixar os indicadores de SRAG em segundo plano em relação à tomada de decisão até 
-que a ocupação volte a diminuir.
-
-Sugestões de melhorias podem ser encaminhadas para o endereço eletrônico de contato, disponível no documento.
+Sugestões de melhorias podem ser encaminhadas para o endereço eletrônico infogripe@fiocruz.br
 
 Acesse o site para mais informações:
 http://info.gripe.fiocruz.br
@@ -164,52 +170,63 @@ Equipe InfoGripe
 InfoGripe - http://info.gripe.fiocruz.br
 Dados abertos - http://bit.ly/mave-infogripe-dados-fiocruz
 Boletins do InfoGripe - http://bit.ly/mave-infogripe-fiocruz
-MAVE: Grupo de Métodos Analíticos em Vigilância Epidemiológica (PROCC/Fiocruz e EMAp/FGV), em parceria com o 
-GT-Influenza da Secretaria de Vigilância em Saúde do Ministério da Saúde.
+MAVE: Grupo de Métodos Analíticos em Vigilância Epidemiológica (PROCC/Fiocruz e EMAp/FGV), em parceria com o GT-Influenza da Secretaria de Vigilância em Saúde do Ministério da Saúde.
 """ % (epiyear, epiweek),
         **REPORT
     }
-
-    email_msg = MIMEMultipart()
-    email_msg['From'] = '%(NAME)s <%(USER)s>' % mail_report
-    email_msg['Subject'] = mail_report['subject']
     body = MIMEText(mail_report['email_body'], 'plain')
-    email_msg.attach(body)
-
-    # if filtertype == 'srag':
-    #     # Base report
-    #     report_fname = 'Boletim_InfoGripe_SE%s%02d.pdf' % (epiyear, epiweek)
-    # elif filtertype == 'sragnofever':
-    #     # Report without fever filter
-    #     report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_febre.pdf' % (epiyear, epiweek)
-    # elif filtertype == 'hospdeath':
-    #     # Report without any symptoms filter
-    #     report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_sintomas.pdf' % (epiyear, epiweek)
-
+    mail_report['CCO'] = mail_report['CCO'].split(', ')
     short_version = 'Resumo_InfoGripe_%s_%02d.pdf' % (epiyear, epiweek)
     report_fname = os.path.join(public_report_folder_email, 'boletins_anteriores', short_version)
 
-    fp = open(report_fname, 'rb')
-    attachment = MIMEApplication(fp.read(), _subtype='pdf', _encoder=encode_base64)
-    attachment.add_header("Content-Disposition", "attachment", filename=short_version)
-    email_msg.attach(attachment)
+    for bcc in [mail_report['CCO'][i:(i+40)] for i in range(0, len(mail_report['CCO']), 40)]:
+        sleep(random.randint(15, 30))
+        email_msg = MIMEMultipart()
+        user_id = '%(NAME)s <%(USER)s>' % REPORT
+        email_msg['From'] = user_id
+        email_msg['To'] = mail_report['TO']
+        email_msg['Subject'] = mail_report['subject']
+        email_msg['Bcc'] = ', '.join(bcc)
+        email_msg.attach(body)
 
-    if extra:
-        # Extra report
-        report_fname = extra
+        # if filtertype == 'srag':
+        #     # Base report
+        #     report_fname = 'Boletim_InfoGripe_SE%s%02d.pdf' % (epiyear, epiweek)
+        # elif filtertype == 'sragnofever':
+        #     # Report without fever filter
+        #     report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_febre.pdf' % (epiyear, epiweek)
+        # elif filtertype == 'hospdeath':
+        #     # Report without any symptoms filter
+        #     report_fname = 'Boletim_InfoGripe_SE%s%02d_sem_filtro_sintomas.pdf' % (epiyear, epiweek)
+
         fp = open(report_fname, 'rb')
         attachment = MIMEApplication(fp.read(), _subtype='pdf', _encoder=encode_base64)
-        attachment.add_header("Content-Disposition", "attachment", filename=report_fname)
+        attachment.add_header("Content-Disposition", "attachment", filename=short_version)
         email_msg.attach(attachment)
-    try:
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        server.ehlo()
-        server.login(REPORT['USER'], REPORT['PASSWORD'])
-        server.send_message(email_msg, to_addrs=mail_report['CCO'].split(', '))
-        server.close()
-    except Exception as exception:
-        logger.exception(exception)
-        raise
+
+        if extra:
+            # Extra report
+            fp = open(extra, 'rb')
+            attachment = MIMEApplication(fp.read(), _subtype='pdf', _encoder=encode_base64)
+            attachment.add_header("Content-Disposition", "attachment", filename=extra.split('/')[-1])
+            email_msg.attach(attachment)
+        try:
+            # message = {'raw': base64.urlsafe_b64encode(email_msg.as_string().encode()).decode()}
+            # creds = Credentials.from_authorized_user_file(token_path,
+            #                                               ['https://www.googleapis.com/auth/gmail.compose'])
+            # service = build('gmail', 'v1', credentials=creds)
+            # user_id = '%(USER)s' % EMAILFIOCRUZ
+            # message = (service.users().messages().send(userId=user_id, body=message).execute())
+            context=ssl.create_default_context()
+            server = smtplib.SMTP('smtp.office365.com', 587)
+            server.ehlo()
+            server.starttls(context=context)
+            server.login(EMAILFIOCRUZ['USER'], EMAILFIOCRUZ['PASSWORD'])
+            server.send_message(email_msg)
+            server.close()
+        except Exception as exception:
+            logger.exception(exception)
+            raise
 
     logger.info('%s : DONE', module_name)
     return
@@ -401,7 +418,7 @@ def apply_opportunities(filtertype='srag'):
         raise
 
 
-def apply_estimator(date='max', filtertype='srag', dmax=None, wdw=None):
+def apply_estimator(date='max', filtertype='sragnofever', dmax=None, wdw=None):
     from opportunity_estimator import add_situation2weekly_data
 
     dataset = ['srag', 'sragflu', 'obitoflu', 'obito', 'sragcovid', 'obitocovid']
@@ -435,34 +452,38 @@ def apply_estimator(date='max', filtertype='srag', dmax=None, wdw=None):
 
         logger.info('... DONE')
 
-    if filtertype == 'sragnofever':
-        data = 'srag'
-        logger.info('Calculating estimates for capitals and macroregions of health: %s' % data)
-        module_name = 'opportunity_estimator.nowcastingCapitaisMacrosaude.R'
-        try:
-            cwd = os.getcwd()
-            os.chdir('../nowcasting_capitais')
-            Rscript = 'nowcastingCapitaisMacrosaude.R'
-            if all([dmax, wdw]):
-                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
-                     '--dmax', dmax, '--window', wdw, '--graphs'], check=True)
-            elif dmax:
-                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
-                     '--dmax', dmax, '--graphs'], check=True)
-            elif wdw:
-                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
-                     '--window', wdw, '--graphs'], check=True)
-            else:
-                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype, '--graphs'],
-                    check=True)
-            os.chdir(cwd)
-        except Exception as err:
-            logger.exception(module_name)
-            logger.exception(err)
-            mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
-            send_email(mail_error)
-            raise
-        logger.info('... DONE')
+    logger.info('detailed opportunity_estimator : DONE')
+    return
+
+
+def apply_detailedestimator(date='max', filtertype='sragnofever', dmax=None, wdw=None):
+    cwd = os.getcwd()
+    os.chdir('../nowcasting_capitais')
+    data = 'srag'
+    logger.info('Calculating estimates for capitals and macroregions of health: %s' % data)
+    module_name = 'opportunity_estimator.nowcastingCapitaisMacrosaude.R'
+    try:
+        Rscript = 'nowcastingCapitaisMacrosaude.R'
+        if all([dmax, wdw]):
+            run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
+                 '--dmax', dmax, '--window', wdw, '--graphs'], check=True)
+        elif dmax:
+            run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
+                 '--dmax', dmax, '--graphs'], check=True)
+        elif wdw:
+            run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
+                 '--window', wdw, '--graphs'], check=True)
+        else:
+            run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype, '--graphs'],
+                check=True)
+    except Exception as err:
+        logger.exception(module_name)
+        logger.exception(err)
+        mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
+        send_email(mail_error)
+        raise
+    os.chdir(cwd)
+    logger.info('... DONE')
 
     logger.info('opportunity_estimator : DONE')
     return
@@ -567,7 +588,11 @@ def generate_report(epiyear=None, epiweek=None, plot=None, filtertype='srag'):
     return
 
 
-def generate_public_datasets(filtertype='srag'):
+def generate_public_datasets(filtertype='srag',
+                             standard_estimates=True,
+                             detailed_estimates=False,
+                             report=False,
+                             epiweekmax=None):
 
     import pandas as pd
 
@@ -645,188 +670,184 @@ def generate_public_datasets(filtertype='srag'):
             'hospdeath': '_sem_filtro_sintomas'
         }
 
-        #MEM
-        fname = os.path.join(data_folder, 'mem-report%s.csv' % suff)
-        dfreport = pd.read_csv(fname)
-        dfreport = dfreport.rename(columns={'População': 'População de referência para cálculo de incidência',
-                                            'temporadas utilizadas para os corredores endêmicos': 'temporadas consideradas regulares'})
+        if standard_estimates:
+            #MEM
+            fname = os.path.join(data_folder, 'mem-report%s.csv' % suff)
+            dfreport = pd.read_csv(fname)
+            dfreport = dfreport.rename(columns={'População': 'População de referência para cálculo de incidência',
+                                                'temporadas utilizadas para os corredores endêmicos': 'temporadas consideradas regulares'})
 
-        tgt_cols = ['UF', 'Unidade da Federação', 'Tipo', 'dado', 'escala',
-                    'limiar pré-epidêmico',  'intensidade alta', 'intensidade muito alta',
-                    'temporadas consideradas regulares',
-                    'População de referência para cálculo de incidência']
-        dfreport = dfreport[tgt_cols]
+            tgt_cols = ['UF', 'Unidade da Federação', 'Tipo', 'dado', 'escala',
+                        'limiar pré-epidêmico',  'intensidade alta', 'intensidade muito alta',
+                        'temporadas consideradas regulares',
+                        'População de referência para cálculo de incidência']
+            dfreport = dfreport[tgt_cols]
 
-        fname = os.path.join(data_folder, 'mem-typical%s.csv' % suff)
-        dftypical = pd.read_csv(fname)
-        dftypical = dftypical.drop(columns='População').merge(dfreport)
-        dftypical.loc[dftypical.Tipo != 'Estado', 'UF'] = dftypical.loc[dftypical.Tipo != 'Estado', 'UF'].map(
-            convert_region_id)
+            fname = os.path.join(data_folder, 'mem-typical%s.csv' % suff)
+            dftypical = pd.read_csv(fname)
+            dftypical = dftypical.drop(columns='População').merge(dfreport)
+            dftypical.loc[dftypical.Tipo != 'Estado', 'UF'] = dftypical.loc[dftypical.Tipo != 'Estado', 'UF'].map(
+                convert_region_id)
 
-        fname = os.path.join(data_folder, 'valores_esperados_por_localidade%s.csv' % suff_out[filtertype])
-        tgt_cols = ['UF', 'Unidade da Federação', 'Tipo', 'dado', 'escala', 'epiweek',
-                    'corredor baixo', 'corredor mediano', 'corredor alto',
-                    'limiar pré-epidêmico', 'intensidade alta',
-                    'intensidade muito alta', 'temporadas consideradas regulares',
-                    'População de referência para cálculo de incidência']
-        dftypical[tgt_cols].rename(columns=rename_cols).to_csv(fname, sep=';', index=False, decimal=',')
-        fname = os.path.join(public_data_folder, 'valores_esperados_por_localidade%s.csv' % suff_out[filtertype])
-        dftypical[tgt_cols].rename(columns=rename_cols).to_csv(fname, sep=';', index=False, decimal=',')
+            fname = os.path.join(data_folder, 'valores_esperados_por_localidade%s.csv' % suff_out[filtertype])
+            tgt_cols = ['UF', 'Unidade da Federação', 'Tipo', 'dado', 'escala', 'epiweek',
+                        'corredor baixo', 'corredor mediano', 'corredor alto',
+                        'limiar pré-epidêmico', 'intensidade alta',
+                        'intensidade muito alta', 'temporadas consideradas regulares',
+                        'População de referência para cálculo de incidência']
+            dftypical[tgt_cols].rename(columns=rename_cols).to_csv(fname, sep=';', index=False, decimal=',')
+            fname = os.path.join(public_data_folder, 'valores_esperados_por_localidade%s.csv' % suff_out[filtertype])
+            dftypical[tgt_cols].rename(columns=rename_cols).to_csv(fname, sep=';', index=False, decimal=',')
 
-        #time series
-        fname = os.path.join(data_folder, 'current_estimated_values%s.csv.gz' % suff)
-        df = pd.read_csv(fname)
-        run_date = df['Run date'].unique()[0]
-        tgt_cols = ['Run date', 'UF', 'dado', 'escala', 'epiyear', 'epiweek', 'Situation', 'SRAG', '2.5%', '50%',
-                    'bounded_97.5%', 'cntry_percentage', 'rolling_average', 'population']
-        df = df[tgt_cols].copy()
-        df = df.merge(dfreport[['UF',
-                                'Unidade da Federação',
-                                'Tipo',
-                                'dado',
-                                'escala',
-                                'limiar pré-epidêmico',
-                                'intensidade alta',
-                                'intensidade muito alta']], how='left')
-        df = df[['Run date',
-                 'UF',
-                 'Unidade da Federação',
-                 'Tipo',
-                 'dado',
-                 'escala',
-                 'epiyear',
-                 'epiweek',
-                 'Situation',
-                 'SRAG',
-                 '2.5%',
-                 '50%',
-                 'rolling_average',
-                 'bounded_97.5%',
-                 'cntry_percentage',
-                 'population',
-                 'limiar pré-epidêmico',
-                 'intensidade alta',
-                 'intensidade muito alta']]
-        df.loc[df.Situation != 'estimated', ['2.5%', '50%', 'bounded_97.5%']] = None
-        epiweekmax = df.loc[df.Situation == 'estimated',
-                            ['epiyear', 'epiweek']].sort_values(by=['epiyear', 'epiweek']).tail(1)
-        df.loc[(df.epiyear == epiweekmax.epiyear.values[0]) &
-               (df.epiweek >= epiweekmax.epiweek.values[0]-1),
-               'SRAG'] = None
-        if epiweekmax.epiweek.values[0] == 1:
-            epiyearprev = epiweekmax.epiyear.values[0] - 1
-            epiwkmax = df.epiweek[df.Situation == 'estimated'].max()
-            df.loc[(df.epiyear == epiyearprev) &
-                   (df.epiweek == epiwkmax),
+            #time series
+            fname = os.path.join(data_folder, 'current_estimated_values%s.csv.gz' % suff)
+            df = pd.read_csv(fname)
+            run_date = df['Run date'].unique()[0]
+            tgt_cols = ['Run date', 'UF', 'dado', 'escala', 'epiyear', 'epiweek', 'Situation', 'SRAG', '2.5%', '50%',
+                        'bounded_97.5%', 'cntry_percentage', 'rolling_average', 'population']
+            df = df[tgt_cols].copy()
+            df = df.merge(dfreport[['UF',
+                                    'Unidade da Federação',
+                                    'Tipo',
+                                    'dado',
+                                    'escala',
+                                    'limiar pré-epidêmico',
+                                    'intensidade alta',
+                                    'intensidade muito alta']], how='left')
+            df = df[['Run date',
+                     'UF',
+                     'Unidade da Federação',
+                     'Tipo',
+                     'dado',
+                     'escala',
+                     'epiyear',
+                     'epiweek',
+                     'Situation',
+                     'SRAG',
+                     '2.5%',
+                     '50%',
+                     'rolling_average',
+                     'bounded_97.5%',
+                     'cntry_percentage',
+                     'population',
+                     'limiar pré-epidêmico',
+                     'intensidade alta',
+                     'intensidade muito alta']]
+            df.loc[df.Situation != 'estimated', ['2.5%', '50%', 'bounded_97.5%']] = None
+            epiweekmax = df.loc[df.Situation == 'estimated',
+                                ['epiyear', 'epiweek']].sort_values(by=['epiyear', 'epiweek']).tail(1)
+            df.loc[(df.epiyear == epiweekmax.epiyear.values[0]) &
+                   (df.epiweek >= epiweekmax.epiweek.values[0]-1),
                    'SRAG'] = None
+            if epiweekmax.epiweek.values[0] == 1:
+                epiyearprev = epiweekmax.epiyear.values[0] - 1
+                epiwkmax = df.epiweek[df.Situation == 'estimated'].max()
+                df.loc[(df.epiyear == epiyearprev) &
+                       (df.epiweek == epiwkmax),
+                       'SRAG'] = None
 
-        df.Situation = df.Situation.map(situation_dict)
-        df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
-        df.UF = df.UF.astype(int)
+            df.Situation = df.Situation.map(situation_dict)
+            df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
+            df.UF = df.UF.astype(int)
 
-        ## Add alert levels
-        fname = os.path.join(data_folder, 'weekly_alert%s.csv' % suff)
-        dfalert = pd.read_csv(fname)[['dataset_id', 'territory_id', 'epiyear', 'epiweek', 'alert']]
-        dfalert.dataset_id = dfalert.dataset_id.map(dataset_id_map)
-        dfalert.alert = dfalert.alert.map(alert_dict)
-        df = df.merge(dfalert,
-                      left_on=['UF', 'dado', 'epiyear', 'epiweek'],
-                      right_on=['territory_id', 'dataset_id', 'epiyear', 'epiweek'], how='left')
-        df = df.drop(columns={'territory_id', 'dataset_id'})
+            ## Add alert levels
+            fname = os.path.join(data_folder, 'weekly_alert%s.csv' % suff)
+            dfalert = pd.read_csv(fname)[['dataset_id', 'territory_id', 'epiyear', 'epiweek', 'alert']]
+            dfalert.dataset_id = dfalert.dataset_id.map(dataset_id_map)
+            dfalert.alert = dfalert.alert.map(alert_dict)
+            df = df.merge(dfalert,
+                          left_on=['UF', 'dado', 'epiyear', 'epiweek'],
+                          right_on=['territory_id', 'dataset_id', 'epiyear', 'epiweek'], how='left')
+            df = df.drop(columns={'territory_id', 'dataset_id'})
 
-        def alert_level_rolling(x):
-            if pd.isnull(x[0]):
-                return None
-            if x[0] >= x[2]:
-                return 'Vermelho'
-            if x[0] >= x[1]:
-                return 'Amarelo'
-            return 'Verde'
+            def alert_level_rolling(x):
+                if pd.isnull(x[0]):
+                    return None
+                if x[0] >= x[2]:
+                    return 'Vermelho'
+                if x[0] >= x[1]:
+                    return 'Amarelo'
+                return 'Verde'
 
-        df['nível por média móvel'] = df[['rolling_average',
-                                          'limiar pré-epidêmico',
-                                          'intensidade alta']].apply(axis=1, func=alert_level_rolling)
-        df = df.rename(columns=rename_cols)
-        df.dado = pd.Categorical(df.dado, ['srag', 'sragflu', 'sragcovid', 'obito', 'obitoflu', 'obitocovid'])
-        df = df.sort_values(by=['Ano epidemiológico', 'escala', 'dado', 'UF', 'Semana epidemiológica']).reset_index(
-            drop=True)
-        fname = os.path.join(data_folder, 'serie_temporal_com_estimativas_recentes%s.csv.gz' % suff_out[filtertype])
-        df.to_csv(fname, sep=';', index=False, decimal=',')
-        fname = os.path.join(public_data_folder, 'serie_temporal_com_estimativas_recentes%s.csv.gz' % suff_out[filtertype])
-        df.to_csv(fname, sep=';', index=False, decimal=',')
+            df['nível por média móvel'] = df[['rolling_average',
+                                              'limiar pré-epidêmico',
+                                              'intensidade alta']].apply(axis=1, func=alert_level_rolling)
+            df = df.rename(columns=rename_cols)
+            df.dado = pd.Categorical(df.dado, ['srag', 'sragflu', 'sragcovid', 'obito', 'obitoflu', 'obitocovid'])
+            df = df.sort_values(by=['Ano epidemiológico', 'escala', 'dado', 'UF', 'Semana epidemiológica']).reset_index(
+                drop=True)
+            fname = os.path.join(data_folder, 'serie_temporal_com_estimativas_recentes%s.csv.gz' % suff_out[filtertype])
+            df.to_csv(fname, sep=';', index=False, decimal=',')
+            fname = os.path.join(public_data_folder, 'serie_temporal_com_estimativas_recentes%s.csv.gz' % suff_out[filtertype])
+            df.to_csv(fname, sep=';', index=False, decimal=',')
 
-        # tabela:
-        if epiweekmax.epiweek.values[0] == 1:
-            df = df.loc[(((df['Ano epidemiológico'] == epiyearprev) & (df['Semana epidemiológica'] == epiwkmax)) |
-                         ((df['Ano epidemiológico'] == epiyearprev+1) & (df['Semana epidemiológica'] == 1))) &
-                        (df.dado == 'srag') &
-                        (df.escala == 'incidência'),
-                        ['UF', 'Unidade da Federação', 'dado', 'escala', 'Ano epidemiológico', 'Semana epidemiológica',
-                         'casos estimados', 'média móvel', 'nível semanal', 'nível por média móvel']].copy()
-        else:
-            df = df.loc[(df['Ano epidemiológico'] == epiweekmax.epiyear.values[0]) &
-                        (df['Semana epidemiológica'].isin([epiweekmax.epiweek-1, epiweekmax.epiweek])) &
-                        (df.dado == 'srag') &
-                        (df.escala == 'incidência'),
-                        ['UF', 'Unidade da Federação', 'dado', 'escala', 'Ano epidemiológico', 'Semana epidemiológica',
-                         'casos estimados', 'média móvel', 'nível semanal', 'nível por média móvel']].copy()
+            # tabela:
+            if epiweekmax.epiweek.values[0] == 1:
+                df = df.loc[(((df['Ano epidemiológico'] == epiyearprev) & (df['Semana epidemiológica'] == epiwkmax)) |
+                             ((df['Ano epidemiológico'] == epiyearprev+1) & (df['Semana epidemiológica'] == 1))) &
+                            (df.dado == 'srag') &
+                            (df.escala == 'incidência'),
+                            ['UF', 'Unidade da Federação', 'dado', 'escala', 'Ano epidemiológico', 'Semana epidemiológica',
+                             'casos estimados', 'média móvel', 'nível semanal', 'nível por média móvel']].copy()
+            else:
+                df = df.loc[(df['Ano epidemiológico'] == epiweekmax.epiyear.values[0]) &
+                            (df['Semana epidemiológica'].isin([epiweekmax.epiweek-1, epiweekmax.epiweek])) &
+                            (df.dado == 'srag') &
+                            (df.escala == 'incidência'),
+                            ['UF', 'Unidade da Federação', 'dado', 'escala', 'Ano epidemiológico', 'Semana epidemiológica',
+                             'casos estimados', 'média móvel', 'nível semanal', 'nível por média móvel']].copy()
 
-        fname = os.path.join(data_folder, 'tabela_de_alerta%s.csv' % suff_out[filtertype])
-        df.to_csv(fname, sep=';', index=False, decimal=',')
-        fname = os.path.join(public_data_folder, 'tabela_de_alerta%s.csv' % suff_out[filtertype])
-        df.to_csv(fname, sep=';', index=False, decimal=',')
+            fname = os.path.join(data_folder, 'tabela_de_alerta%s.csv' % suff_out[filtertype])
+            df.to_csv(fname, sep=';', index=False, decimal=',')
+            fname = os.path.join(public_data_folder, 'tabela_de_alerta%s.csv' % suff_out[filtertype])
+            df.to_csv(fname, sep=';', index=False, decimal=',')
 
-        # Data by age, gender, and virus:
-        fname = os.path.join(data_folder, 'clean_data_epiweek-weekly-incidence_w_situation%s.csv.gz' % suff)
-        df = pd.read_csv(fname)
-        df.Situation = df.Situation.map(situation_dict)
-        df['Run date'] = run_date
-        df = df.rename(columns=rename_cols)
-        df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
+            # Data by age, gender, and virus:
+            fname = os.path.join(data_folder, 'clean_data_epiweek-weekly-incidence_w_situation%s.csv.gz' % suff)
+            df = pd.read_csv(fname)
+            df.Situation = df.Situation.map(situation_dict)
+            df['Run date'] = run_date
+            df = df.rename(columns=rename_cols)
+            df.loc[df.Tipo != 'Estado', 'UF'] = df.loc[df.Tipo != 'Estado', 'UF'].map(convert_region_id)
 
-        tgt_cols = ['data de publicação',
-                    'UF',
-                    'Unidade da Federação',
-                    'Tipo',
-                    'dado',
-                    'escala',
-                    'sexo',
-                    'Ano epidemiológico',
-                    'Semana epidemiológica',
-                    'Ano e semana epidemiológica',
-                    'Situação do dado',
-                    'Casos semanais reportados até a última atualização',
-                    'Idade desconhecida',
-                    '< 2 anos', '0-4 anos', '10-19 anos', '2-4 anos', '20-29 anos', '30-39 anos', '40-49 anos',
-                    '5-9 anos', '50-59 anos', '60+ anos',
-                    'Testes positivos', 'Testes negativos', 'Casos aguardando resultado',
-                    'Casos sem informação laboratorial', 'Casos sem teste laboratorial',
-                    'Resultado inconclusivo',
-                    'Influenza A', 'Influenza B', 'SARS-CoV-2', 'Vírus sincicial respiratório (VSR)',
-                    'Parainfluenza 1', 'Parainfluenza 2', 'Parainfluenza 3', 'Parainfluenza 4', 'Adenovirus',
-                    'Rinovirus', 'Bocavirus', 'Metapneumovirus', 'Outros virus'
-                    ]
-        fname = os.path.join(data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv.gz' % suff_out[filtertype])
-        df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
-        fname = os.path.join(public_data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv.gz' % suff_out[filtertype])
-        df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
+            tgt_cols = ['data de publicação',
+                        'UF',
+                        'Unidade da Federação',
+                        'Tipo',
+                        'dado',
+                        'escala',
+                        'sexo',
+                        'Ano epidemiológico',
+                        'Semana epidemiológica',
+                        'Ano e semana epidemiológica',
+                        'Situação do dado',
+                        'Casos semanais reportados até a última atualização',
+                        'Idade desconhecida',
+                        '< 2 anos', '0-4 anos', '10-19 anos', '2-4 anos', '20-29 anos', '30-39 anos', '40-49 anos',
+                        '5-9 anos', '50-59 anos', '60+ anos',
+                        'Testes positivos', 'Testes negativos', 'Casos aguardando resultado',
+                        'Casos sem informação laboratorial', 'Casos sem teste laboratorial',
+                        'Resultado inconclusivo',
+                        'Influenza A', 'Influenza B', 'SARS-CoV-2', 'Vírus sincicial respiratório (VSR)',
+                        'Parainfluenza 1', 'Parainfluenza 2', 'Parainfluenza 3', 'Parainfluenza 4', 'Adenovirus',
+                        'Rinovirus', 'Bocavirus', 'Metapneumovirus', 'Outros virus'
+                        ]
+            fname = os.path.join(data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv.gz' % suff_out[filtertype])
+            df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
+            fname = os.path.join(public_data_folder, 'dados_semanais_faixa_etaria_sexo_virus%s.csv.gz' % suff_out[filtertype])
+            df[tgt_cols].to_csv(fname, sep=';', index=False, decimal=',')
 
-        run(['cp --force ./report/Figs/Territory_*_dataset_1_timeseries%s.png %s/.' % (suff, public_figs_folder)],
-            check=True, shell=True)
-        run(['rename "s/Territory/Territorio/" %s/Territory_*png' % public_figs_folder], check=True, shell=True)
-        run(['rename -f "s/dataset_1/SRAG/" %s/Territorio_*png' % public_figs_folder], check=True, shell=True)
-        run(['rename -f "s/timeseries/serietemporal/" %s/Territorio_*png' % public_figs_folder], check=True, shell=True)
-        run(['rename -f "s/%s/%s/" %s/Territorio_*png' % (suff, suff_out[filtertype], public_figs_folder)], check=True,
-            shell=True)
-        run(['rm --force %s/Territory_*png' % public_figs_folder],
-            check=True, shell=True)
-        run(['cp --force ./report/Boletim_InfoGripe_atual%s.pdf %s/.' % (suff_out[filtertype], public_report_folder)],
-            check=True, shell=True)
-        run(['cp --force ./report/Boletim_InfoGripe_SE%s%02d%s.pdf %s/boletins_anteriores/.' % (
-            epiweekmax.epiyear.values[0], epiweekmax.epiweek.values[0], suff_out[filtertype], public_report_folder)],
-            check=True, shell=True)
+            run(['cp --force ./report/Figs/Territory_*_dataset_1_timeseries%s.png %s/.' % (suff, public_figs_folder)],
+                check=True, shell=True)
+            run(['rename "s/Territory/Territorio/" %s/Territory_*png' % public_figs_folder], check=True, shell=True)
+            run(['rename -f "s/dataset_1/SRAG/" %s/Territorio_*png' % public_figs_folder], check=True, shell=True)
+            run(['rename -f "s/timeseries/serietemporal/" %s/Territorio_*png' % public_figs_folder], check=True, shell=True)
+            run(['rename -f "s/%s/%s/" %s/Territorio_*png' % (suff, suff_out[filtertype], public_figs_folder)], check=True,
+                shell=True)
+            run(['rm --force %s/Territory_*png' % public_figs_folder],
+                check=True, shell=True)
 
-        if filtertype == 'sragnofever':
+        if detailed_estimates:
             run(['cp --force ./nowcasting_capitais/Figs/UF/fig*.png %s/UF/.' % public_figs_folder],
                 check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/Figs/UF/Mapa_ufs_tendencia.png %s/UF/.' %
@@ -865,6 +886,12 @@ def generate_public_datasets(filtertype='srag'):
                 check=True, shell=True)
             run(['cp --force ./nowcasting_capitais/macsaud_serie_estimativas_tendencia_sem_filtro_febre.csv %s/.' %
                  public_data_folder],
+                check=True, shell=True)
+        if report:
+            run(['cp --force ./report/Boletim_InfoGripe_atual%s.pdf %s/.' % (suff_out[filtertype], public_report_folder)],
+                check=True, shell=True)
+            run(['cp --force ./report/Boletim_InfoGripe_SE%s%02d%s.pdf %s/boletins_anteriores/.' % (
+                epiweekmax.epiyear.values[0], epiweekmax.epiweek.values[0], suff_out[filtertype], public_report_folder)],
                 check=True, shell=True)
 
     except Exception as err:
@@ -949,6 +976,8 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
                        'consolidate',
                        'public_dataset',
                        'report']
+        if filtertype == 'sragnofever':
+            module_list.append('detailed_estimator')
 
     logger.info('Update MEM: %s', update_mem)
     logger.info('Update modules: %s', module_list)
@@ -1006,9 +1035,27 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     if 'consolidate' in module_list:
         logger.info('Consolidate dataset and update DB')
         consolidate(dbdump, filtertype)
+        if 'public_dataset' in module_list:
+            os.chdir('../')
+            logger.info('Generate public dataset')
+            generate_public_datasets(filtertype, standard_estimates=True,
+                                     detailed_estimates=False,
+                                     report=False)
+            os.chdir('./data_filter')
 
-    os.chdir('../')
-    os.chdir('./report')
+    os.chdir('../nowcasting_capitais')
+    if 'detailed_estimator' in module_list:
+        logger.info('Apply detailed opportunity estimator')
+        apply_detailedestimator(date, filtertype, dmax, wdw)
+        if 'public_dataset' in module_list:
+            os.chdir('../')
+            logger.info('Generate public dataset')
+            generate_public_datasets(filtertype, standard_estimates=False,
+                                     detailed_estimates=True,
+                                     report=False)
+            os.chdir('./nowcasting_capitais')
+
+    os.chdir('../report')
     epiyear, epiweek = episem(date).split('W')
     if int(epiweek) == 1:
         epiyear = int(epiyear) - 1
@@ -1018,18 +1065,31 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
         epiweek = int(epiweek) - 1
 
     if 'report' in module_list:
+        import pandas as pd
         logger.info('Report generation')
         generate_report(epiyear=epiyear, epiweek=epiweek, plot=plot, filtertype=filtertype)
+        if 'public_dataset' in module_list:
+            os.chdir('../')
+            logger.info('Generate public dataset')
+            generate_public_datasets(filtertype, standard_estimates=False,
+                                     detailed_estimates=False,
+                                     report=True,
+                                     epiweekmax=pd.DataFrame([{'epiweek': epiweek, 'epiyear': epiyear}])
+                                     )
+            os.chdir('./report')
 
     if 'sendreport' in module_list:
         logger.info('Send report over email')
         send_report_email(epiyear=epiyear, epiweek=epiweek, filtertype=filtertype, extra=extra)
 
     os.chdir('../')
-
     if 'public_dataset' in module_list:
         logger.info('Generate public dataset')
-        generate_public_datasets(filtertype)
+        flags = [i not in module_list for i in ['consolidate', 'detailed', 'report']]
+        generate_public_datasets(filtertype,
+                                 standard_estimates=flags[0],
+                                 detailed_estimates=flags[1],
+                                 report=flags[2])
 
     if 'export' in module_list:
         logger.info('Export DB')

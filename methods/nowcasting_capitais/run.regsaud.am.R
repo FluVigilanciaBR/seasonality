@@ -113,8 +113,8 @@ run.regsaud.am <- function(qthres.probs=0.95){
         pred.srag.summy <- try.estimate('REGSAUDE AM', warn.lbl,
                                         dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
         if (inherits(pred.srag.summy, 'error')){
-          dmax <- dmax + 1
-          wdw <- wdw + 2
+          dmax <- dmax - 2
+          wdw <- ceiling(2.25*dmax)
           pred.warning <- c(pred.warning, warn.lbl)
           pred.srag.summy <- try.estimate('REGSAUDE AM', warn.lbl,
                                           dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
@@ -124,9 +124,9 @@ run.regsaud.am <- function(qthres.probs=0.95){
             pred.srag.summy <- readRDS(paste0(preff,'/estimativas_regsaud_am', lyear, '_', today.week-1, '.rds')) %>%
               filter(co_regsaud_am == as.integer(REGSAUDAM.id),
                      grupo_jur == gpj) %>%
-              select(-epiweek, -epiyear, -co_regsaud_am, -no_regiao_am) %>%
+              select(-epiweek, -epiyear, -no_regiao_am) %>%
               right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
-              fill(co_reg_saud_am, DS_NOMEPAD_regsaud, CO_UF, DS_UF_SIGLA, populacao, grupo_jur, .direction='down')
+              fill(co_regsaud_am, DS_NOMEPAD_regsaud, CO_UF, DS_UF_SIGLA, populacao, grupo_jur, .direction='down')
             pred.regsaud.am <- pred.regsaud.am %>%
               bind_rows(pred.srag.summy)
             

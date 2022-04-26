@@ -80,6 +80,7 @@ today.week <- as.integer(strsplit(today, 'W')[[1]][2])
 
 # Tabela cadmun no git
 tblCADMUN <- read.csv("../data/municip_macsaud_regmetr.csv", stringsAsFactors = F)
+tblregsaud <- read.csv("../data/base_territorial/rl_municip_regsaud.csv", stringsAsFactors = F)
 tblmumpop <- read.csv("../data/tab_datasus_pop_faixateraria.csv", stringsAsFactors = F)
 tblmumpop[,4:ncol(tblmumpop)] <- tblmumpop %>%
   select(-codmun, -municipio, -ano) %>%
@@ -179,7 +180,8 @@ dados_full <- fread( path_file, stringsAsFactors = F, data.table=F) %>%
          TESTING_IGNORED,
          CLASSI_FIN,
          CRITERIO,
-         SinPri2Digita_DelayWeeks)
+         SinPri2Digita_DelayWeeks) %>%
+  as_tibble()
 if (args$filtertype == 'sragnofever'){
   dados_full %>%
     filter(SG_UF_NOT == 13) %>%
@@ -270,7 +272,7 @@ try.estimate <- function(nivel, uf, dadosBR, Inicio=Inicio, today.week=today.wee
 
 
 # Read CNES data
-cnes <- read.csv2('../data/tbEstabelecimento_atual_clean.csv', stringsAsFactors = F) %>%
+cnes <- read_csv2('../data/tbEstabelecimento_atual_clean.csv') %>%
   select(CO_CNES, CO_NATUREZA_JUR)
 dados_full <- dados_full %>%
   left_join(cnes, by=c('CO_UNI_NOT' = 'CO_CNES')) %>%
@@ -363,11 +365,37 @@ for (uf in uf.list$CO_UF){
   pop <- uf.list$Populacao[uf.list$CO_UF == uf]
   gpj <- 0
   
-  age.BR.h.srag.pred <- nowcasting_age(dados.obs %>% filter(
-    SG_UF_NOT == uf,
-    delay <= qthreshold$dmax[qthreshold$SG_UF_NOT==uf],
-    Time >= today.week - (qthreshold$wdw[qthreshold$SG_UF_NOT==uf])-1))
-  age.BR.h.srag.pred <- nowcasting.summary(age.BR.h.srag.pred, age = T)
+  trials <- 0
+  consistent <- F
+  i.dmax <- qthreshold$dmax[qthreshold$SG_UF_NOT==uf]
+  i.wdw <- qthreshold$wdw[qthreshold$SG_UF_NOT==uf]-1
+  while (trials < 3 & !consistent){
+    age.BR.h.srag.pred <- nowcasting_age(dados.obs %>% filter(
+      SG_UF_NOT == uf,
+      delay <= i.dmax,
+      Time >= today.week - i.wdw))
+    age.BR.h.srag.pred <- nowcasting.summary(age.BR.h.srag.pred, age = T)
+    consistent <- age.BR.h.srag.pred$age %>%
+      filter(dt_event == today.week) %>%
+      transmute(dispersion = LS/(Median+1) < 20) %>%
+      all()
+    trials <- trials + 1
+    i.dmax <- max(i.dmax - 2, 4)
+    i.wdw <- round(2.25*i.dmax) - 1
+    if (!consistent){
+      fx.explode <- age.BR.h.srag.pred$age %>%
+        filter(dt_event == today.week,
+               LS/(Median+1) > 20) %>%
+        select(fx_etaria)
+      age.BR.h.srag.pred$age <- age.BR.h.srag.pred$age %>%
+        mutate(LS = case_when(
+          fx_etaria %in% fx.explode$fx_etaria ~ as.numeric(IC80S),
+          TRUE ~ as.numeric(LS)
+        ))
+      print(paste0('UF: ', uf.name, '. Tentativa: ', trials, '.\nExplosão nas fx etárias:'))
+      print(fx.explode)
+    }
+  }
   
   if (uf == 0){
     age.BR.h.srag.pred$age <- dados_full %>%
@@ -375,7 +403,7 @@ for (uf in uf.list$CO_UF){
       group_by(DT_SIN_PRI_epiweek, fx_etaria) %>%
       summarise(n = n()) %>%
       ungroup() %>%
-      complete(DT_SIN_PRI_epiweek, fx_etaria, fill=list(n=0)) %>%
+      complete(DT_SIN_PRI_epiweek=1:today.week, fx_etaria, fill=list(n=0)) %>%
       rename(dt_event=DT_SIN_PRI_epiweek) %>%
       left_join(age.BR.h.srag.pred$age, by=c('dt_event', 'fx_etaria')) %>%
       mutate(fx_etaria=factor(fx_etaria,
@@ -390,7 +418,7 @@ for (uf in uf.list$CO_UF){
       group_by(DT_SIN_PRI_epiweek, fx_etaria) %>%
       summarise(n = n()) %>%
       ungroup() %>%
-      complete(DT_SIN_PRI_epiweek, fx_etaria, fill=list(n=0)) %>%
+      complete(DT_SIN_PRI_epiweek=1:today.week, fx_etaria, fill=list(n=0)) %>%
       rename(dt_event=DT_SIN_PRI_epiweek) %>%
       left_join(age.BR.h.srag.pred$age, by=c('dt_event', 'fx_etaria')) %>%
       mutate(fx_etaria=factor(fx_etaria,
@@ -456,7 +484,6 @@ for (uf in uf.list$CO_UF){
       right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
       replace_na(list(Casos = 0))
   }
-  gc(verbose=F)
   pred.srag.summy <- generate.slope(dadosBR,
                                     age.BR.h.srag.pred$total.samples %>%
                                       ungroup() %>%
@@ -508,7 +535,7 @@ df.uf.age <- df.uf.age %>%
          casos_notificados=n,
          mediana_da_estimativa=Median) %>%
   left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek')) %>%
-  arrange(SG_UF_NOT, DT_SIN_PRI_epiweek, fx_etaria)
+  arrange(SG_UF_NOT, fx_etaria, DT_SIN_PRI_epiweek)
 df.uf.age %>%
   saveRDS(file=paste0(preff,'/uf.estimativas.fx.etaria.rds'))
 df.uf.age %>%
@@ -764,10 +791,22 @@ for(k in 1:nrow(tblCADMUN.capital)){
                  dt_event=DT_SIN_PRI_epiweek,
                  delay=SinPri2Digita_DelayWeeks,
                  Time=dt_event)
-        age.BR.h.srag.pred <- nowcasting_age(dadosBR %>% filter(
-          delay <= dmax,
-          Time >= today.week - (wdw-1)))
-        age.BR.h.srag.pred <- nowcasting.summary(age.BR.h.srag.pred, age = T)
+        
+        trials <- 0
+        consistent <- F
+        while (trials < 3 & !consistent & dmax >= 4){
+          age.BR.h.srag.pred <- nowcasting_age(dadosBR %>% filter(
+            delay <= dmax,
+            Time >= today.week - (wdw-1)))
+          age.BR.h.srag.pred <- nowcasting.summary(age.BR.h.srag.pred, age = T)
+          consistent <- age.BR.h.srag.pred$age %>%
+            filter(dt_event == today.week) %>%
+            transmute(dispersion = LS/(Median+1) < 20) %>%
+            all()
+          trials <- trials + 1
+          dmax <- dmax - 2
+          wdw <- round(2.25*dmax) - 1
+        }
         
         age.BR.h.srag.pred$age <- dadosBR0 %>%
           filter(!is.na(fx_etaria)) %>%
@@ -978,7 +1017,8 @@ if (args$filtertype != 'sragnofever'){
 
 # Macrorregionais de saúde: ----
 tblMACSAUD <- tblCADMUN %>%
-  filter(!is.na(CO_MACSAUD)) %>%
+  filter(!is.na(CO_MACSAUD),
+         CO_MACSAUD != 0) %>%
   select(CO_MACSAUD, DS_NOMEPAD_macsaud, CO_UF, DS_UF_SIGLA, Populacao) %>%
   group_by(CO_MACSAUD, DS_NOMEPAD_macsaud, CO_UF, DS_UF_SIGLA) %>%
   summarise(Populacao = sum(Populacao)) %>%
@@ -1005,6 +1045,16 @@ qthreshold <- dados_full %>%
            TRUE ~ as.numeric(ceiling(2.25*dmax)))
   )
 
+macros.unicas <- tblMACSAUD %>%
+  group_by(CO_UF) %>%
+  summarise(n=n()) %>%
+  filter(n==1, CO_UF !=0) %>%
+  ungroup() %>%
+  left_join(tblMACSAUD, by='CO_UF')
+pred.ufs <- readRDS('ufs_current.rds') %>%
+  filter(CO_UF %in% macros.unicas$CO_UF) %>%
+  select(-epiweek, -epiyear)
+
 pred.macros <- c()
 pred.warning <- c()
 pred.failed <- c()
@@ -1029,6 +1079,13 @@ for(k in 1:nrow(tblMACSAUD)){
       CO_MACSAUD == tblMACSAUD$CO_MACSAUD[k]
     )
   
+  macsaud.id <- tblMACSAUD$CO_MACSAUD[k]
+  # Semana epidemiologica termina no Sabado, entao vou excluir os dados mais recentes caso a semana nao comece no sábado.
+  Fim.sat <- today.week
+  pop <- tblMACSAUD$Populacao[k]
+  macsaud.name <- tblMACSAUD$DS_NOMEPAD_macsaud[k]
+  uf <- tblMACSAUD$CO_UF[k]
+  uf.name <- tblMACSAUD$DS_UF_SIGLA[k]
   
   for (gpj in c(0)){
     if (gpj > 0){
@@ -1039,49 +1096,50 @@ for(k in 1:nrow(tblMACSAUD)){
     }
     if (nrow(dadosBR) > 10){
       Inicio <- min(dadosBR$DT_SIN_PRI)
-        
-  
-      macsaud.id <- dadosBR$CO_MACSAUD %>% unique()
-      # Semana epidemiologica termina no Sabado, entao vou excluir os dados mais recentes caso a semana nao comece no sábado.
-      Fim.sat <- today.week
-      pop <- tblMACSAUD$Populacao[k]
-      macsaud.name <- tblMACSAUD$DS_NOMEPAD_macsaud[k]
-      uf <- tblMACSAUD$CO_UF[k]
-      uf.name <- tblMACSAUD$DS_UF_SIGLA[k]
-      
       warn.lbl <- macsaud.id
-      pred.srag.summy <- try.estimate('MACSAUDE', warn.lbl,
-                                      dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
-      if (inherits(pred.srag.summy, 'error')){
-        dmax <- dmax + 1
-        wdw <- wdw + 2
-        pred.warning <- c(pred.warning, warn.lbl)
+      if ((gpj == 0) & (uf %in% macros.unicas$CO_UF)){
+        pred.srag.summy <- pred.ufs %>%
+          filter(CO_UF == uf) %>%
+          mutate(nivel = calc.transmission.thresholds(rolling_average),
+                 CO_MACSAUD = as.integer(macsaud.id),
+                 DS_NOMEPAD_macsaud = macsaud.name) %>%
+          fill(nivel, .direction = 'downup')
+      } else {
+        
         pred.srag.summy <- try.estimate('MACSAUDE', warn.lbl,
                                         dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
         if (inherits(pred.srag.summy, 'error')){
-          pred.failed <- c(pred.failed, warn.lbl)
-          message(paste('Não foi possível executar. Pulando o local', warn.lbl))
-          pred.srag.summy <- readRDS(paste0(preff,'/macros_', lyear, '_', today.week-1, '.rds')) %>%
-            filter(CO_MACSAUD == as.integer(macsaud.id)) %>%
-            select(-epiweek, -epiyear) %>%
-            mutate(grupo_jur=0) %>%
-            right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
-            fill(nivel, CO_MACSAUD, DS_NOMEPAD_macsaud, CO_UF, DS_UF_SIGLA, populacao, grupo_jur, .direction='down')
-          pred.macros <- pred.macros %>%
-            bind_rows(pred.srag.summy)
-          next
+          dmax <- dmax - 2
+          wdw <- ceiling(2.25*dmax)
+          pred.warning <- c(pred.warning, warn.lbl)
+          pred.srag.summy <- try.estimate('MACSAUDE', warn.lbl,
+                                          dadosBR, Inicio, today.week, Dmax=dmax, wdw=wdw, zero.inflated = TRUE)
+          if (inherits(pred.srag.summy, 'error')){
+            pred.failed <- c(pred.failed, warn.lbl)
+            message(paste('Não foi possível executar. Pulando o local', warn.lbl))
+            pred.srag.summy <- readRDS(paste0(preff,'/macros_', lyear, '_', today.week-1, '.rds')) %>%
+              filter(CO_MACSAUD == as.integer(macsaud.id)) %>%
+              select(-epiweek, -epiyear) %>%
+              mutate(grupo_jur=0) %>%
+              right_join(epiweek.table %>% transmute(Date = DT_SIN_PRI_epiweek), by='Date') %>%
+              fill(nivel, CO_MACSAUD, DS_NOMEPAD_macsaud, CO_UF, DS_UF_SIGLA, populacao, grupo_jur, .direction='down')
+            pred.macros <- pred.macros %>%
+              bind_rows(pred.srag.summy)
+            next
+          }
         }
+        pred.srag.summy <- pred.srag.summy %>%
+          mutate_at(vars(-("Date"), -starts_with("tendencia")), ~ .*100000/pop) %>%
+          mutate(nivel = calc.transmission.thresholds(rolling_average),
+                 CO_MACSAUD = as.integer(macsaud.id),
+                 DS_NOMEPAD_macsaud = macsaud.name,
+                 CO_UF = uf,
+                 DS_UF_SIGLA = uf.name,
+                 populacao = pop,
+                 grupo_jur = gpj) %>%
+          fill(nivel, .direction = 'downup')
       }
-      pred.srag.summy <- pred.srag.summy %>%
-        mutate_at(vars(-("Date"), -starts_with("tendencia")), ~ .*100000/pop) %>%
-        mutate(nivel = calc.transmission.thresholds(rolling_average),
-               CO_MACSAUD = as.integer(macsaud.id),
-               DS_NOMEPAD_macsaud = macsaud.name,
-               CO_UF = uf,
-               DS_UF_SIGLA = uf.name,
-               populacao = pop,
-               grupo_jur = gpj) %>%
-        fill(nivel, .direction = 'downup')
+      
       pred.macros <- pred.macros %>%
         bind_rows(pred.srag.summy)
       

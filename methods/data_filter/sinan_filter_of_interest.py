@@ -244,9 +244,13 @@ dict_dtypes = {
     'DT_ATUALIZACAO': 'str',
     'DOSE_1_COV': 'str',
     'DOSE_2_COV': 'str',
+    'DOSE_REF': 'str',
     'LOTE_1_COV': 'str',
     'LOTE_2_COV': 'str',
     'FAB_COV': 'str',
+    'FAB_COV1': 'str',
+    'FAB_COV2': 'str',
+    'FAB_COVREF': 'str',
     'VACINA_COV': 'Int8',
     '@VERSION': 'Int64',
     '@TIMESTAMP': 'str'
@@ -488,7 +492,17 @@ def filter_db2019(df, tag=None, filtertype='srag'):
                           'TOMO_RES',
                           'TOMO_OUT',
                           'DT_TOMO']
-    tgt_cols_vac_covid = ['VACINA_COV', 'DOSE_1_COV', 'DOSE_2_COV', 'FAB_COV', 'FNT_IN_COV']
+    tgt_cols_vac_covid = ['VACINA_COV',
+                          'DOSE_1_COV',
+                          'DOSE_2_COV',
+                          'DOSE_REF',
+                          'DOSE_R2',
+                          'FAB_COV',
+                          'FAB_COV_1',
+                          'FAB_COV_2',
+                          'FAB_COVREF',
+                          'FAB_COVR2',
+                          'FNT_IN_COV']
 
     if 'DT_RES_AN' in df.columns:
         table_compatibility(df)
@@ -505,7 +519,7 @@ def filter_db2019(df, tag=None, filtertype='srag'):
     df = df[tgtcols].copy()
     df = symptoms_filter(df)
 
-    regexp = re.compile('^DT')
+    regexp = re.compile('^DT|.*DOSE')
     dt_cols = list(filter(regexp.match, tgtcols))
     df = date_cleanup(df, dt_cols)
 
