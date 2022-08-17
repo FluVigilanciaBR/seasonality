@@ -6,11 +6,13 @@ suppressWarnings(suppressPackageStartupMessages(library("tidyverse")))
 suppressWarnings(suppressPackageStartupMessages(library(magick)))
 suppressWarnings(suppressPackageStartupMessages(library(grid)))
 suppressWarnings(suppressPackageStartupMessages(library(cowplot)))
+suppressWarnings(suppressPackageStartupMessages(library(RcppRoll)))
 options(dplyr.summarise.inform=F) 
 source("../data_filter/episem.R")
 source("generate.estimate.R")
 source("mapas_macsaud.R")
 source('plot.ts.tendencia.R')
+source('plot.age.ts.R')
 source('calc.transmission.thresholds.R')
 source('run.regsaud.am.R')
 source('run.regsaud.sc.R')
@@ -114,7 +116,7 @@ path_file <- paste0("../clean_data/clean_data_", args$type, suff, "_epiweek.csv.
 
 
 # RegionalSaude <- st_read("~/Git/PROCC /covid-19/malha/regional_saude_2019.gpkg" )
-dados_full <- fread( path_file, stringsAsFactors = F, data.table=F) %>%
+dados_full <- fread( path_file, stringsAsFactors = F, data.table=T) %>%
   filter(DT_SIN_PRI_epiyear >= 2020) %>%
   select(NU_NOTIFIC,
          CO_MUN_RES,
@@ -180,8 +182,7 @@ dados_full <- fread( path_file, stringsAsFactors = F, data.table=F) %>%
          TESTING_IGNORED,
          CLASSI_FIN,
          CRITERIO,
-         SinPri2Digita_DelayWeeks) %>%
-  as_tibble()
+         SinPri2Digita_DelayWeeks)
 if (args$filtertype == 'sragnofever'){
   dados_full %>%
     filter(SG_UF_NOT == 13) %>%
@@ -257,7 +258,7 @@ epiweek.table <- dados_full %>%
 epilbls <- c(1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52)
 xbreaks <- c(epilbls + epiweek.shift, epilbls + epiweekmax + epiweek.shift)
 xlbls <- c(epilbls, epilbls)
-xlimits <- c(1 + epiweek.shift, dados_full %>% 
+xlimits <- c(1 + epiweek.shift + epiweekmax, dados_full %>% 
                filter(DT_SIN_PRI_epiyear == lyear) %>%
                select(DT_SIN_PRI_epiweek) %>% max())
 
@@ -430,29 +431,14 @@ for (uf in uf.list$CO_UF){
   }
   
   plt <- age.BR.h.srag.pred$age %>%
-    filter(between(dt_event, xlimits[1], xlimits[2])) %>%
-    ggplot(aes(x=dt_event, y=Y, color = fx_etaria,
-               ymin = LI, ymax = LS, fill = fx_etaria)) +
-    geom_line(show.legend = F) +
-    geom_ribbon(aes(ymin=LI, ymax=LS), color = NA, alpha = 0.4, show.legend = F) +
-    geom_ribbon(aes(ymin=Q1, ymax=Q3), color = NA, alpha = 0.6, show.legend = F) +
-    scale_fill_manual(values=colorRampPalette(colorblind_pal()(8))(length(fx.labels))) +
-    scale_color_manual(values=colorRampPalette(colorblind_pal()(8))(length(fx.labels))) +
-    scale_x_continuous(breaks = xbreaks[seq(1,length(xbreaks), 2)],
-                       labels = xlbls[seq(1,length(xbreaks), 2)],
-                       minor_breaks = waiver(),
-                       limits = xlimits) +
-    theme_Publication(base_size = 14, base_family='Roboto') +
-    facet_wrap(~fx_etaria, nrow = 3, scales = "free_y") +
+    plot.age.ts(xlimits=xlimits, xbreaks=xbreaks, xlbls=xlbls) + 
     labs(
       x = "Semana de primeiros sintomas",
       y = "Casos de SRAG",
       color = "Faixa Etária", 
       title = uf.name,
       subtitle = paste0("Novos casos semanais por faixa etária. Dados até a semana ", today.week.ori, ' ', lyear)) +
-    theme(panel.grid.minor.x = element_line(colour="#f0f0f0", linetype=2),
-          axis.text.x = element_text(angle=45, hjust=1)
-          )
+    theme(axis.text.x = element_text(angle=45, hjust=1))
   png(filename = paste0(preff,"/Figs/UF/fig_", uf.name, "_fx_etaria.png"),
       width=9, height=6, units='in', res=200)
   print(plt)
@@ -535,11 +521,18 @@ df.uf.age <- df.uf.age %>%
          casos_notificados=n,
          mediana_da_estimativa=Median) %>%
   left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek')) %>%
-  arrange(SG_UF_NOT, fx_etaria, DT_SIN_PRI_epiweek)
+  arrange(SG_UF_NOT, fx_etaria, DT_SIN_PRI_epiweek) %>%
+  mutate(mediana_da_estimativa=case_when(
+    !is.na(mediana_da_estimativa) ~ as.numeric(mediana_da_estimativa),
+    TRUE ~ as.numeric(casos_notificados)
+  )) %>%
+  group_by(SG_UF_NOT, fx_etaria) %>%
+  mutate(media_movel=round(roll_mean(mediana_da_estimativa, n=3, align='center', fill=NA)))
 df.uf.age %>%
   saveRDS(file=paste0(preff,'/uf.estimativas.fx.etaria.rds'))
 df.uf.age %>%
-  mutate(mediana_da_estimativa=round(mediana_da_estimativa),
+  mutate(fx_etaria=str_replace(fx_etaria, '-', ' a '),
+         mediana_da_estimativa=round(mediana_da_estimativa),
          LI=round(LI),
          LS=round(LS),
          Q1=round(Q1),
@@ -606,7 +599,7 @@ qthreshold <- dados_full %>%
   ) %>%
   group_by(CO_MUN_RES, grupo_jur) %>%
   summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
-  mutate(dmax = dmax + 2,
+  mutate(dmax = ceiling(dmax + 2),
          dmax = case_when(
            dmax > args$dmax ~ as.numeric(args$dmax),
            dmax < 4 ~ 4,
@@ -624,7 +617,7 @@ qthreshold <- dados_full %>%
   group_by(grupo_jur) %>%
   summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
   mutate(CO_MUN_RES = 530010,
-         dmax = dmax + 2,
+         dmax = ceiling(dmax + 2),
          dmax = case_when(
            dmax > args$dmax ~ as.numeric(args$dmax),
            dmax < 4 ~ 4,
@@ -643,7 +636,7 @@ qthreshold <- dados_full %>%
   ) %>%
   group_by(CO_MUN_RES) %>%
   summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
-  mutate(dmax = dmax + 2,
+  mutate(dmax = ceiling(dmax + 2),
          dmax = case_when(
            dmax > args$dmax ~ as.numeric(args$dmax),
            dmax < 4 ~ 4,
@@ -662,7 +655,7 @@ qthreshold <- dados_full %>%
   select(SinPri2Digita_DelayWeeks) %>%
   summarize(dmax = quantile(SinPri2Digita_DelayWeeks, probs=qthres.probs, na.rm=TRUE)) %>%
   mutate(CO_MUN_RES = 530010,
-         dmax = dmax + 2,
+         dmax = ceiling(dmax + 2),
          dmax = case_when(
            dmax > args$dmax ~ as.numeric(args$dmax),
            dmax < 4 ~ 4,
@@ -674,7 +667,7 @@ qthreshold <- dados_full %>%
   ) %>%
   rbind(qthreshold)
 
-codmun.list <- c(110020)
+codmun.list <- c(110020,172100)
 qthreshold <- qthreshold %>%
   mutate(dmax = ifelse(CO_MUN_RES %in% codmun.list, dmax + 2, dmax),
          wdw = ifelse(CO_MUN_RES %in% codmun.list, round(2.5*dmax), wdw))
@@ -800,12 +793,26 @@ for(k in 1:nrow(tblCADMUN.capital)){
             Time >= today.week - (wdw-1)))
           age.BR.h.srag.pred <- nowcasting.summary(age.BR.h.srag.pred, age = T)
           consistent <- age.BR.h.srag.pred$age %>%
-            filter(dt_event == today.week) %>%
+            filter(dt_event > today.week-dmax) %>%
             transmute(dispersion = LS/(Median+1) < 20) %>%
             all()
           trials <- trials + 1
           dmax <- dmax - 2
           wdw <- round(2.25*dmax) - 1
+          if (!consistent){
+            fx.explode <- age.BR.h.srag.pred$age %>%
+              filter(dt_event > today.week-dmax,
+                     LS/(Median+1) > 20) %>%
+              select(fx_etaria) %>%
+              distinct()
+            age.BR.h.srag.pred$age <- age.BR.h.srag.pred$age %>%
+              mutate(LS = case_when(
+                fx_etaria %in% fx.explode$fx_etaria ~ as.numeric(IC80S),
+                TRUE ~ as.numeric(LS)
+              ))
+            print(paste0('Capital: ', title0, '. Tentativa: ', trials, '.\nExplosão nas fx etárias:'))
+            print(fx.explode)
+          }
         }
         
         age.BR.h.srag.pred$age <- dadosBR0 %>%
@@ -823,28 +830,14 @@ for(k in 1:nrow(tblCADMUN.capital)){
                  n = ifelse(dt_event >= today.week-4, NA, n))
         
         plt <- age.BR.h.srag.pred$age  %>%
-          filter(between(dt_event, xlimits[1], xlimits[2]))%>%
-          ggplot(aes(x=dt_event, y=Y, color = fx_etaria,
-                     ymin = LI, ymax = LS, fill = fx_etaria)) +
-          geom_line(show.legend = F) +
-          geom_ribbon(aes(ymin=LI, ymax=LS), color = NA, alpha = 0.4, show.legend = F) +
-          geom_ribbon(aes(ymin=Q1, ymax=Q3), color = NA, alpha = 0.6, show.legend = F) +
-          scale_fill_manual(values=colorRampPalette(colorblind_pal()(8))(9)) +
-          scale_color_manual(values=colorRampPalette(colorblind_pal()(8))(9)) +
-          scale_x_continuous(breaks = xbreaks[seq(1,length(xbreaks), 2)],
-                             labels = xlbls[seq(1,length(xbreaks), 2)],
-                             minor_breaks = waiver(),
-                             limits = xlimits) +
-          theme_Publication(base_size = 14, base_family='Roboto') +
-          facet_wrap(~fx_etaria, nrow = 3, scales = "free_y") +
+          plot.age.ts(xlimits=xlimits, xbreaks=xbreaks, xlbls=xlbls) + 
           labs(
             x = "Semana de primeiros sintomas",
             y = "Casos de SRAG",
             color = "Faixa Etária", 
             title = paste0(tblCADMUN.capital$DS_UF_SIGLA[k], ": ", title),
             subtitle = paste0("Novos casos semanais por faixa etária. Dados até a semana ", today.week.ori, ' ', lyear)) +
-          theme(panel.grid.minor.x = element_line(colour="#f0f0f0", linetype=2),
-                axis.text.x = element_text(angle=45, hjust=1))
+          theme(axis.text.x = element_text(angle=45, hjust=1))
         png(filename = paste0(preff,"/Figs/Capitais/fig_",
                               tblCADMUN.capital$DS_UF_SIGLA[k],
                               '_',
@@ -999,11 +992,18 @@ df.uf.age <- df.uf.age %>%
          casos_notificados=n,
          mediana_da_estimativa=Median) %>%
   left_join(epiweek.table, by=c('DT_SIN_PRI_epiweek')) %>%
-  arrange(CO_MUN_RES, fx_etaria, DT_SIN_PRI_epiweek)
+  arrange(CO_MUN_RES, fx_etaria, DT_SIN_PRI_epiweek) %>%
+  mutate(mediana_da_estimativa=case_when(
+    !is.na(mediana_da_estimativa) ~ as.numeric(mediana_da_estimativa),
+    TRUE ~ as.numeric(casos_notificados)
+  )) %>%
+  group_by(CO_MUN_RES, fx_etaria) %>%
+  mutate(media_movel=round(roll_mean(mediana_da_estimativa, n=3, align='center', fill=NA)))
 df.uf.age %>%
   saveRDS(file=paste0(preff,'/capitais.estimativas.fx.etaria.rds'))
 df.uf.age %>%
-  mutate(mediana_da_estimativa=round(mediana_da_estimativa),
+  mutate(fx_etaria=str_replace(fx_etaria, '-', ' a '),
+         mediana_da_estimativa=round(mediana_da_estimativa),
          LI=round(LI),
          LS=round(LS),
          Q1=round(Q1),

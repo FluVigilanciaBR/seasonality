@@ -429,7 +429,7 @@ def apply_estimator(date='max', filtertype='sragnofever', dmax=None, wdw=None):
         module_name = 'opportunity_estimator.opportunity.estimator.R'
         try:
             if wdw:
-                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype, '-w', wdw],
+                run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype, '-w', str(wdw)],
                     check=True)
             else:
                 run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype], check=True)
@@ -466,13 +466,13 @@ def apply_detailedestimator(date='max', filtertype='sragnofever', dmax=None, wdw
         Rscript = 'nowcastingCapitaisMacrosaude.R'
         if all([dmax, wdw]):
             run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
-                 '--dmax', dmax, '--window', wdw, '--graphs'], check=True)
+                 '--dmax', str(dmax), '--window', str(wdw), '--graphs'], check=True)
         elif dmax:
             run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
-                 '--dmax', dmax, '--graphs'], check=True)
+                 '--dmax', str(dmax), '--graphs'], check=True)
         elif wdw:
             run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype,
-                 '--window', wdw, '--graphs'], check=True)
+                 '--window', str(wdw), '--graphs'], check=True)
         else:
             run([rscript_path, '--vanilla', Rscript, '-d', date, '-t', data, '-f', filtertype, '--graphs'],
                 check=True)
@@ -509,8 +509,7 @@ def consolidate(fname=None, filtertype='srag'):
     try:
         if not fname:
             fname = os.path.join(data_folder, 'infogripe%s.dump' % timesmpl)
-        run(['pg_dump', '-Fc', '--host=%(HOST)s' % DATABASE, '--username=%(USER)s' % DATABASE,
-             '--dbname=%(NAME)s' % DATABASE, '-w', '--file', fname], check=True)
+        run(['pg_dump', '-Fc', '--no-owner', '--dbname=%(NAME)s' % DATABASE, '--file', fname], check=True)
     except Exception as err:
         logger.exception(module_name)
         logger.exception(err)
@@ -541,7 +540,6 @@ def exportdb(fname=None):
                 logger.exception(err)
                 mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
                 send_email(mail_error)
-                raise
         break
 
     for i in range(tries):
@@ -558,7 +556,6 @@ def exportdb(fname=None):
                 logger.exception(err)
                 mail_error['email_body'] = mail_error['email_body'] % {'time': time, 'mdl_name': module_name}
                 send_email(mail_error)
-                raise
         break
 
     logger.info('%s : DONE', module_name)
@@ -791,7 +788,8 @@ def generate_public_datasets(filtertype='srag',
                              'casos estimados', 'média móvel', 'nível semanal', 'nível por média móvel']].copy()
             else:
                 df = df.loc[(df['Ano epidemiológico'] == epiweekmax.epiyear.values[0]) &
-                            (df['Semana epidemiológica'].isin([epiweekmax.epiweek-1, epiweekmax.epiweek])) &
+                            (df['Semana epidemiológica'].isin([epiweekmax.epiweek.values[0]-1,
+                                                               epiweekmax.epiweek.values[0]])) &
                             (df.dado == 'srag') &
                             (df.escala == 'incidência'),
                             ['UF', 'Unidade da Federação', 'dado', 'escala', 'Ano epidemiológico', 'Semana epidemiológica',
@@ -1046,7 +1044,7 @@ def main(flist=None, update_mem=False, module_list=None, history_files=None, dir
     os.chdir('../nowcasting_capitais')
     if 'detailed_estimator' in module_list:
         logger.info('Apply detailed opportunity estimator')
-        apply_detailedestimator(date, filtertype, dmax, wdw)
+        apply_detailedestimator(date, filtertype, dmax, str(wdw))
         if 'public_dataset' in module_list:
             os.chdir('../')
             logger.info('Generate public dataset')

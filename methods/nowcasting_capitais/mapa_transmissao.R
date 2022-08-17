@@ -2,7 +2,7 @@ library(tidyverse)
 library(lubridate)
 library(geobr)
 
-url <- "https://gitlab.procc.fiocruz.br/mave/repo/-/raw/master/Dados/InfoGripe/macsaud_serie_estimativas_tendencia_sem_filtro_febre.csv"
+url <- "macsaud_serie_estimativas_tendencia_sem_filtro_febre.csv"
 
 srag_macro <- read_csv2(file = url)
 

@@ -113,7 +113,7 @@ nowcast.INLA <- function(dados.ag, model.day, zero.inflated = TRUE, ...){
     output <- inla(formula = model.day, 
                  family = family, 
                  data = dados.ag,
-                 num.threads = 4,
+                 num.threads = 6,
                  control.predictor = list(link = 1, compute = T),
                  control.compute = list(config = T, waic=F, dic=F, openmp.strategy='huge'),
                  control.family = control.family,
@@ -221,7 +221,7 @@ nowcasting_age <- function(dados.age, n.samples=1000, ...){
                                                   param = c(0.001, 0.001))
                       )
                     ),
-                    num.threads = 4,
+                    num.threads = 6,
                     control.inla = list(h = h.value),
                     ...
                     

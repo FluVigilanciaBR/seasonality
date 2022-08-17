@@ -554,6 +554,9 @@ def filter_db2019(df, tag=None, filtertype='srag'):
     labresultcleanup(df, 'IF_RESUL')
 
     df['FLU_A'] = pd.Series([], dtype='Int8')
+    df['FLU_AH1N1'] = pd.Series([], dtype='Int8')
+    df['FLU_AH3N2'] = pd.Series([], dtype='Int8')
+    df['FLU_ANSUB'] = pd.Series([], dtype='Int8')
     df['FLU_B'] = pd.Series([], dtype='Int8')
     df['FLU_LAB'] = pd.Series([], dtype='Int8')
     df['VSR'] = pd.Series([], dtype='Int8')
@@ -598,6 +601,9 @@ def filter_db2019(df, tag=None, filtertype='srag'):
            (eq_notna(df.FLU_A, 1)) |
            (eq_notna(df.FLU_B, 1)) |
            ((eq_notna(df.CLASSI_FIN, 1)) & (eq_notna(df.CRITERIO, 1))), 'FLU_LAB'] = 1
+    df.loc[eq_notna(df.PCR_FLUASU, 1), 'FLU_AH1N1'] = 1
+    df.loc[eq_notna(df.PCR_FLUASU, 2), 'FLU_AH3N2'] = 1
+    df.loc[eq_notna(df.PCR_FLUASU, 6), 'FLU_AOUT'] = 1
     df.loc[(ne_orna(df.FLU_LAB, 1)) & ((eq_notna(df.POS_IF_FLU, 2)) | (eq_notna(df.POS_PCRFLU, 2))), 'FLU_LAB'] = 0
     df.loc[(eq_notna(df.IF_VSR, 1)) | (eq_notna(df.PCR_VSR, 1)), 'VSR'] = 1
     df.loc[(eq_notna(df.IF_PARA1, 1)) | (eq_notna(df.PCR_PARA1, 1)), 'PARA1'] = 1

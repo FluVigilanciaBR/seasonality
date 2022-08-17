@@ -10,7 +10,7 @@ suppressWarnings(suppressPackageStartupMessages(library(stringi)))
 suppressWarnings(suppressPackageStartupMessages(library(sf)))
 suppressWarnings(suppressPackageStartupMessages(library(magick)))
 source('theme.publication.R')
-use_python('~/miniconda/env/fludashboard-development/bin/python')
+use_python('~/miniconda3/envs/fludashboard-development/bin/python')
 source_python('../data_filter/episem.py')
 suppressWarnings(suppressPackageStartupMessages(library("argparse")))
 # create parser object

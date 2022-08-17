@@ -33,7 +33,7 @@ parser <- ArgumentParser()
 # by default ArgumentParser will add an help option
 parser$add_argument("-t", "--type", type="character", default='srag',
                     help="Type of data input [srag, sragflu, obitoflu]. Default %(default)s")
-parser$add_argument("-f", "--filtertype", type="character", default='srag',
+parser$add_argument("-f", "--filtertype", type="character", default='sragnofever',
                     help="Type of filter [srag, sragnofever, hospdeath]. Default %(default)s")
 parser$add_argument("-d", "--date", type="character", default=format(Sys.Date(), '%Y-%m-%d'),
                     help="Date to use as base, in format YYYY-MM-DD [default Sys.Date()]")

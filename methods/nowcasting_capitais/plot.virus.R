@@ -103,8 +103,8 @@ suff <- suff_list[args$filtertype]
 preff_list <- list(srag = 'srag', sragnofever = '.', hospdeath = 'hospdeath')
 preff <- as.character(preff_list[args$filtertype])
 fx.breaks=c(0, 5, 12, 18, seq(30, 80, 10), 140)
-fx.labels=c('0-4', '5-11', '12-17','18-29', '30-39', '40-49', '50-59',
-            '60-69', '70-79',
+fx.labels=c('0 a 4', '5 a 11', '12 a 17','18 a 29', '30 a 39', '40 a 49', '50 a 59',
+            '60 a 69', '70 a 79',
             '80+')
 
 path_file <- paste0("../clean_data/clean_data_", args$type, suff, "_epiweek.csv.gz")
@@ -130,6 +130,9 @@ dados_full <- fread( path_file, stringsAsFactors = F, data.table=F) %>%
          VSR,
          OTHERS,
          FLU_A,
+         FLU_AH1N1,
+         FLU_AH3N2,
+         FLU_AOUT,
          FLU_B,
          FLU_LAB,
          FLU_CLINIC,
@@ -206,6 +209,9 @@ dados.ag <- dados_full %>%
             VSR=sum(VSR, na.rm=T),
             FLU=sum(FLU_LAB, na.rm=T),
             FLU_A=sum(FLU_A, na.rm=T),
+            FLU_AH1N1=sum(FLU_AH1N1, na.rm=T),
+            FLU_AH3N2=sum(FLU_AH3N2, na.rm=T),
+            FLU_AOUT=sum(FLU_AOUT, na.rm=T),
             FLU_B=sum(FLU_B, na.rm=T),
             RINO=sum(RINO, na.rm=T),
             ADNO=sum(ADNO, na.rm=T),
@@ -227,6 +233,9 @@ dados.ag <- dados_full %>%
             VSR=sum(VSR, na.rm=T),
             FLU=sum(FLU_LAB, na.rm=T),
             FLU_A=sum(FLU_A, na.rm=T),
+            FLU_AH1N1=sum(FLU_AH1N1, na.rm=T),
+            FLU_AH3N2=sum(FLU_AH3N2, na.rm=T),
+            FLU_AOUT=sum(FLU_AOUT, na.rm=T),
             FLU_B=sum(FLU_B, na.rm=T),
             RINO=sum(RINO, na.rm=T),
             ADNO=sum(ADNO, na.rm=T),
@@ -248,6 +257,9 @@ dados.ag <- dados_full %>%
             VSR=sum(VSR, na.rm=T),
             FLU=sum(FLU_LAB, na.rm=T),
             FLU_A=sum(FLU_A, na.rm=T),
+            FLU_AH1N1=sum(FLU_AH1N1, na.rm=T),
+            FLU_AH3N2=sum(FLU_AH3N2, na.rm=T),
+            FLU_AOUT=sum(FLU_AOUT, na.rm=T),
             FLU_B=sum(FLU_B, na.rm=T),
             RINO=sum(RINO, na.rm=T),
             ADNO=sum(ADNO, na.rm=T),
@@ -270,6 +282,9 @@ dados.ag <- dados_full %>%
             VSR=sum(VSR, na.rm=T),
             FLU=sum(FLU_LAB, na.rm=T),
             FLU_A=sum(FLU_A, na.rm=T),
+            FLU_AH1N1=sum(FLU_AH1N1, na.rm=T),
+            FLU_AH3N2=sum(FLU_AH3N2, na.rm=T),
+            FLU_AOUT=sum(FLU_AOUT, na.rm=T),
             FLU_B=sum(FLU_B, na.rm=T),
             RINO=sum(RINO, na.rm=T),
             ADNO=sum(ADNO, na.rm=T),
@@ -289,6 +304,9 @@ dados.ag <- dados_full %>%
                      VSR=0,
                      FLU=0,
                      FLU_A=0,
+                     FLU_AH1N1=0,
+                     FLU_AH3N2=0,
+                     FLU_AOUT=0,
                      FLU_B=0,
                      RINO=0,
                      ADNO=0,
@@ -303,8 +321,8 @@ dados.ag <- dados_full %>%
 dados.ag <- dados.ag %>%
   mutate(fx_etaria=factor(fx_etaria,
                           levels = c(fx.labels, 'Total')
-                          )
-         ) %>%
+                          ),
+         FLU_ANSUB=FLU_A - FLU_AH1N1 - FLU_AH3N2 - FLU_AOUT) %>%
   left_join(uf.list %>% select(CO_UF, DS_UF_SIGLA),
             by=c('SG_UF_NOT'='CO_UF'))
 rm(dados_full)
@@ -315,6 +333,7 @@ dados.ag %>%
   select(-DT_SIN_PRI_epiweek) %>%
   mutate(`Semana epidemiológica` = epiweek,
          `Ano epidemiológico` = epiyear) %>%
+  arrange(SG_UF_NOT, fx_etaria, epiyear, epiweek) %>%
   write_csv2('casos_semanais_fx_etaria_virus_sem_filtro_febre.csv')
 
 plt.age.virus <- function(uf, df=dados.ag){
@@ -331,6 +350,7 @@ plt.age.virus <- function(uf, df=dados.ag){
              PARA4+
              OUTROS
     ) %>%
+    select(-FLU_AH1N1, -FLU_AH3N2, -FLU_AOUT, -FLU_ANSUB) %>%
     pivot_longer(cols=c(SRAG, SARS2, VSR, FLU_A, FLU_B, RINO, ADNO, OUTROS),
                  names_to='dado',
                  values_to='Casos') %>%
@@ -386,7 +406,7 @@ plt.age.virus <- function(uf, df=dados.ag){
 map(uf.list$CO_UF, plt.age.virus)
 
 plt <- dados.ag %>%
-  filter(SG_UF_NOT!=0, fx_etaria=='0-4', DT_SIN_PRI_epiweek > today.week-16) %>%
+  filter(SG_UF_NOT!=0, fx_etaria=='0 a 4', DT_SIN_PRI_epiweek > today.week-16) %>%
   mutate(OUTROS=BOCA+
            METAP+
            PARA1+
@@ -395,6 +415,7 @@ plt <- dados.ag %>%
            PARA4+
            OUTROS
   ) %>%
+  select(-FLU_AH1N1, -FLU_AH3N2, -FLU_AOUT, -FLU_ANSUB) %>%
   pivot_longer(cols=c(SRAG, SARS2, VSR, FLU_A, FLU_B, RINO, ADNO, OUTROS),
                names_to='dado',
                values_to='Casos') %>%
@@ -456,6 +477,7 @@ plt <- dados.ag %>%
            PARA4+
            OUTROS
   ) %>%
+  select(-FLU_AH1N1, -FLU_AH3N2, -FLU_AOUT, -FLU_ANSUB) %>%
   pivot_longer(cols=c(SRAG, SARS2, VSR, FLU_A, FLU_B, RINO, ADNO, OUTROS),
                names_to='dado',
                values_to='Casos') %>%

@@ -1,6 +1,9 @@
-pred.ufs <- readRDS('ufs_current.rds')
-pred.capitais <- readRDS('capitais_current.rds')
-pred.macros <- readRDS('macros_current.rds')
+pred.ufs <- readRDS('~/ownCloud/Fiocruz/Influenza/Dados-equipe/dados-processados/dados-agregados/ufs_current.rds')
+pred.capitais <- readRDS('~/ownCloud/Fiocruz/Influenza/Dados-equipe/dados-processados/dados-agregados/capitais_current.rds')
+pred.macros <- readRDS('~/ownCloud/Fiocruz/Influenza/Dados-equipe/dados-processados/dados-agregados/macros_current.rds')
+# pred.ufs <- readRDS('./ufs_current.rds')
+# pred.capitais <- readRDS('./capitais_current.rds')
+# pred.macros <- readRDS('./macros_current.rds')
 require(tidyverse)
 
 # UFs -----

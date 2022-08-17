@@ -12,6 +12,12 @@ EMAIL = {
     'PASSWORD': None,
     'TO': None,
 }
+EMAILFIOCRUZ = {
+    'NAME': None,
+    'USER': None,
+    'PASSWORD': None,
+    'TO': None,
+}
 SERVER = {
     'USER': None,
     'HOST': None
